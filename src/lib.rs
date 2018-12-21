@@ -15,14 +15,14 @@ pub type ColQuadrupleSeqsWithColQuadruples = HashMap<ColQuadruple, ColQuadruples
 pub type ColPair = (Col, Col);
 pub type ColPairs = Vec<ColPair>;
 pub type ColPairSeqsWithColPairs = HashMap<ColPair, ColPairs, Hasher>; 
-pub type ProbsWithColPairs = HashMap<ColPair, Prob, Hasher>;
+// pub type ProbsWithColPairs = HashMap<ColPair, Prob, Hasher>;
 pub type PosPairs = Vec<PosPair>;
 pub type PosPairSeqsWithColPairs = HashMap<ColPair, PosPairs, Hasher>;
 pub type RnaIds = Vec<RnaId>;
 #[derive(Clone)]
 pub struct MeaCss {
   pub corresponding_col_quadruple_seqs_inside_col_quadruples: ColQuadrupleSeqsWithColQuadruples,
-  pub mean_bpaps_with_col_pairs: ProbsWithColPairs,
+  // pub mean_bpaps_with_col_pairs: ProbsWithColPairs,
   pub seq_num: usize,
   pub mea: Mea,
   pub pos_pair_seqs_with_col_pairs: PosPairSeqsWithColPairs,
@@ -57,7 +57,7 @@ impl MeaCss {
   pub fn new() -> MeaCss {
     MeaCss {
       corresponding_col_quadruple_seqs_inside_col_quadruples: ColQuadrupleSeqsWithColQuadruples::default(),
-      mean_bpaps_with_col_pairs: ProbsWithColPairs::default(),
+      // mean_bpaps_with_col_pairs: ProbsWithColPairs::default(),
       seq_num: 0,
       mea: 0.,
       pos_pair_seqs_with_col_pairs: PosPairSeqsWithColPairs::default(),
@@ -83,25 +83,37 @@ pub fn get_mea_consensus_ss(mea_css_pair: &MeaCssPair, gamma_plus_1: Prob, bpap_
   let mut col_pair_seqs_with_col_pairs_4_forward_bpas = ColPairSeqsWithColPairs::default();
   let inverse_gamma_plus_1 = 1. / gamma_plus_1;
   let seq_num_pair = (mea_css_pair.0.seq_num, mea_css_pair.1.seq_num);
-  let combi_num_pair = (
+  /* let combi_num_pair = (
     (0 .. seq_num_pair.0).combinations(2).fold(0, |acc, i| {&acc + 1}) as Prob,
     (0 .. seq_num_pair.1).combinations(2).fold(0, |acc, i| {&acc + 1}) as Prob,
-  );
+  ); */
   let sum_of_seq_num_pair = seq_num_pair.0 + seq_num_pair.1;
   for sub_seq_len_1 in 2 .. mea_css_pair.0.col_num + 1 {
     for i in 0 .. mea_css_pair.0.col_num - sub_seq_len_1 + 1 {
       let j = i + sub_seq_len_1 - 1;
-      if !(mea_css_pair.0.seq_num == 1 || mea_css_pair.0.mean_bpaps_with_col_pairs.contains_key(&(i, j))) {continue;}
+      // if !(mea_css_pair.0.seq_num == 1 || mea_css_pair.0.mean_bpaps_with_col_pairs.contains_key(&(i, j))) {continue;}
+      if !(mea_css_pair.0.seq_num == 1 || mea_css_pair.0.pos_pair_seqs_with_col_pairs.contains_key(&(i, j))) {continue;}
       for sub_seq_len_2 in 2 .. mea_css_pair.1.col_num + 1 {
         for k in 0 .. mea_css_pair.1.col_num - sub_seq_len_2 + 1 {
           let l = k + sub_seq_len_2 - 1;
           let col_quadruple = (i, j, k, l);
-          if !(mea_css_pair.1.seq_num == 1 || mea_css_pair.1.mean_bpaps_with_col_pairs.contains_key(&(k, l))) {continue;}
-          let mut mean_bpap = if mea_css_pair.0.seq_num == 1 {0.} else {combi_num_pair.0 * mea_css_pair.0.mean_bpaps_with_col_pairs[&(i, j)]} + if mea_css_pair.1.seq_num == 1 {0.} else {combi_num_pair.1 * mea_css_pair.1.mean_bpaps_with_col_pairs[&(k, l)]};
+          // if !(mea_css_pair.1.seq_num == 1 || mea_css_pair.1.mean_bpaps_with_col_pairs.contains_key(&(k, l))) {continue;}
+          if !(mea_css_pair.1.seq_num == 1 || mea_css_pair.1.pos_pair_seqs_with_col_pairs.contains_key(&(k, l))) {continue;}
+          // let mut mean_bpap = if mea_css_pair.0.seq_num == 1 {0.} else {combi_num_pair.0 * mea_css_pair.0.mean_bpaps_with_col_pairs[&(i, j)]} + if mea_css_pair.1.seq_num == 1 {0.} else {combi_num_pair.1 * mea_css_pair.1.mean_bpaps_with_col_pairs[&(k, l)]};
+          let mut mean_bpap = 0.;
           let ref pos_pairs_1 = mea_css_pair.0.pos_pair_seqs_with_col_pairs[&(i, j)];
           let ref pos_pairs_2 = mea_css_pair.1.pos_pair_seqs_with_col_pairs[&(k, l)];
           for (m, pos_pair_1) in pos_pairs_1.iter().enumerate() {
             let rna_id_1 = mea_css_pair.0.rna_ids[m];
+            for (n, pos_pair_2) in (&pos_pairs_1[m + 1 ..]).iter().enumerate() {
+              let n = n + m + 1;
+              let rna_id_2 = mea_css_pair.0.rna_ids[n];
+              let rna_id_pair = if rna_id_1 < rna_id_2 {(rna_id_1, rna_id_2)} else {(rna_id_2, rna_id_1)};
+              let pos_quadruple = if rna_id_1 < rna_id_2 {(pos_pair_1.0, pos_pair_1.1, pos_pair_2.0, pos_pair_2.1)} else {(pos_pair_2.0, pos_pair_2.1, pos_pair_1.0, pos_pair_1.1)};
+              let ref bpap_mat = bpap_mats_with_rna_id_pairs[&rna_id_pair];
+              if !bpap_mat.contains_key(&pos_quadruple) {continue;}
+              mean_bpap += bpap_mat[&pos_quadruple];
+            }
             for (n, pos_pair_2) in pos_pairs_2.iter().enumerate() {
               let rna_id_2 = mea_css_pair.1.rna_ids[n];
               let rna_id_pair = if rna_id_1 < rna_id_2 {(rna_id_1, rna_id_2)} else {(rna_id_2, rna_id_1)};
@@ -111,7 +123,19 @@ pub fn get_mea_consensus_ss(mea_css_pair: &MeaCssPair, gamma_plus_1: Prob, bpap_
               mean_bpap += bpap_mat[&pos_quadruple];
             }
           }
-          mean_bpap /= (0 .. sum_of_seq_num_pair).combinations(2).fold(0, |acc, i| {&acc + 1}) as Prob;
+          for (m, pos_pair_1) in pos_pairs_2.iter().enumerate() {
+            let rna_id_1 = mea_css_pair.1.rna_ids[m];
+            for (n, pos_pair_2) in (&pos_pairs_2[m + 1 ..]).iter().enumerate() {
+              let n = n + m + 1;
+              let rna_id_2 = mea_css_pair.1.rna_ids[n];
+              let rna_id_pair = if rna_id_1 < rna_id_2 {(rna_id_1, rna_id_2)} else {(rna_id_2, rna_id_1)};
+              let pos_quadruple = if rna_id_1 < rna_id_2 {(pos_pair_1.0, pos_pair_1.1, pos_pair_2.0, pos_pair_2.1)} else {(pos_pair_2.0, pos_pair_2.1, pos_pair_1.0, pos_pair_1.1)};
+              let ref bpap_mat = bpap_mats_with_rna_id_pairs[&rna_id_pair];
+              if !bpap_mat.contains_key(&pos_quadruple) {continue;}
+              mean_bpap += bpap_mat[&pos_quadruple];
+            }
+          }
+          mean_bpap /= (0 .. sum_of_seq_num_pair).combinations(2).fold(0, |acc, _| {&acc + 1}) as Prob;
           if mean_bpap <= inverse_gamma_plus_1 {
             continue;
           }
@@ -203,7 +227,7 @@ pub fn get_mea_consensus_ss(mea_css_pair: &MeaCssPair, gamma_plus_1: Prob, bpap_
       }
     }
   }
-  for (col_pair, pos_pairs) in &mea_css.pos_pair_seqs_with_col_pairs {
+  /* for (col_pair, pos_pairs) in &mea_css.pos_pair_seqs_with_col_pairs {
     let mut mean_bpap = 0.;
     for (i, pos_pair_1) in pos_pairs.iter().enumerate() {
       let rna_id_1 = mea_css.rna_ids[i];
@@ -223,7 +247,7 @@ pub fn get_mea_consensus_ss(mea_css_pair: &MeaCssPair, gamma_plus_1: Prob, bpap_
     }
     mean_bpap /= (0 .. sum_of_seq_num_pair).combinations(2).fold(0, |acc, i| {&acc + 1}) as Prob;
     mea_css.mean_bpaps_with_col_pairs.insert(*col_pair, mean_bpap);
-  }
+  } */
   mea_css
 }
 

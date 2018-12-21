@@ -16,6 +16,7 @@ num_cpus = "1.0"
 stem = {path = "../stem"}
 # stem = "0.1"
 petgraph = "0.4"
+rand = "0.6"
 
 [lib]
 path = "src/lib.rs"

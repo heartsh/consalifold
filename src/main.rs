@@ -4,6 +4,7 @@ extern crate scoped_threadpool;
 extern crate bio;
 extern crate num_cpus;
 extern crate petgraph;
+extern crate rand;
 
 use mearcof::*;
 use getopts::Options;
@@ -15,6 +16,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 use std::fs::File;
 use petgraph::{Outgoing, Incoming};
+use rand::Rng;
 
 type Arg = String;
 type NumOfThreads = u32;
@@ -25,6 +27,7 @@ type Strings = Vec<String>;
 type MeaCsss = Vec<MeaCss>;
 
 const DEFAULT_GAMMA: Prob = 1.;
+const DEFAULT_NUM_OF_ITERATIVE_REFINEMENTS: usize = 5;
 const VERSION: &'static str = "0.1.0";
 
 fn main() {
@@ -35,6 +38,7 @@ fn main() {
   opts.reqopt("p", "input_base_pair_align_prob_matrix_file_path", "The path to an input file containing base pair alignment probability matrices", "STR");
   opts.reqopt("o", "output_file_path", "The path to an output file which will contain estimated consensus secondary structures", "STR");
   opts.optopt("", "gamma", &format!("An MEA gamma (Uses {} by default)", DEFAULT_GAMMA), "FLOAT");
+  opts.optopt("", "num_of_iterative_refinements", &format!("The number of iterative refinements (Uses {} by default)", DEFAULT_NUM_OF_ITERATIVE_REFINEMENTS), "UINT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of all the threads of this computer by default)", "UINT");
   opts.optflag("h", "help", "Print a help menu");
   let opts = match opts.parse(&args[1 ..]) {
@@ -52,6 +56,11 @@ fn main() {
   } else {
     DEFAULT_GAMMA
   } + 1.;
+  let num_of_iterative_refinements = if opts.opt_present("num_of_iterative_refinements") {
+    opts.opt_str("num_of_iterative_refinements").expect("Failed to get the number of iterative refinements from command arguments.").parse().expect("Failed to parse the number of iterative refinements.")
+  } else {
+    DEFAULT_NUM_OF_ITERATIVE_REFINEMENTS
+  };
   let num_of_threads = if opts.opt_present("t") {
     opts.opt_str("t").expect("Failed to get the number of threads in multithreading from command arguments.").parse().expect("Failed to parse the number of threads in multithreading.")
   } else {
@@ -132,9 +141,9 @@ fn main() {
   });
   let guide_tree = get_guide_tree(&mea_mat, num_of_fasta_records);
   let root_node = guide_tree.externals(Incoming).next().expect("Failed to get the root node of a guide tree.");
-  let mea_css = get_mea_css_of_node(&guide_tree, &root_node, &mea_csss, gamma_plus_1, &bpap_mats_with_rna_id_pairs, num_of_fasta_records);
+  let mea_css = get_mea_css_of_node(&guide_tree, &root_node, &mea_csss, gamma_plus_1, &bpap_mats_with_rna_id_pairs, num_of_fasta_records, num_of_iterative_refinements);
   let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).expect("Failed to create an output file."));
-  let mut buf_4_writer_2_output_file = format!("; The version {} of the MEARCOF program.\n; The path to the input FASTA file for computing the consensus secondary structures (= CSSs) in this file = \"{}\".\n; The path to the input base pair alignment matrix file for computing these structures = \"{}\".\n; The values of the parameters used for computing these structures are as follows.\n; \"gamma\" = {}, \"num_of_threads\" = {}.\n\n", VERSION, input_fasta_file_path.display(), input_bpap_mat_file_path.display(), gamma_plus_1 - 1., num_of_threads);
+  let mut buf_4_writer_2_output_file = format!("; The version {} of the MEARCOF program.\n; The path to the input FASTA file for computing the consensus secondary structures (= CSSs) in this file = \"{}\".\n; The path to the input base pair alignment matrix file for computing these structures = \"{}\".\n; The values of the parameters used for computing these structures are as follows.\n; \"gamma\" = {}, \"num_of_iterative_refinements\" = {}, \"num_of_threads\" = {}.\n; Each row is with pairs of the ID of each of RNA sequences and corresponding position pairs.\n\nmea = {}\n", VERSION, input_fasta_file_path.display(), input_bpap_mat_file_path.display(), gamma_plus_1 - 1., num_of_iterative_refinements, num_of_threads, mea_css.mea);
   let seq_num = mea_css.seq_num;
   for (col_pair, pos_pairs) in mea_css.pos_pair_seqs_with_col_pairs.iter() {
     if col_pair.0 == 0 {continue;}
@@ -159,7 +168,7 @@ fn print_program_usage(program_name: &str, opts: &Options) {
 }
 
 #[inline]
-fn get_mea_css_of_node(guide_tree: &GuideTree, node: &NodeIndex<usize>, mea_csss: &MeaCsss, gamma_plus_1: Prob, bpap_mats_with_rna_id_pairs: &Prob4dMatsWithRnaIdPairs, num_of_fasta_records: usize) -> MeaCss {
+fn get_mea_css_of_node(guide_tree: &GuideTree, node: &NodeIndex<usize>, mea_csss: &MeaCsss, gamma_plus_1: Prob, bpap_mats_with_rna_id_pairs: &Prob4dMatsWithRnaIdPairs, num_of_fasta_records: usize, num_of_iterative_refinements: usize) -> MeaCss {
   let node_index = node.index();
   if node.index() < num_of_fasta_records {
     mea_csss[node_index].clone()
@@ -169,14 +178,38 @@ fn get_mea_css_of_node(guide_tree: &GuideTree, node: &NodeIndex<usize>, mea_csss
       child_node_pair.next().expect("Failed to get a child node of a node in a guide tree."),
       child_node_pair.next().expect("Failed to get a child node of a node in a guide tree."),
     );
-    let mea_css = get_mea_consensus_ss(
+    let mut mea_css = get_mea_consensus_ss(
       &(
-        &get_mea_css_of_node(guide_tree, &child_node_pair.0, mea_csss, gamma_plus_1, bpap_mats_with_rna_id_pairs, num_of_fasta_records),
-        &get_mea_css_of_node(guide_tree, &child_node_pair.1, mea_csss, gamma_plus_1, bpap_mats_with_rna_id_pairs, num_of_fasta_records),
+        &get_mea_css_of_node(guide_tree, &child_node_pair.0, mea_csss, gamma_plus_1, bpap_mats_with_rna_id_pairs, num_of_fasta_records, num_of_iterative_refinements),
+        &get_mea_css_of_node(guide_tree, &child_node_pair.1, mea_csss, gamma_plus_1, bpap_mats_with_rna_id_pairs, num_of_fasta_records, num_of_iterative_refinements),
       ),
       gamma_plus_1,
       bpap_mats_with_rna_id_pairs,
     );
+    if child_node_pair.0.index() >= num_of_fasta_records && child_node_pair.1.index() >= num_of_fasta_records {
+      let num_of_rnas = mea_css.rna_ids.len();
+      let mut rand_num_generator = rand::thread_rng();
+      for _ in 0 .. num_of_iterative_refinements {
+        let mut new_mea_css = mea_css.clone();
+        let index_4_remove = rand_num_generator.gen_range(0, num_of_rnas);
+        let chosen_rna_id = new_mea_css.rna_ids[index_4_remove].clone();
+        new_mea_css.rna_ids.remove(index_4_remove);
+        for pos_pairs in new_mea_css.pos_pair_seqs_with_col_pairs.values_mut() {
+          pos_pairs.remove(index_4_remove);
+        }
+        new_mea_css = get_mea_consensus_ss(
+          &(
+            &new_mea_css,
+            &get_mea_css_of_node(guide_tree, &NodeIndex::new(chosen_rna_id), mea_csss, gamma_plus_1, bpap_mats_with_rna_id_pairs, num_of_fasta_records, num_of_iterative_refinements),
+          ),
+          gamma_plus_1,
+          bpap_mats_with_rna_id_pairs,
+        );
+        if mea_css.mea < new_mea_css.mea {
+          mea_css = new_mea_css;
+        }
+      }
+    }
     mea_css
   }
 }

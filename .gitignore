@@ -1,0 +1,11 @@
+*
+!**/
+target
+!*.rs
+!*.py
+!*.fa
+!*.afa
+!*.aln
+!Cargo.toml
+!.gitignore
+!README.md

@@ -26,7 +26,7 @@ type FastaRecords = Vec<FastaRecord>;
 type Strings = Vec<String>;
 type MeaCsss = Vec<MeaCss>;
 
-const DEFAULT_GAMMA: Prob = 1.;
+const DEFAULT_GAMMA: Prob = 9.;
 const DEFAULT_NUM_OF_ITERATIVE_REFINEMENTS: usize = 5;
 const VERSION: &'static str = "0.1.0";
 
@@ -118,7 +118,7 @@ fn main() {
     for j in 0 .. seq_len + 2 {
       for k in j + 1 .. seq_len + 2 {
         let pos_pair = (j, k);
-        mea_css.pos_pair_seqs_with_col_pairs.insert(pos_pair, vec![pos_pair]);
+        mea_css.rna_id_pos_triple_seqs_with_col_pairs.insert(pos_pair, vec![(i, pos_pair.0, pos_pair.1)]);
       }
     }
     mea_css.rna_ids = vec![i];
@@ -144,16 +144,16 @@ fn main() {
   let mea_css = get_mea_css_of_node(&guide_tree, &root_node, &mea_csss, gamma_plus_1, &bpap_mats_with_rna_id_pairs, num_of_fasta_records, num_of_iterative_refinements);
   let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).expect("Failed to create an output file."));
   let mut buf_4_writer_2_output_file = format!("; The version {} of the MEARCOF program.\n; The path to the input FASTA file for computing the consensus secondary structures (= CSSs) in this file = \"{}\".\n; The path to the input base pair alignment matrix file for computing these structures = \"{}\".\n; The values of the parameters used for computing these structures are as follows.\n; \"gamma\" = {}, \"num_of_iterative_refinements\" = {}, \"num_of_threads\" = {}.\n; Each row is with pairs of the ID of each of RNA sequences and corresponding position pairs.\n\nmea = {}\n", VERSION, input_fasta_file_path.display(), input_bpap_mat_file_path.display(), gamma_plus_1 - 1., num_of_iterative_refinements, num_of_threads, mea_css.mea);
-  let seq_num = mea_css.seq_num;
-  for (col_pair, pos_pairs) in mea_css.pos_pair_seqs_with_col_pairs.iter() {
+  // let seq_num = mea_css.seq_num;
+  for (col_pair, rna_id_pos_triples) in mea_css.rna_id_pos_triple_seqs_with_col_pairs.iter() {
     if col_pair.0 == 0 {continue;}
     let mut buf_4_col_pair = String::new();
-    for (i, pos_pair) in pos_pairs.iter().enumerate() {
-      let rna_id = mea_css.rna_ids[i];
-      buf_4_col_pair.push_str(&if i < seq_num - 1 {
-        format!("{}:{},{} ", rna_id, pos_pair.0 - 1, pos_pair.1 - 1)
+    let num_of_rna_id_pos_triples = rna_id_pos_triples.len();
+    for (i, &(rna_id, pos_1, pos_2)) in rna_id_pos_triples.iter().enumerate() {
+      buf_4_col_pair.push_str(&if i < num_of_rna_id_pos_triples - 1 {
+        format!("{}:{},{} ", rna_id, pos_1 - 1, pos_2 - 1)
       } else {
-        format!("{}:{},{}\n", rna_id, pos_pair.0 - 1, pos_pair.1 - 1)
+        format!("{}:{},{}\n", rna_id, pos_1 - 1, pos_2 - 1)
       });
     }
     buf_4_writer_2_output_file.push_str(&buf_4_col_pair);
@@ -194,8 +194,22 @@ fn get_mea_css_of_node(guide_tree: &GuideTree, node: &NodeIndex<usize>, mea_csss
         let index_4_remove = rand_num_generator.gen_range(0, num_of_rnas);
         let chosen_rna_id = new_mea_css.rna_ids[index_4_remove].clone();
         new_mea_css.rna_ids.remove(index_4_remove);
-        for pos_pairs in new_mea_css.pos_pair_seqs_with_col_pairs.values_mut() {
-          pos_pairs.remove(index_4_remove);
+        new_mea_css.seq_num -= 1;
+        for rna_id_pos_pairs in &mut new_mea_css.rna_id_pos_pair_seqs_with_cols {
+          match rna_id_pos_pairs.iter().enumerate().find(|(_, &(rna_id, _))| {rna_id == chosen_rna_id}) {
+            Some((index_4_remove, _)) => {
+              rna_id_pos_pairs.remove(index_4_remove);
+            },
+            None => {},
+          }
+        }
+        for rna_id_pos_triples in new_mea_css.rna_id_pos_triple_seqs_with_col_pairs.values_mut() {
+          match rna_id_pos_triples.iter().enumerate().find(|(_, &(rna_id, _, _))| {rna_id == chosen_rna_id}) {
+            Some((index_4_remove, _)) => {
+              rna_id_pos_triples.remove(index_4_remove);
+            },
+            None => {},
+          }
         }
         new_mea_css = get_mea_consensus_ss(
           &(

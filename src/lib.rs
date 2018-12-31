@@ -14,18 +14,18 @@ pub type ColQuadruples = Vec<ColQuadruple>;
 pub type ColQuadrupleSeqsWithColQuadruples = HashMap<ColQuadruple, ColQuadruples, Hasher>; 
 pub type ColPair = (Col, Col);
 pub type ColPairs = Vec<ColPair>;
-pub type ColPairSeqsWithColPairs = HashMap<ColPair, ColPairs, Hasher>; 
-// pub type ProbsWithColPairs = HashMap<ColPair, Prob, Hasher>;
-pub type PosPairs = Vec<PosPair>;
-pub type PosPairSeqsWithColPairs = HashMap<ColPair, PosPairs, Hasher>;
+pub type ColPairSeqsWithColPairs = HashMap<ColPair, ColPairs, Hasher>;
+pub type RnaIdPosTriple = (RnaId, Pos, Pos);
+pub type RnaIdPosTriples = Vec<RnaIdPosTriple>;
+pub type RnaIdPosTripleSeqsWithColPairs = HashMap<ColPair, RnaIdPosTriples, Hasher>;
 pub type RnaIds = Vec<RnaId>;
 #[derive(Clone)]
 pub struct MeaCss {
   pub corresponding_col_quadruple_seqs_inside_col_quadruples: ColQuadrupleSeqsWithColQuadruples,
-  // pub mean_bpaps_with_col_pairs: ProbsWithColPairs,
   pub seq_num: usize,
   pub mea: Mea,
-  pub pos_pair_seqs_with_col_pairs: PosPairSeqsWithColPairs,
+  pub rna_id_pos_pair_seqs_with_cols: RnaIdPosPairSeqs,
+  pub rna_id_pos_triple_seqs_with_col_pairs: RnaIdPosTripleSeqsWithColPairs,
   pub col_num: usize,
   pub rna_ids: RnaIds,
   pub pseudo_col_quadruple: ColQuadruple,
@@ -49,18 +49,19 @@ type ClusterIndexScorePairs = Vec<ClusterIndexScorePair>;
 type ClusterIndexScorePairSeqsWithClusterIndexes = HashMap<ClusterIndex, ClusterIndexScorePairs, Hasher>;
 pub type SparseMeaMat = HashMap<RnaIdPair, Mea>;
 type SeqNumsWithClusterIndexes = HashMap<ClusterIndex, usize, Hasher>;
-type Poss = Vec<Pos>;
-type PosSeqs = Vec<Poss>;
-type BoolsWithPosPairs = HashMap<PosPair, bool, Hasher>;
+type RnaIdPosPair = (RnaId, Pos);
+type RnaIdPosPairs = Vec<RnaIdPosPair>;
+type RnaIdPosPairSeqs = Vec<RnaIdPosPairs>;
+pub type BoolsWithPosPairs = HashMap<PosPair, bool, Hasher>;
 
 impl MeaCss {
   pub fn new() -> MeaCss {
     MeaCss {
       corresponding_col_quadruple_seqs_inside_col_quadruples: ColQuadrupleSeqsWithColQuadruples::default(),
-      // mean_bpaps_with_col_pairs: ProbsWithColPairs::default(),
       seq_num: 0,
       mea: 0.,
-      pos_pair_seqs_with_col_pairs: PosPairSeqsWithColPairs::default(),
+      rna_id_pos_pair_seqs_with_cols: RnaIdPosPairSeqs::new(),
+      rna_id_pos_triple_seqs_with_col_pairs: RnaIdPosTripleSeqsWithColPairs::default(),
       col_num: 0,
       rna_ids: RnaIds::new(),
       pseudo_col_quadruple: (0, 0, 0, 0),
@@ -79,57 +80,44 @@ impl ClusterIndexScorePair {
 
 #[inline]
 pub fn get_mea_consensus_ss(mea_css_pair: &MeaCssPair, gamma_plus_1: Prob, bpap_mats_with_rna_id_pairs: &Prob4dMatsWithRnaIdPairs) -> MeaCss {
+  let mea_css_pair = &if mea_css_pair.0.mea >= mea_css_pair.1.mea {*mea_css_pair} else {(mea_css_pair.1, mea_css_pair.0)};
   let mut mea_mat_4_corresponding_col_quadruples = Mea4dMat::default();
   let mut col_pair_seqs_with_col_pairs_4_forward_bpas = ColPairSeqsWithColPairs::default();
   let inverse_gamma_plus_1 = 1. / gamma_plus_1;
   let seq_num_pair = (mea_css_pair.0.seq_num, mea_css_pair.1.seq_num);
-  /* let combi_num_pair = (
-    (0 .. seq_num_pair.0).combinations(2).fold(0, |acc, i| {&acc + 1}) as Prob,
-    (0 .. seq_num_pair.1).combinations(2).fold(0, |acc, i| {&acc + 1}) as Prob,
-  ); */
   let sum_of_seq_num_pair = seq_num_pair.0 + seq_num_pair.1;
   for sub_seq_len_1 in 2 .. mea_css_pair.0.col_num + 1 {
     for i in 0 .. mea_css_pair.0.col_num - sub_seq_len_1 + 1 {
       let j = i + sub_seq_len_1 - 1;
-      // if !(mea_css_pair.0.seq_num == 1 || mea_css_pair.0.mean_bpaps_with_col_pairs.contains_key(&(i, j))) {continue;}
-      if !(mea_css_pair.0.seq_num == 1 || mea_css_pair.0.pos_pair_seqs_with_col_pairs.contains_key(&(i, j))) {continue;}
+      if !mea_css_pair.0.rna_id_pos_triple_seqs_with_col_pairs.contains_key(&(i, j)) {continue;}
+      let ref rna_id_pos_triples_1 = mea_css_pair.0.rna_id_pos_triple_seqs_with_col_pairs[&(i, j)];
       for sub_seq_len_2 in 2 .. mea_css_pair.1.col_num + 1 {
         for k in 0 .. mea_css_pair.1.col_num - sub_seq_len_2 + 1 {
           let l = k + sub_seq_len_2 - 1;
           let col_quadruple = (i, j, k, l);
-          // if !(mea_css_pair.1.seq_num == 1 || mea_css_pair.1.mean_bpaps_with_col_pairs.contains_key(&(k, l))) {continue;}
-          if !(mea_css_pair.1.seq_num == 1 || mea_css_pair.1.pos_pair_seqs_with_col_pairs.contains_key(&(k, l))) {continue;}
-          // let mut mean_bpap = if mea_css_pair.0.seq_num == 1 {0.} else {combi_num_pair.0 * mea_css_pair.0.mean_bpaps_with_col_pairs[&(i, j)]} + if mea_css_pair.1.seq_num == 1 {0.} else {combi_num_pair.1 * mea_css_pair.1.mean_bpaps_with_col_pairs[&(k, l)]};
+          if !mea_css_pair.1.rna_id_pos_triple_seqs_with_col_pairs.contains_key(&(k, l)) {continue;}
           let mut mean_bpap = 0.;
-          let ref pos_pairs_1 = mea_css_pair.0.pos_pair_seqs_with_col_pairs[&(i, j)];
-          let ref pos_pairs_2 = mea_css_pair.1.pos_pair_seqs_with_col_pairs[&(k, l)];
-          for (m, pos_pair_1) in pos_pairs_1.iter().enumerate() {
-            let rna_id_1 = mea_css_pair.0.rna_ids[m];
-            for (n, pos_pair_2) in (&pos_pairs_1[m + 1 ..]).iter().enumerate() {
-              let n = n + m + 1;
-              let rna_id_2 = mea_css_pair.0.rna_ids[n];
+          let ref rna_id_pos_triples_2 = mea_css_pair.1.rna_id_pos_triple_seqs_with_col_pairs[&(k, l)];
+          for (m, &(rna_id_1, pos_1, pos_2)) in rna_id_pos_triples_1.iter().enumerate() {
+            for &(rna_id_2, pos_3, pos_4) in &rna_id_pos_triples_1[m + 1 ..] {
               let rna_id_pair = if rna_id_1 < rna_id_2 {(rna_id_1, rna_id_2)} else {(rna_id_2, rna_id_1)};
-              let pos_quadruple = if rna_id_1 < rna_id_2 {(pos_pair_1.0, pos_pair_1.1, pos_pair_2.0, pos_pair_2.1)} else {(pos_pair_2.0, pos_pair_2.1, pos_pair_1.0, pos_pair_1.1)};
+              let pos_quadruple = if rna_id_1 < rna_id_2 {(pos_1, pos_2, pos_3, pos_4)} else {(pos_3, pos_4, pos_1, pos_2)};
               let ref bpap_mat = bpap_mats_with_rna_id_pairs[&rna_id_pair];
               if !bpap_mat.contains_key(&pos_quadruple) {continue;}
               mean_bpap += bpap_mat[&pos_quadruple];
             }
-            for (n, pos_pair_2) in pos_pairs_2.iter().enumerate() {
-              let rna_id_2 = mea_css_pair.1.rna_ids[n];
+            for &(rna_id_2, pos_3, pos_4) in rna_id_pos_triples_2 {
               let rna_id_pair = if rna_id_1 < rna_id_2 {(rna_id_1, rna_id_2)} else {(rna_id_2, rna_id_1)};
-              let pos_quadruple = if rna_id_1 < rna_id_2 {(pos_pair_1.0, pos_pair_1.1, pos_pair_2.0, pos_pair_2.1)} else {(pos_pair_2.0, pos_pair_2.1, pos_pair_1.0, pos_pair_1.1)};
+              let pos_quadruple = if rna_id_1 < rna_id_2 {(pos_1, pos_2, pos_3, pos_4)} else {(pos_3, pos_4, pos_1, pos_2)};
               let ref bpap_mat = bpap_mats_with_rna_id_pairs[&rna_id_pair];
               if !bpap_mat.contains_key(&pos_quadruple) {continue;}
               mean_bpap += bpap_mat[&pos_quadruple];
             }
           }
-          for (m, pos_pair_1) in pos_pairs_2.iter().enumerate() {
-            let rna_id_1 = mea_css_pair.1.rna_ids[m];
-            for (n, pos_pair_2) in (&pos_pairs_2[m + 1 ..]).iter().enumerate() {
-              let n = n + m + 1;
-              let rna_id_2 = mea_css_pair.1.rna_ids[n];
+          for (m, &(rna_id_1, pos_1, pos_2)) in rna_id_pos_triples_2.iter().enumerate() {
+            for &(rna_id_2, pos_3, pos_4) in &rna_id_pos_triples_2[m + 1 ..] {
               let rna_id_pair = if rna_id_1 < rna_id_2 {(rna_id_1, rna_id_2)} else {(rna_id_2, rna_id_1)};
-              let pos_quadruple = if rna_id_1 < rna_id_2 {(pos_pair_1.0, pos_pair_1.1, pos_pair_2.0, pos_pair_2.1)} else {(pos_pair_2.0, pos_pair_2.1, pos_pair_1.0, pos_pair_1.1)};
+              let pos_quadruple = if rna_id_1 < rna_id_2 {(pos_1, pos_2, pos_3, pos_4)} else {(pos_3, pos_4, pos_1, pos_2)};
               let ref bpap_mat = bpap_mats_with_rna_id_pairs[&rna_id_pair];
               if !bpap_mat.contains_key(&pos_quadruple) {continue;}
               mean_bpap += bpap_mat[&pos_quadruple];
@@ -153,24 +141,26 @@ pub fn get_mea_consensus_ss(mea_css_pair: &MeaCssPair, gamma_plus_1: Prob, bpap_
   let mut mea_css = MeaCss::new();
   let pseudo_col_quadruple = (0, mea_css_pair.0.col_num - 1, 0, mea_css_pair.1.col_num - 1);
   let mut col_quadruple_stack = vec![pseudo_col_quadruple];
-  let mut pos_seqs = PosSeqs::new();
+  let mut rna_id_pos_pair_seqs = RnaIdPosPairSeqs::new();
   let mut pos_pairs_exist_in_fisrt_seq = BoolsWithPosPairs::default();
   while col_quadruple_stack.len() > 0 {
     let col_quadruple_1 = col_quadruple_stack.pop().expect("Failed to pop an element of a vector.");
     let (i, j, k, l) = col_quadruple_1;
-    pos_pairs_exist_in_fisrt_seq.insert(mea_css_pair.0.pos_pair_seqs_with_col_pairs[&(i, j)][0], true);
-    let mut left_poss = Poss::new();
-    let mut right_poss = Poss::new();
-    for &(m, n) in &mea_css_pair.0.pos_pair_seqs_with_col_pairs[&(i, j)] {
-      left_poss.push(m);
-      right_poss.push(n);
+    let first_seq_rna_id_pos_triple = mea_css_pair.0.rna_id_pos_triple_seqs_with_col_pairs[&(i, j)][0];
+    let first_seq_pos_pair = (first_seq_rna_id_pos_triple.1, first_seq_rna_id_pos_triple.2);
+    pos_pairs_exist_in_fisrt_seq.insert(first_seq_pos_pair, true);
+    let mut left_rna_id_pos_pairs = RnaIdPosPairs::new();
+    let mut right_rna_id_pos_pairs = left_rna_id_pos_pairs.clone();
+    for &(rna_id, m, n) in &mea_css_pair.0.rna_id_pos_triple_seqs_with_col_pairs[&(i, j)] {
+      left_rna_id_pos_pairs.push((rna_id, m));
+      right_rna_id_pos_pairs.push((rna_id, n));
     }
-    for &(m, n) in &mea_css_pair.1.pos_pair_seqs_with_col_pairs[&(k, l)] {
-      left_poss.push(m);
-      right_poss.push(n);
+    for &(rna_id, m, n) in &mea_css_pair.1.rna_id_pos_triple_seqs_with_col_pairs[&(k, l)] {
+      left_rna_id_pos_pairs.push((rna_id, m));
+      right_rna_id_pos_pairs.push((rna_id, n));
     }
-    pos_seqs.push(left_poss);
-    pos_seqs.push(right_poss);
+    rna_id_pos_pair_seqs.push(left_rna_id_pos_pairs);
+    rna_id_pos_pair_seqs.push(right_rna_id_pos_pairs);
     mea_css.col_num += 2;
     let mea_mat_4_corresponding_col_quadruple = get_mea_mat_4_corresponding_col_quadruple(&col_quadruple_1, &mea_mat_4_corresponding_col_quadruples, &col_pair_seqs_with_col_pairs_4_forward_bpas);
     let mea = mea_mat_4_corresponding_col_quadruple[j - i - 1][l - k - 1];
@@ -180,6 +170,14 @@ pub fn get_mea_consensus_ss(mea_css_pair: &MeaCssPair, gamma_plus_1: Prob, bpap_
     while mea_mat_4_corresponding_col_quadruple[n - i][p - k] > 0. {
       let mea = mea_mat_4_corresponding_col_quadruple[n - i][p - k];
       if mea == mea_mat_4_corresponding_col_quadruple[n - i - 1][p - k] {
+        if mea_css_pair.0.seq_num > 1 {
+          let mut rna_id_pos_pairs = RnaIdPosPairs::new();
+          for &(rna_id, m) in &mea_css_pair.0.rna_id_pos_pair_seqs_with_cols[n] {
+            rna_id_pos_pairs.push((rna_id, m));
+          }
+          rna_id_pos_pair_seqs.push(rna_id_pos_pairs);
+          mea_css.col_num += 1;
+        }
         n = n - 1;
       } else if mea == mea_mat_4_corresponding_col_quadruple[n - i][p - k - 1] {
         p = p - 1;
@@ -212,42 +210,32 @@ pub fn get_mea_consensus_ss(mea_css_pair: &MeaCssPair, gamma_plus_1: Prob, bpap_
   mea_css.rna_ids = mea_css_pair.0.rna_ids.clone();
   mea_css.rna_ids.extend(&mea_css_pair.1.rna_ids);
   mea_css.pseudo_col_quadruple = pseudo_col_quadruple;
-  pos_seqs.sort_unstable_by(|poss_1, poss_2| {poss_1[0].cmp(&poss_2[0])});
+  rna_id_pos_pair_seqs.sort_unstable_by(|rna_id_pos_pairs_1, rna_id_pos_pairs_2| {(rna_id_pos_pairs_1[0].1).cmp(&rna_id_pos_pairs_2[0].1)});
   for i in 0 .. mea_css.col_num {
-    let ref left_poss = pos_seqs[i];
-    let left_col_first_pos = left_poss[0];
+    let ref left_rna_id_pos_pairs = rna_id_pos_pair_seqs[i];
+    let left_col_first_pos = left_rna_id_pos_pairs[0].1;
     for j in i + 1 .. mea_css.col_num {
-      let ref right_poss = pos_seqs[j];
-      let right_col_first_pos = right_poss[0];
+      let ref right_rna_id_pos_pairs = rna_id_pos_pair_seqs[j];
+      let right_col_first_pos = right_rna_id_pos_pairs[0].1;
       let first_seq_pos_pair = (left_col_first_pos, right_col_first_pos);
       if pos_pairs_exist_in_fisrt_seq.contains_key(&first_seq_pos_pair) {
         let col_pair = (i, j);
-        let pos_pairs = left_poss.iter().zip(right_poss).map(|(&i, &j)| {(i, j)}).collect::<PosPairs>();
-        mea_css.pos_pair_seqs_with_col_pairs.insert(col_pair, pos_pairs);
+        let rna_id_pos_triples = left_rna_id_pos_pairs.iter().zip(right_rna_id_pos_pairs).map(|(&(rna_id, i), &(_, j))| {(rna_id, i, j)}).collect::<RnaIdPosTriples>();
+        mea_css.rna_id_pos_triple_seqs_with_col_pairs.insert(col_pair, rna_id_pos_triples);
+      } else if mea_css_pair.0.seq_num > 1 {
+        for rna_id_pos_triples in mea_css_pair.0.rna_id_pos_triple_seqs_with_col_pairs.values() {
+          let first_seq_pos_triple = rna_id_pos_triples[0];
+          let first_seq_pos_pair_2 = (first_seq_pos_triple.1, first_seq_pos_triple.2);
+          if first_seq_pos_pair_2 == first_seq_pos_pair {
+            let col_pair = (i, j);
+            let rna_id_pos_triples = left_rna_id_pos_pairs.iter().zip(right_rna_id_pos_pairs).map(|(&(rna_id, i), &(_, j))| {(rna_id, i, j)}).collect::<RnaIdPosTriples>();
+            mea_css.rna_id_pos_triple_seqs_with_col_pairs.insert(col_pair, rna_id_pos_triples);
+          }
+        }
       }
     }
   }
-  /* for (col_pair, pos_pairs) in &mea_css.pos_pair_seqs_with_col_pairs {
-    let mut mean_bpap = 0.;
-    for (i, pos_pair_1) in pos_pairs.iter().enumerate() {
-      let rna_id_1 = mea_css.rna_ids[i];
-      for (j, pos_pair_2) in (&pos_pairs[i + 1 ..]).iter().enumerate() {
-        let j = j + i + 1;
-        let rna_id_2 = mea_css.rna_ids[j];
-        let rna_id_pair = if rna_id_1 < rna_id_2 {(rna_id_1, rna_id_2)} else {(rna_id_2, rna_id_1)};
-        let pos_quadruple = if rna_id_1 < rna_id_2 {
-          (pos_pair_1.0, pos_pair_1.1, pos_pair_2.0, pos_pair_2.1)
-        } else {
-          (pos_pair_2.0, pos_pair_2.1, pos_pair_1.0, pos_pair_1.1)
-        };
-        let ref bpap_mat = bpap_mats_with_rna_id_pairs[&rna_id_pair];
-        if !bpap_mat.contains_key(&pos_quadruple) {continue;}
-        mean_bpap += bpap_mat[&pos_quadruple];
-      }
-    }
-    mean_bpap /= (0 .. sum_of_seq_num_pair).combinations(2).fold(0, |acc, i| {&acc + 1}) as Prob;
-    mea_css.mean_bpaps_with_col_pairs.insert(*col_pair, mean_bpap);
-  } */
+  mea_css.rna_id_pos_pair_seqs_with_cols = rna_id_pos_pair_seqs;
   mea_css
 }
 
@@ -257,8 +245,12 @@ fn get_mea_mat_4_corresponding_col_quadruple(col_quadruple: &ColQuadruple, mea_m
   let sub_seq_len_1 = j - i + 1;
   let sub_seq_len_2 = l - k + 1;
   let mut mea_mat_4_corresponding_col_quadruple = vec![vec![0.; sub_seq_len_2 - 1]; sub_seq_len_1 - 1];
-  for n in i + 2 .. j {
-    for p in k + 2 .. l {
+  for n in i .. j {
+    for p in k .. l {
+      if n == i || p == k {
+        mea_mat_4_corresponding_col_quadruple[n - i][p - k] = 0.;
+        continue;
+      }
       let mut mea = 0.;
       match col_pair_seqs_with_col_pairs_4_forward_bpas.get(&(n, p)) {
         Some(col_pairs) => {
@@ -304,7 +296,7 @@ pub fn get_guide_tree(mea_mat: &SparseMeaMat, seq_num: usize) -> GuideTree {
     cluster_index_score_pair_seqs_with_cluster_indexes.insert(i, cluster_index_score_pairs);
   }
   for cluster_index_score_pairs in cluster_index_score_pair_seqs_with_cluster_indexes.values_mut() {
-    cluster_index_score_pairs.sort_unstable_by(|cluster_index_score_pair_1, cluster_index_score_pair_2| {cluster_index_score_pair_2.score.partial_cmp(&cluster_index_score_pair_1.score).expect("Failed to compare 2 floating-point numbers.")});
+    cluster_index_score_pairs.sort_unstable_by(|cluster_index_score_pair_1, cluster_index_score_pair_2| {cluster_index_score_pair_2.score.partial_cmp(&cluster_index_score_pair_1.score).expect("Failed to compare 2 floating-point numbers with each other.")});
   }
   let mut seq_nums_with_cluster_indexes = (0 .. seq_num).map(|cluster_index| {(cluster_index, 1)}).collect::<SeqNumsWithClusterIndexes>();
   let mut new_cluster_index = seq_num;

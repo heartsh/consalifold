@@ -86,6 +86,7 @@ pub fn get_mea_consensus_ss(mea_css_pair: &MeaCssPair, gamma_plus_1: Prob, bpap_
   let inverse_gamma_plus_1 = 1. / gamma_plus_1;
   let seq_num_pair = (mea_css_pair.0.seq_num, mea_css_pair.1.seq_num);
   let sum_of_seq_num_pair = seq_num_pair.0 + seq_num_pair.1;
+  let combination_num = (0 .. sum_of_seq_num_pair).combinations(2).fold(0, |acc, _| {&acc + 1}) as Prob;
   for sub_seq_len_1 in 2 .. mea_css_pair.0.col_num + 1 {
     for i in 0 .. mea_css_pair.0.col_num - sub_seq_len_1 + 1 {
       let j = i + sub_seq_len_1 - 1;
@@ -123,7 +124,7 @@ pub fn get_mea_consensus_ss(mea_css_pair: &MeaCssPair, gamma_plus_1: Prob, bpap_
               mean_bpap += bpap_mat[&pos_quadruple];
             }
           }
-          mean_bpap /= (0 .. sum_of_seq_num_pair).combinations(2).fold(0, |acc, _| {&acc + 1}) as Prob;
+          mean_bpap /= combination_num;
           if mean_bpap <= inverse_gamma_plus_1 {
             continue;
           }

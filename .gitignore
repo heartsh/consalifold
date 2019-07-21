@@ -3,9 +3,7 @@
 target
 !*.rs
 !*.py
-!*.fa
-!*.afa
-!*.aln
 !Cargo.toml
 !.gitignore
 !README.md
+!assets/rfam_seed_stas.sth

@@ -1,14 +1,16 @@
 extern crate rnafamprob;
-extern crate petgraph;
-extern crate itertools;
+extern crate neofold;
+/* extern crate petgraph;
+extern crate itertools; */
 
 pub use rnafamprob::*;
-pub use petgraph::graph::{Graph, NodeIndex};
+pub use neofold::*;
+/* pub use petgraph::graph::{Graph, NodeIndex};
 pub use petgraph::Directed;
-use itertools::Itertools;
+use itertools::Itertools; */
 
-pub type Mea = Prob;
-pub type Col = Pos;
+// pub type Mea = Prob;
+/* pub type Col = Pos;
 pub type ColQuadruple = (Col, Col, Col, Col);
 pub type ColQuadruples = Vec<ColQuadruple>; 
 pub type ColQuadrupleSeqsWithColQuadruples = HashMap<ColQuadruple, ColQuadruples, Hasher>; 
@@ -32,9 +34,10 @@ pub struct MeaCss {
   pub col_num: usize,
   pub rna_ids: RnaIds,
   // pub pseudo_col_quadruple: ColQuadruple,
-}
+} */
 pub type Prob4dMatsWithRnaIdPairs = HashMap<RnaIdPair, Prob4dMat, Hasher>;
-pub type MeaCssPair<'a> = (&'a MeaCss, &'a MeaCss);
+pub type ProbsWithRnaIds = Vec<Probs>;
+/* pub type MeaCssPair<'a> = (&'a MeaCss, &'a MeaCss);
 pub type Meas = Vec<Mea>;
 pub type MeaMat = Vec<Meas>;
 pub type Mea4dMat = HashMap<ColQuadruple, Mea, Hasher>;
@@ -65,9 +68,46 @@ pub type FloatPoss = Vec<FloatPos>;
 pub type FloatPosSeqs = Vec<FloatPoss>;
 // pub type FloatPosSeqsWithCols = HashMap<Col, FloatPoss, Hasher>;
 pub type FloatPosPairSeqs = Vec<FloatPosPairs>;
-pub type ProbsWithCols = HashMap<Col, Prob, Hasher>;
+pub type ProbsWithCols = HashMap<Col, Prob, Hasher>; */
+pub type SeqId = String;
+pub type SeqIds = Vec<SeqId>;
+// type FastaRecord = (FastaId, Seq, usize);
+// type FastaRecords = Vec<FastaRecord>;
+pub type Col = Vec<Char>;
+pub type Cols = Vec<Col>;
+pub type PosMaps = Vec<Pos>;
+pub type PosMapSets = Vec<PosMaps>;
+#[derive(Debug)]
+pub struct SeqAlign {
+  // pub seq_ids: SeqIds,
+  pub cols: Cols,
+  pub pos_map_sets: PosMapSets,
+}
+pub struct MeaCss {
+  pub bpa_pos_pair_seqs_inside_pos_pairs: PosPairSeqsWithPosPairs,
+  pub ea: Mea,
+}
+
+impl SeqAlign {
+  pub fn new() -> SeqAlign {
+    SeqAlign {
+      // seq_ids: SeqIds::new(),
+      cols: Cols::new(),
+      pos_map_sets: PosMapSets::new(),
+    }
+  }
+}
 
 impl MeaCss {
+  pub fn new() -> MeaCss {
+    MeaCss {
+      bpa_pos_pair_seqs_inside_pos_pairs: PosPairSeqsWithPosPairs::default(),
+      ea: 0.,
+    }
+  }
+}
+
+/* impl MeaCss {
   pub fn new() -> MeaCss {
     MeaCss {
       // corresponding_col_quadruple_seqs_inside_col_quadruples: ColQuadrupleSeqsWithColQuadruples::default(),
@@ -82,18 +122,151 @@ impl MeaCss {
       // pseudo_col_quadruple: (0, 0, 0, 0),
     }
   }
-}
+} */
 
-impl ClusterIndexScorePair {
+/* impl ClusterIndexScorePair {
   pub fn new(cluster_index: ClusterIndex, cluster_score: ClusterScore) -> ClusterIndexScorePair {
     ClusterIndexScorePair {
       index: cluster_index,
       score: cluster_score,
     }
   }
-}
+} */
+
+pub const GAP: Char = '-' as Char;
 
 #[inline]
+pub fn neoalifold(bpap_mats_with_rna_id_pairs: &Prob4dMatsWithRnaIdPairs, mean_upp_mat: &Probs, gamma: Prob, sa: &SeqAlign) -> MeaCss {
+  let mut mea_mat_4_bpa_pos_pairs = MeaMat::default();
+  let mut pos_seqs_with_poss_4_forward_bpas = PosSeqsWithPoss::default();
+  let sa_len = sa.cols.len();
+  let num_of_rnas = sa.cols[0].len();
+  let combination_num = (num_of_rnas * (num_of_rnas - 1)) as Prob / 2.;
+  for sub_sa_len in 2 .. sa_len + 1 {
+    for i in 0 .. sa_len + 1 - sub_sa_len {
+      let j = i + sub_sa_len - 1;
+      let pos_pair = (i, j);
+      let mut mean_bpap = 0.;
+      for rna_id_1 in 0 .. num_of_rnas {
+        for rna_id_2 in rna_id_1 + 1 .. num_of_rnas {
+          let rna_id_pair = (rna_id_1, rna_id_2);
+          let ref bpap_mat = bpap_mats_with_rna_id_pairs[&rna_id_pair];
+          let base_quadruple = (sa.cols[i][rna_id_1], sa.cols[j][rna_id_1], sa.cols[i][rna_id_2], sa.cols[j][rna_id_2]);
+          if base_quadruple.0 == GAP || base_quadruple.1 == GAP || base_quadruple.2 == GAP || base_quadruple.3 == GAP {
+            continue;
+          }
+          let pos_quadruple = (sa.pos_map_sets[i][rna_id_1], sa.pos_map_sets[j][rna_id_1], sa.pos_map_sets[i][rna_id_2], sa.pos_map_sets[j][rna_id_2]);
+          match bpap_mat.get(&pos_quadruple) {
+            Some(&bpap) => {
+              mean_bpap += bpap;
+            },
+            None => {},
+          }
+        }
+      }
+      mean_bpap /= combination_num;
+      let meas_4_bpa_pos_pair = get_meas_4_bpa_pos_pair(&pos_pair, &mea_mat_4_bpa_pos_pairs, &pos_seqs_with_poss_4_forward_bpas, mean_upp_mat);
+      mea_mat_4_bpa_pos_pairs.insert(pos_pair, meas_4_bpa_pos_pair[j - i - 1] + gamma * mean_bpap);
+      let poss_exist = match pos_seqs_with_poss_4_forward_bpas.get(&j) {
+        Some(_) => {true},
+        None => {false},
+      };
+      if poss_exist {
+        pos_seqs_with_poss_4_forward_bpas.get_mut(&j).expect("Failed to get an element of a hash map.").push(i);
+      } else {
+        pos_seqs_with_poss_4_forward_bpas.insert(j, vec![i]);
+      }
+      /* match bpp_mat.get(&pos_pair) {
+        Some(&bpp) => {
+          let meas_4_bp_pos_pair = get_meas_4_bp_pos_pair(&pos_pair, &mea_mat_4_bp_pos_pairs, &pos_seqs_with_poss_4_forward_bps, upp_mat);
+          mea_mat_4_bp_pos_pairs.insert(pos_pair, meas_4_bp_pos_pair[j - i - 1] + gamma * bpp);
+          let poss_exist = match pos_seqs_with_poss_4_forward_bps.get(&j) {
+            Some(_) => {true},
+            None => {false},
+          };
+          if poss_exist {
+            pos_seqs_with_poss_4_forward_bps.get_mut(&j).expect("Failed to get an element of a hash map.").push(i);
+          } else {
+            pos_seqs_with_poss_4_forward_bps.insert(j, vec![i]);
+          }
+        },
+        None => {},
+      } */
+    }
+  }
+  let mut mea_css = MeaCss::new();
+  let pseudo_pos_pair = (0, sa_len - 1);
+  let mut pos_pair_stack = vec![pseudo_pos_pair];
+  while pos_pair_stack.len() > 0 {
+    let pos_pair_1 = pos_pair_stack.pop().expect("Failed to pop an element of a vector.");
+    let meas_4_bpa_pos_pair = get_meas_4_bpa_pos_pair(&pos_pair_1, &mea_mat_4_bpa_pos_pairs, &pos_seqs_with_poss_4_forward_bpas, mean_upp_mat);
+    let (i, j) = pos_pair_1;
+    let mea = meas_4_bpa_pos_pair[j - i - 1];
+    if mea == 0. {continue;}
+    let mut n = j - 1;
+    while meas_4_bpa_pos_pair[n - i] > 0. {
+      let mea = meas_4_bpa_pos_pair[n - i];
+      if mea == meas_4_bpa_pos_pair[n - i - 1] + mean_upp_mat[n] {
+        n = n - 1;
+      } else {
+        match pos_seqs_with_poss_4_forward_bpas.get(&n) {
+          Some(poss) => {
+            for &m in poss {
+              if m <= i {continue;}
+              let pos_pair_2 = (m, n);
+              if mea == meas_4_bpa_pos_pair[m - i - 1] + mea_mat_4_bpa_pos_pairs[&pos_pair_2] {
+                let bpa_pos_pairs_exist = match mea_css.bpa_pos_pair_seqs_inside_pos_pairs.get(&pos_pair_1) {
+                  Some(_) => {true},
+                  None => {false},
+                };
+                if bpa_pos_pairs_exist {
+                  mea_css.bpa_pos_pair_seqs_inside_pos_pairs.get_mut(&pos_pair_1).expect("Failed to get an element of a hash map.").push(pos_pair_2);
+                } else {
+                  mea_css.bpa_pos_pair_seqs_inside_pos_pairs.insert(pos_pair_1, vec![pos_pair_2]);
+                }
+                pos_pair_stack.push(pos_pair_2);
+                n = m - 1;
+                break;
+              }
+            }
+          },
+          None => {},
+        }
+      }
+    }
+  }
+  mea_css.ea = mea_mat_4_bpa_pos_pairs[&pseudo_pos_pair];
+  mea_css
+}
+
+fn get_meas_4_bpa_pos_pair(pos_pair: &PosPair, mea_mat_4_bpa_pos_pairs: &MeaMat, pos_seqs_with_poss_4_forward_bpas: &PosSeqsWithPoss, mean_upp_mat: &Probs) -> Meas {
+  let (i, j) = *pos_pair;
+  let sub_sa_len = j - i + 1;
+  let mut meas_4_bpa_pos_pair = vec![0.; sub_sa_len - 1];
+  for n in i + 2 .. j {
+    let mut mea = 0.;
+    match pos_seqs_with_poss_4_forward_bpas.get(&n) {
+      Some(poss) => {
+        for &m in poss {
+          if m <= i {continue;}
+          let ea = meas_4_bpa_pos_pair[m - i - 1] + mea_mat_4_bpa_pos_pairs[&(m, n)];
+          if ea > mea {
+            mea = ea;
+          }
+        }
+      },
+      None => {},
+    };
+    let ea = meas_4_bpa_pos_pair[n - i - 1] + mean_upp_mat[n];
+    if ea > mea {
+      mea = ea;
+    }
+    meas_4_bpa_pos_pair[n - i] = mea;
+  }
+  meas_4_bpa_pos_pair
+}
+
+/* #[inline]
 // pub fn get_mea_consensus_ss(mea_css_pair: &MeaCssPair, gamma_plus_1: Prob, bpap_mats_with_rna_id_pairs: &Prob4dMatsWithRnaIdPairs) -> MeaCss {
 pub fn get_mea_consensus_ss(mea_css_pair: &MeaCssPair, gamma: Prob, bpap_mats_with_rna_id_pairs: &Prob4dMatsWithRnaIdPairs, upp_mats_with_rna_ids: &ProbSeqsWithRnaIds) -> MeaCss {
   let mea_css_pair = &if mea_css_pair.0.mea >= mea_css_pair.1.mea {*mea_css_pair} else {(mea_css_pair.1, mea_css_pair.0)};
@@ -294,9 +467,9 @@ pub fn get_mea_consensus_ss(mea_css_pair: &MeaCssPair, gamma: Prob, bpap_mats_wi
   mea_css.rna_ids.extend(&mea_css_pair.1.rna_ids);
   mea_css.pos_seqs_with_cols.sort_unstable_by(|poss_1, poss_2| {poss_1.partial_cmp(&poss_2).expect("Failed to compare 2 floating-point numbers with each other.")});
   mea_css
-}
+} */
 
-#[inline]
+/* #[inline]
 fn get_mea_mat_4_corresponding_col_quadruple(col_quadruple: &ColQuadruple, mea_mat_4_corresponding_col_quadruples: &Mea4dMat, col_pair_seqs_with_col_pairs_4_forward_bpas: &ColPairSeqsWithColPairs, upp_mats_with_rna_ids: &ProbSeqsWithRnaIds, mea_css_pair: &MeaCssPair, mean_upps_with_cols_1: &mut ProbsWithCols, mean_upps_with_cols_2: &mut ProbsWithCols) -> MeaMat {
   let &(i, j, k, l) = col_quadruple;
   let sub_seq_len_1 = j - i + 1;
@@ -376,9 +549,9 @@ fn get_mea_mat_4_corresponding_col_quadruple(col_quadruple: &ColQuadruple, mea_m
     }
   }
   mea_mat_4_corresponding_col_quadruple
-}
+} */
 
-#[inline]
+/* #[inline]
 pub fn get_guide_tree(mea_mat: &SparseMeaMat, seq_num: usize) -> GuideTree {
   let mut guide_tree = GuideTree::default();
   for _ in 0 .. seq_num {
@@ -457,4 +630,4 @@ pub fn get_guide_tree(mea_mat: &SparseMeaMat, seq_num: usize) -> GuideTree {
 #[inline]
 pub fn is_gap_pos(pos: FloatPos) -> bool {
   if pos.fract() != 0. {true} else {false}
-}
+} */

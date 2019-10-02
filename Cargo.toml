@@ -6,16 +6,17 @@ description = "MEARCOF Program, Program for Maximum-expected-accuracy Estimation
 
 [dependencies]
 rna-algos = "0.1"
-itertools = "0.8"
-lazy_static = "0.1"
-time = "0.1"
-scoped_threadpool = "0.1"
+# itertools = "0.8"
+# lazy_static = "0.1"
+# time = "0.1"
+# scoped_threadpool = "0.1"
 getopts = "0.2"
-bio = "0.20"
-num_cpus = "1.0"
+# bio = "0.20"
+# num_cpus = "1.0"
 rnafamprob = {path = "../rnafamprob"}
-petgraph = "0.4"
-rand = "0.6"
+# petgraph = "0.4"
+# rand = "0.6"
+neofold = {path = "../neofold"}
 
 [lib]
 path = "src/lib.rs"

@@ -9,7 +9,6 @@ pub use neofold::*;
 pub use petgraph::Directed;
 use itertools::Itertools; */
 
-type MeaMat = Vec<Meas>;
 // pub type Mea = Prob;
 /* pub type Col = Pos;
 pub type ColQuadruple = (Col, Col, Col, Col);
@@ -71,8 +70,6 @@ pub type FloatPosSeqs = Vec<FloatPoss>;
 // pub type FloatPosSeqsWithCols = HashMap<Col, FloatPoss, Hasher>;
 pub type FloatPosPairSeqs = Vec<FloatPosPairs>;
 pub type ProbsWithCols = HashMap<Col, Prob, Hasher>; */
-pub type SeqId = String;
-pub type SeqIds = Vec<SeqId>;
 // type FastaRecord = (FastaId, Seq, usize);
 // type FastaRecords = Vec<FastaRecord>;
 pub type Col = Vec<Char>;
@@ -89,6 +86,8 @@ pub struct MeaCss {
   pub bpa_pos_pairs: PosPairs,
   pub ea: Mea,
 }
+pub type SeqId = String;
+pub type SeqIds = Vec<SeqId>;
 
 impl SeqAlign {
   pub fn new() -> SeqAlign {
@@ -151,12 +150,10 @@ pub fn neoalifold(bpap_mats_with_rna_id_pairs: &Prob4dMatsWithRnaIdPairs, mean_u
       let j = i + sub_sa_len - 1;
       let pos_pair = (i, j);
       let mut mea = mea_mat[i + 1][j] + mean_upp_mat[i];
-      // println!("MEA 1: {}", mea);
       let ea = mea_mat[i][j - 1] + mean_upp_mat[j];
       if ea > mea {
         mea = ea;
       }
-      // println!("MEA 2: {}", mea);
       let mut mean_bpap = 0.;
       for rna_id_1 in 0 .. num_of_rnas {
         for rna_id_2 in rna_id_1 + 1 .. num_of_rnas {
@@ -181,13 +178,11 @@ pub fn neoalifold(bpap_mats_with_rna_id_pairs: &Prob4dMatsWithRnaIdPairs, mean_u
       if ea > mea {
         mea = ea;
       }
-      // println!("MEA 3: {}", mea);
       for k in i .. j {
         let ea = mea_mat[i][k] + mea_mat[k + 1][j];
         if ea > mea {
           mea = ea;
         }
-        // println!("MEA 4: {}", mea);
       }
       mea_mat[i][j] = mea;
     }

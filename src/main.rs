@@ -36,7 +36,7 @@ fn main() {
   opts.reqopt("a", "input_seq_align_file_path", "The path to an input CLUSTAL file containing a sequence alignment of RNA sequences", "STR");
   opts.reqopt("p", "input_base_pair_align_prob_matrix_file_path", "The path to an input file containing base pair alignment probability matrices", "STR");
   opts.reqopt("q", "input_unpair_prob_matrix_file_path", "The path to an input file containing unpairing probability matrices", "STR");
-  opts.reqopt("o", "output_file_path", "The path to an output file which will contain estimated consensus secondary structures", "STR");
+  opts.reqopt("o", "output_file_path", "The path to an output STOCKHOLM file which will contain estimated consensus secondary structures", "STR");
   opts.optopt("", "gamma", &format!("An MEA gamma (Uses {} by default)", DEFAULT_GAMMA), "FLOAT");
   // opts.optopt("", "num_of_iterative_refinements", &format!("The number of iterative refinements (Uses {} by default)", DEFAULT_NUM_OF_ITERATIVE_REFINEMENTS), "UINT");
   // opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of all the threads of this computer by default)", "UINT");
@@ -69,9 +69,7 @@ fn main() {
     num_cpus::get() as NumOfThreads
   }; */
   // let fasta_file_reader = Reader::from_file(Path::new(&input_fasta_file_path)).expect("Failed to set a FASTA file reader.");
-  // println!("Start to read a sequence alignment from a CLUSTAL file.");
-  let mut sa = read_sa_from_clustal_file(input_sa_file_path);
-  // println!("Finish to read a sequence alignment from a CLUSTAL file.");
+  let (mut sa, seq_ids) = read_sa_from_clustal_file(input_sa_file_path);
   let num_of_rnas = sa.cols[0].len();
   let mut seq_lens = vec![0; num_of_rnas];
   let num_of_cols = sa.cols.len();
@@ -87,7 +85,6 @@ fn main() {
       }
     }
   }
-  // println!("{:?}.", &sa.pos_map_sets);
   /* for fasta_record in fasta_file_reader.records() {
     let fasta_record = fasta_record.expect("Failed to read a FASTA record.");
     let seq = unsafe {from_utf8_unchecked(fasta_record.seq()).to_uppercase().as_bytes().iter().filter(|&&base| {is_rna_base(base)}).map(|&base| {base}).collect::<Seq>()};
@@ -147,19 +144,34 @@ fn main() {
       let subsubsubstrings = subsubstring.split(",").collect::<Vec<&str>>();
       upp_mat[subsubsubstrings[0].parse::<Pos>().expect("Failed to parse an index.") + 1] = subsubsubstrings[1].parse().expect("Failed to parse a base pair alignment probability.");
     }
-    // println!("{:?}", upp_mat);
   }
   let mean_upp_mat = get_mean_upp_mat(&upp_mats_with_rna_ids, &sa);
-  // println!("Finish to compute mean-unpairing-probability matrix.");
   let mea_css = neoalifold(&bpap_mats_with_rna_id_pairs, &mean_upp_mat, gamma, &sa);
-  // println!("{}", get_mea_css_str(&mea_css, sa.cols.len()));
   let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).expect("Failed to create an output file."));
-  let mut buf_4_writer_2_output_file = format!("; The version {} of the NeoAliFold program.\n; The path to the input CLUSTAL file for computing the consensus secondary structure (= CSS) in this file = \"{}\".\n; The path to the input base pair alignment probability matrix file for computing this structure = \"{}\".\n; The path to the input unpairing probability matrix file for computing this structure = \"{}\".\n; The values of the parameters used for computing this structure are as follows.\n; \"gamma\" = {}.\n\n", VERSION, input_sa_file_path.display(), input_bpap_mat_file_path.display(), input_upp_mat_file_path.display(), gamma);
-  let mea_css_str = get_mea_css_str(&mea_css, sa.cols.len());
-  let mea_css_str = unsafe {from_utf8_unchecked(&mea_css_str)};
-  buf_4_writer_2_output_file.push_str(&mea_css_str);
+  // let mut buf_4_writer_2_output_file = format!("; The version {} of the NeoAliFold program.\n; The path to the input CLUSTAL file for computing the consensus secondary structure (= CSS) in this file = \"{}\".\n; The path to the input base pair alignment probability matrix file for computing this structure = \"{}\".\n; The path to the input unpairing probability matrix file for computing this structure = \"{}\".\n; The values of the parameters used for computing this structure are as follows.\n; \"gamma\" = {}.\n\n", VERSION, input_sa_file_path.display(), input_bpap_mat_file_path.display(), input_upp_mat_file_path.display(), gamma);
+  let mut buf_4_writer_2_output_file = format!("# STOCKHOLM 1.0\n#=GF CC The version {} of the NeoAliFold program\n#=GF CC The path to the input CLUSTAL file for computing the consensus secondary structure (= CSS) in this file = \"{}\"\n#=GF CC The path to the input base pair alignment probability matrix file for computing this structure = \"{}\"\n#=GF CC The path to the input unpairing probability matrix file for computing this structure = \"{}\"\n#=GF CC The values of the parameters used for computing this structure are as follows\n#=GF CC \"gamma\" = {}\n", VERSION, input_sa_file_path.display(), input_bpap_mat_file_path.display(), input_upp_mat_file_path.display(), gamma);
+  let sa_len = sa.cols.len();
+  let max_seq_id_len = seq_ids.iter().map(|seq_id| {seq_id.len()}).max().expect("Failed to find the maximum length of sequence IDs.");
+  for rna_id in 0 .. num_of_rnas {
+    let ref seq_id = seq_ids[rna_id];
+    buf_4_writer_2_output_file.push_str(seq_id);
+    let mut stockholm_row = vec![' ' as Char; max_seq_id_len - seq_id.len() + 2];
+    let mut sa_row = (1 .. sa_len - 1).map(|x| {sa.cols[x][rna_id]}).collect::<Seq>();
+    stockholm_row.append(&mut sa_row);
+    let mut stockholm_row = unsafe {from_utf8_unchecked(&stockholm_row)};
+    buf_4_writer_2_output_file.push_str(&stockholm_row);
+    buf_4_writer_2_output_file.push_str("\n");
+  }
+  let descriptor = "#=GC SS_cons";
+  let descriptor_len = descriptor.len();
+  buf_4_writer_2_output_file.push_str(descriptor);
+  let mut stockholm_row = vec![' ' as Char; max_seq_id_len - descriptor_len + 2];
+  let mut mea_css_str = get_mea_css_str(&mea_css, sa_len);
+  stockholm_row.append(&mut mea_css_str);
+  let stockholm_row = unsafe {from_utf8_unchecked(&stockholm_row)};
+  buf_4_writer_2_output_file.push_str(&stockholm_row);
+  buf_4_writer_2_output_file.push_str("\n//");
   let _ = writer_2_output_file.write_all(buf_4_writer_2_output_file.as_bytes());
-  // println!("OK");
   /* let mut mea_csss = vec![MeaCss::new(); num_of_fasta_records];
   for i in 0 .. num_of_fasta_records {
     let ref mut mea_css = mea_csss[i];
@@ -240,14 +252,15 @@ fn print_program_usage(program_name: &str, opts: &Options) {
   print!("{}", opts.usage(&program_usage));
 }
 
-
 #[inline]
-fn read_sa_from_clustal_file(clustal_file_path: &Path) -> SeqAlign {
+fn read_sa_from_clustal_file(clustal_file_path: &Path) -> (SeqAlign, SeqIds) {
   let mut sa = SeqAlign::new();
+  let mut seq_ids = SeqIds::new();
   let reader_2_clustal_file = BufReader::new(File::open(clustal_file_path).expect("Failed to read a CLUSTAL file."));
   // let mut buf_4_reader_2_clustal_file = Vec::new();
   let mut seq_pointer = 0;
   let mut pos_pointer = 0;
+  let mut are_seq_ids_read = false;
   for (i, string) in reader_2_clustal_file.lines().enumerate() {
     let string = string.expect("Failed to read a CLUSTAL file.");
     // println!("{}", sa.cols.len());
@@ -256,11 +269,16 @@ fn read_sa_from_clustal_file(clustal_file_path: &Path) -> SeqAlign {
       if sa.cols.len() > 0 {
         seq_pointer = 0;
         pos_pointer = sa.cols.len();
+        are_seq_ids_read = true;
       }
       continue;
     }
-    let substring = string.split_whitespace().nth(1);
-    let substring = substring.expect("Failed to read a CLUSTAL file.");
+    let mut substrings = string.split_whitespace();
+    let substring = substrings.next().expect("Failed to read a CLUSTAL file.");
+    if !are_seq_ids_read {
+      seq_ids.push(String::from(substring));
+    }
+    let substring = substrings.next().expect("Failed to read a CLUSTAL file.");
     // println!("{}.", &substring);
     if seq_pointer == 0 {
       for sa_char in substring.chars() {
@@ -277,7 +295,7 @@ fn read_sa_from_clustal_file(clustal_file_path: &Path) -> SeqAlign {
   let pseudo_bases = vec![PSEUDO_BASE; num_of_rnas];
   sa.cols.insert(0, pseudo_bases.clone());
   sa.cols.push(pseudo_bases);
-  sa
+  (sa, seq_ids)
 }
 
 #[inline]
@@ -285,13 +303,10 @@ fn get_mean_upp_mat(upp_mats_with_rna_ids: &ProbsWithRnaIds, sa: &SeqAlign) -> P
   let sa_len = sa.cols.len();
   let num_of_rnas = sa.cols[0].len();
   let mut mean_upp_mat = vec![0.; sa_len];
-  // println!("{}", mean_upp_mat.len());
   for i in 0 .. sa_len {
     let mut mean_upp = 0.;
     for j in 0 .. num_of_rnas {
       if sa.cols[i][j] == GAP {continue;}
-      // println!("{}", sa.pos_map_sets[i][j]);
-      // println!("{}", upp_mats_with_rna_ids[j].len());
       mean_upp += upp_mats_with_rna_ids[j][sa.pos_map_sets[i][j]];
     }
     mean_upp_mat[i] = mean_upp / num_of_rnas as Prob;
@@ -310,7 +325,6 @@ fn get_mea_css_of_node(guide_tree: &GuideTree, node: &NodeIndex<usize>, mea_csss
       child_node_pair.next().expect("Failed to get a child node of a node in a guide tree."),
       child_node_pair.next().expect("Failed to get a child node of a node in a guide tree."),
     );
-    println!("Merging node pair {:?}.", child_node_pair);
     let mut mea_css = get_mea_consensus_ss(
       &(
         &get_mea_css_of_node(guide_tree, &child_node_pair.0, mea_csss, gamma_plus_1, bpap_mats_with_rna_id_pairs, upp_mats_with_rna_ids, num_of_fasta_records, num_of_iterative_refinements),
@@ -320,7 +334,6 @@ fn get_mea_css_of_node(guide_tree: &GuideTree, node: &NodeIndex<usize>, mea_csss
       bpap_mats_with_rna_id_pairs,
       upp_mats_with_rna_ids,
     );
-    println!("Merged node pair {:?}.", child_node_pair);
     if child_node_pair.0.index() >= num_of_fasta_records || child_node_pair.1.index() >= num_of_fasta_records {
       let num_of_rnas = mea_css.rna_ids.len();
       let mut rand_num_generator = rand::thread_rng();
@@ -359,7 +372,6 @@ fn get_mea_css_of_node(guide_tree: &GuideTree, node: &NodeIndex<usize>, mea_csss
 fn get_mea_css_str(mea_css: &MeaCss, sa_len: usize) -> MeaCssStr {
   let mut mea_css_str = vec![UNPAIRING_BASE; sa_len - 2];
   let pseudo_pos_pair = (0, sa_len - 1);
-  println!("{}", mea_css.bpa_pos_pairs.len());
   for bpa_pos_pair in &mea_css.bpa_pos_pairs {
     let (i, j) = bpa_pos_pair;
     if *bpa_pos_pair != pseudo_pos_pair {

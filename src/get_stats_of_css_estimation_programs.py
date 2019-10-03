@@ -12,22 +12,40 @@ import math
 
 def main():
   (current_work_dir_path, asset_dir_path, program_dir_path, conda_program_dir_path) = utils.get_dir_paths()
-  mearcof_css_dir_path = asset_dir_path + "/mearcof"
+  mafft_ginsi_plus_neoalifold_css_dir_path = asset_dir_path + "/mafft_ginsi_plus_neoalifold"
+  mafft_xinsi_plus_neoalifold_css_dir_path = asset_dir_path + "/mafft_xinsi_plus_neoalifold"
+  ref_sa_plus_neoalifold_css_dir_path = asset_dir_path + "/ref_sa_plus_neoalifold"
   mafft_ginsi_plus_centroidalifold_css_dir_path = asset_dir_path + "/mafft_ginsi_plus_centroidalifold"
   mafft_xinsi_plus_centroidalifold_css_dir_path = asset_dir_path + "/mafft_xinsi_plus_centroidalifold"
   ref_sa_plus_centroidalifold_css_dir_path = asset_dir_path + "/ref_sa_plus_centroidalifold"
-  rna_fam_dir_path = asset_dir_path + "/sampled_rna_families"
-  mearcof_ppvs = []
-  mearcof_senss = []
-  mearcof_fprs = []
-  # centroidalifold_ppvs = []
-  # centroidalifold_senss = []
-  # centroidalifold_fprs = []
+  rna_fam_dir_path = asset_dir_path + "/sampled_rna_fams"
+  mafft_ginsi_plus_neoalifold_ppvs = []
+  mafft_ginsi_plus_neoalifold_senss = []
+  mafft_ginsi_plus_neoalifold_fprs = []
+  mafft_xinsi_plus_neoalifold_ppvs = []
+  mafft_xinsi_plus_neoalifold_senss = []
+  mafft_xinsi_plus_neoalifold_fprs = []
+  ref_sa_plus_neoalifold_ppvs = []
+  ref_sa_plus_neoalifold_senss = []
+  ref_sa_plus_neoalifold_fprs = []
+  # mafft_ginsi_plus_centroidalifold_ppvs = []
+  # mafft_ginsi_plus_centroidalifold_senss = []
+  # mafft_ginsi_plus_centroidalifold_fprs = []
+  # mafft_xinsi_plus_centroidalifold_ppvs = []
+  # mafft_xinsi_plus_centroidalifold_senss = []
+  # mafft_xinsi_plus_centroidalifold_fprs = []
+  # ref_sa_plus_centroidalifold_ppvs = []
+  # ref_sa_plus_centroidalifold_senss = []
+  # ref_sa_plus_centroidalifold_fprs = []
   gammas = [2. ** i for i in range(-7, 11)]
   for gamma in gammas:
     gamma_str = str(gamma)
-    mearcof_tp = mearcof_tn = mearcof_fp = mearcof_fn = 0.
-    # centroidalifold_tp = centroidalifold_tn = centroidalifold_fp = centroidalifold_fn = 0.
+    mafft_ginsi_plus_neoalifold_tp = mafft_ginsi_plus_neoalifold_tn = mafft_ginsi_plus_neoalifold_fp = mafft_ginsi_plus_neoalifold_fn = 0.
+    mafft_xinsi_plus_neoalifold_tp = mafft_xinsi_plus_neoalifold_tn = mafft_xinsi_plus_neoalifold_fp = mafft_xinsi_plus_neoalifold_fn = 0.
+    ref_sa_plus_neoalifold_tp = ref_sa_plus_neoalifold_tn = ref_sa_plus_neoalifold_fp = ref_sa_plus_neoalifold_fn = 0.
+    # mafft_ginsi_plus_centroidalifold_tp = mafft_ginsi_plus_centroidalifold_tn = mafft_ginsi_plus_centroidalifold_fp = mafft_ginsi_plus_centroidalifold_fn = 0.
+    # mafft_xinsi_plus_centroidalifold_tp = mafft_xinsi_plus_centroidalifold_tn = mafft_xinsi_plus_centroidalifold_fp = mafft_xinsi_plus_centroidalifold_fn = 0.
+    # ref_sa_plus_centroidalifold_tp = ref_sa_plus_centroidalifold_tn = ref_sa_plus_centroidalifold_fp = ref_sa_plus_centroidalifold_fn = 0.
     for rna_fam_file in os.listdir(rna_fam_dir_path):
       if not rna_fam_file.endswith(".fa"):
         continue
@@ -35,7 +53,7 @@ def main():
       rna_seq_lens = [len(rna_seq.seq) for rna_seq in SeqIO.parse(rna_seq_file_path, "fasta")]
       num_of_rnas = len(rna_seq_lens)
       (rna_fam_name, extension) = os.path.splitext(rna_fam_file)
-      ref_css_file_path = os.path.join(rna_fam_dir_path, "csss_of_" + rna_fam_name + ".dat")
+      ref_css_file_path = os.path.join(rna_fam_dir_path, rna_fam_name + ".sth")
       ref_css_and_flat_css = utils.get_css_and_flat_css(utils.get_css_string(ref_css_file_path))
       mearcof_estimated_css_dir_path = os.path.join(mearcof_css_dir_path, "css_of_" + rna_fam_name)
       if not os.path.isdir(mearcof_estimated_css_dir_path):

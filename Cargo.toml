@@ -1,8 +1,8 @@
 [package]
-name = "mearcof"
+name = "neoalifold"
 version = "0.1.0"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "MEARCOF Program, Program for Maximum-expected-accuracy Estimations of RNA Consensus Secondary Structures"
+description = "NeoAliFold Program, Program for Maximum-expected-accuracy Estimations of RNA Consensus Secondary Structures"
 
 [dependencies]
 rna-algos = "0.1"
@@ -20,4 +20,4 @@ neofold = {path = "../neofold"}
 
 [lib]
 path = "src/lib.rs"
-name = "mearcof"
+name = "neoalifold"

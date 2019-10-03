@@ -1,5 +1,5 @@
-# MEARCOF Program, Program for Maximum-expected-accuracy Estimations of RNA Consensus Secondary Structures 
-This project provides the MEARCOF Program, a program for the maximum-expected-accuracy estimations of RNA consensus secondary structures.
+# NeoAliFold Program, Program for Maximum-expected-accuracy Estimations of RNA Consensus Secondary Structures 
+This project provides the NeoAliFold Program, a program for the maximum-expected-accuracy estimations of RNA consensus secondary structures.
 
 # Installation
 This project has been written in mainly Rust, a systems programming language.
@@ -10,7 +10,7 @@ You can install these 3 components with 1 line as follows:
 $ curl https://sh.rustup.rs -sSf | sh
 ```
 The above installation is done by [Rustup](https://github.com/rust-lang-nursery/rustup.rs), so you can easily switch a compiler to use. 
-Now you can install the MEARCOF program as follows: 
+Now you can install the NeoAliFold program as follows: 
 ```bash
 $ cargo install mearcof
 ```

@@ -1,4 +1,4 @@
-extern crate mearcof;
+extern crate neoalifold;
 extern crate getopts;
 /* extern crate scoped_threadpool;
 extern crate bio;
@@ -6,7 +6,7 @@ extern crate num_cpus;
 extern crate petgraph;
 extern crate rand; */
 
-use mearcof::*;
+use neoalifold::*;
 use getopts::Options;
 // use self::scoped_threadpool::Pool;
 use std::env;
@@ -24,7 +24,7 @@ type Strings = Vec<String>;
 // type MeaCsss = Vec<MeaCss>;
 type MeaCssStr = MeaSsStr;
 
-const DEFAULT_GAMMA: Prob = 100.;
+const DEFAULT_GAMMA: Prob = 1.;
 // const DEFAULT_NUM_OF_ITERATIVE_REFINEMENTS: usize = 5;
 const VERSION: &'static str = "0.1.0";
 const PSEUDO_BASE: Char = '$' as Char;

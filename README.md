@@ -12,11 +12,11 @@ $ curl https://sh.rustup.rs -sSf | sh
 The above installation is done by [Rustup](https://github.com/rust-lang-nursery/rustup.rs), so you can easily switch a compiler to use. 
 Now you can install the NeoAliFold program as follows: 
 ```bash
-$ cargo install mearcof
+$ cargo install neoalifold
 ```
 Check if this program has been installed properly as follows:
 ```bash
-$ mearcof
+$ neoalifold
 ```
 
 # Author

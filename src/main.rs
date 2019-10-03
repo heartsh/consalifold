@@ -357,22 +357,14 @@ fn get_mea_css_of_node(guide_tree: &GuideTree, node: &NodeIndex<usize>, mea_csss
 
 #[inline]
 fn get_mea_css_str(mea_css: &MeaCss, sa_len: usize) -> MeaCssStr {
-  let mut mea_css_str = vec![UNPAIRING_BASE; sa_len];
+  let mut mea_css_str = vec![UNPAIRING_BASE; sa_len - 2];
   let pseudo_pos_pair = (0, sa_len - 1);
-  let mut pos_pair_stack = vec![pseudo_pos_pair];
-  while pos_pair_stack.len() > 0 {
-    let pos_pair = pos_pair_stack.pop().expect("Failed to pop an element of a vector.");
-    let (i, j) = pos_pair;
-    if pos_pair != pseudo_pos_pair {
+  println!("{}", mea_css.bpa_pos_pairs.len());
+  for bpa_pos_pair in &mea_css.bpa_pos_pairs {
+    let (i, j) = bpa_pos_pair;
+    if *bpa_pos_pair != pseudo_pos_pair {
       mea_css_str[i - 1] = BASE_PAIRING_LEFT_BASE;
       mea_css_str[j - 1] = BASE_PAIRING_RIGHT_BASE;
-    }
-    match mea_css.bpa_pos_pair_seqs_inside_pos_pairs.get(&pos_pair) {
-      Some(pos_pairs) => {
-        for pos_pair in pos_pairs {
-          pos_pair_stack.push(*pos_pair);
-        }
-      }, None => {},
     }
   }
   mea_css_str

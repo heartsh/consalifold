@@ -63,15 +63,15 @@ def get_css_and_flat_css(css_file_path):
     css.append({})
   stack = []
   for i, char in enumerate(css_string):
-    if char == "(" or char == "<" or char == "[":
+    if char == "(" or char == "<" or char == "[" or char == "{":
       stack.append(i)
-    elif char == ")" or char == ">" or char == "]":
+    elif char == ")" or char == ">" or char == "]" or char == "}":
       col_pos = stack.pop()
       for j in range(num_of_rnas):
         base_pair_1 = (sta[j][col_pos], sta[j][i])
-        pos_pair_1 = (pos_map_sets[j][col_pos], pos_map_sets[j][i])
         if base_pair_1[0] == "-" or base_pair_1[1] == "-":
           continue
+        pos_pair_1 = (pos_map_sets[j][col_pos], pos_map_sets[j][i])
         flat_css[j][pos_pair_1[0]] = True
         flat_css[j][pos_pair_1[1]] = True
         css[j][pos_pair_1] = True

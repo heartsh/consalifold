@@ -27,14 +27,15 @@ type MeaCssStr = MeaSsStr;
 const DEFAULT_GAMMA: Prob = 1.;
 // const DEFAULT_NUM_OF_ITERATIVE_REFINEMENTS: usize = 5;
 const VERSION: &'static str = "0.1.0";
-const PSEUDO_BASE: Char = '$' as Char;
+// const PSEUDO_BASE: Char = '$' as Char;
 
 fn main() {
   let args = env::args().collect::<Vec<Arg>>();
   let program_name = args[0].clone();
   let mut opts = Options::new();
   opts.reqopt("a", "input_seq_align_file_path", "The path to an input CLUSTAL file containing a sequence alignment of RNA sequences", "STR");
-  opts.reqopt("p", "input_base_pair_align_prob_matrix_file_path", "The path to an input file containing base pair alignment probability matrices", "STR");
+  // opts.reqopt("p", "input_base_pair_align_prob_matrix_file_path", "The path to an input file containing base pair alignment probability matrices", "STR");
+  opts.reqopt("p", "input_base_pair_prob_matrix_file_path", "The path to an input file containing base-pairing probability matrices", "STR");
   opts.reqopt("q", "input_unpair_prob_matrix_file_path", "The path to an input file containing unpairing probability matrices", "STR");
   opts.reqopt("o", "output_file_path", "The path to an output STOCKHOLM file which will contain estimated consensus secondary structures", "STR");
   opts.optopt("", "gamma", &format!("An MEA gamma (Uses {} by default)", DEFAULT_GAMMA), "FLOAT");
@@ -47,8 +48,10 @@ fn main() {
   };
   let input_sa_file_path = opts.opt_str("a").expect("Failed to get the path to an input CLUSTAL file containing a sequence alignment of RNA sequences from command arguments.");
   let input_sa_file_path = Path::new(&input_sa_file_path);
-  let input_bpap_mat_file_path = opts.opt_str("p").expect("Failed to get the path to an input file containing base pair alignment probability matrices from command arguments.");
-  let input_bpap_mat_file_path = Path::new(&input_bpap_mat_file_path);
+  /* let input_bpap_mat_file_path = opts.opt_str("p").expect("Failed to get the path to an input file containing base pair alignment probability matrices from command arguments.");
+  let input_bpap_mat_file_path = Path::new(&input_bpap_mat_file_path); */
+  let input_bpp_mat_file_path = opts.opt_str("p").expect("Failed to get the path to an input file containing base-pairing probability matrices from command arguments.");
+  let input_bpp_mat_file_path = Path::new(&input_bpp_mat_file_path);
   let input_upp_mat_file_path = opts.opt_str("q").expect("Failed to get the path to an input file containing unpairing probability matrices from command arguments.");
   let input_upp_mat_file_path = Path::new(&input_upp_mat_file_path);
   let output_file_path = opts.opt_str("o").expect("Failed to get the path to an output file which will contain estimated consensus secondary structures from command arguments.");
@@ -92,7 +95,7 @@ fn main() {
     fasta_records.push((String::from(fasta_record.id()), seq, seq_len));
   } */
   // let num_of_fasta_records = fasta_records.len();
-  let mut bpap_mats_with_rna_id_pairs = Prob4dMatsWithRnaIdPairs::default();
+  /* let mut bpap_mats_with_rna_id_pairs = Prob4dMatsWithRnaIdPairs::default();
   for rna_id_1 in 0 .. num_of_rnas {
     for rna_id_2 in rna_id_1 + 1 .. num_of_rnas {
       bpap_mats_with_rna_id_pairs.insert((rna_id_1, rna_id_2), Prob4dMat::default());
@@ -125,7 +128,32 @@ fn main() {
         subsubsubstrings[4].parse().expect("Failed to parse a base pair alignment probability."),
       );
     }
+  } */
+  let mut bpp_mats_with_rna_ids = vec![SparseProbMat::default(); num_of_rnas];
+  let mut reader_2_input_bpp_mat_file = BufReader::new(File::open(input_bpp_mat_file_path).expect("Failed to read an input file."));
+  let mut buf_4_reader_2_input_bpp_mat_file = Vec::new();
+  for _ in 0 .. 2 {
+    let _ = reader_2_input_bpp_mat_file.read_until(b'>', &mut buf_4_reader_2_input_bpp_mat_file);
   }
+  for (i, vec) in reader_2_input_bpp_mat_file.split(b'>').enumerate() {
+    if i == num_of_rnas {break;}
+    let vec = vec.expect("Failed to read an input file.");
+    let substrings = unsafe {String::from_utf8_unchecked(vec).split_whitespace().map(|string| {String::from(string)}).collect::<Strings>()};
+    let rna_id = substrings[0].parse::<RnaId>().expect("Failed to parse an RNA ID.");
+    // let seq_len = seq_lens[rna_id];
+    let ref mut bpp_mat = bpp_mats_with_rna_ids[rna_id];
+    *bpp_mat = SparseProbMat::default();
+    for subsubstring in &substrings[1 ..] {
+      let subsubsubstrings = subsubstring.split(",").collect::<Vec<&str>>();
+      let pos_pair = (
+        subsubsubstrings[0].parse::<Pos>().expect("Failed to parse an index."),
+        subsubsubstrings[1].parse::<Pos>().expect("Failed to parse an index."),
+        );
+      bpp_mat.insert(pos_pair, subsubsubstrings[2].parse().expect("Failed to parse a base pair alignment probability."));
+    }
+    // bpp_mat.insert((0, seq_len + 1), 1.);
+  }
+  let mean_bpp_mat = get_mean_bpp_mat(&bpp_mats_with_rna_ids, &sa);
   let mut upp_mats_with_rna_ids = vec![Probs::new(); num_of_rnas];
   let mut reader_2_input_upp_mat_file = BufReader::new(File::open(input_upp_mat_file_path).expect("Failed to read an input file."));
   let mut buf_4_reader_2_input_upp_mat_file = Vec::new();
@@ -139,24 +167,24 @@ fn main() {
     let rna_id = substrings[0].parse::<RnaId>().expect("Failed to parse an RNA ID.");
     let seq_len = seq_lens[rna_id];
     let ref mut upp_mat = upp_mats_with_rna_ids[rna_id];
-    *upp_mat = vec![0.; seq_len + 2];
+    *upp_mat = vec![0.; seq_len];
     for subsubstring in &substrings[1 ..] {
       let subsubsubstrings = subsubstring.split(",").collect::<Vec<&str>>();
-      upp_mat[subsubsubstrings[0].parse::<Pos>().expect("Failed to parse an index.") + 1] = subsubsubstrings[1].parse().expect("Failed to parse a base pair alignment probability.");
+      upp_mat[subsubsubstrings[0].parse::<Pos>().expect("Failed to parse an index.")] = subsubsubstrings[1].parse().expect("Failed to parse a base pair alignment probability.");
     }
   }
   let mean_upp_mat = get_mean_upp_mat(&upp_mats_with_rna_ids, &sa);
-  let mea_css = neoalifold(&bpap_mats_with_rna_id_pairs, &mean_upp_mat, gamma, &sa);
+  let mea_css = neoalifold(&mean_bpp_mat, &mean_upp_mat, gamma, &sa);
   let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).expect("Failed to create an output file."));
   // let mut buf_4_writer_2_output_file = format!("; The version {} of the NeoAliFold program.\n; The path to the input CLUSTAL file for computing the consensus secondary structure (= CSS) in this file = \"{}\".\n; The path to the input base pair alignment probability matrix file for computing this structure = \"{}\".\n; The path to the input unpairing probability matrix file for computing this structure = \"{}\".\n; The values of the parameters used for computing this structure are as follows.\n; \"gamma\" = {}.\n\n", VERSION, input_sa_file_path.display(), input_bpap_mat_file_path.display(), input_upp_mat_file_path.display(), gamma);
-  let mut buf_4_writer_2_output_file = format!("# STOCKHOLM 1.0\n#=GF CC The version {} of the NeoAliFold program\n#=GF CC The path to the input CLUSTAL file for computing the consensus secondary structure (= CSS) in this file = \"{}\"\n#=GF CC The path to the input base pair alignment probability matrix file for computing this structure = \"{}\"\n#=GF CC The path to the input unpairing probability matrix file for computing this structure = \"{}\"\n#=GF CC The values of the parameters used for computing this structure are as follows\n#=GF CC \"gamma\" = {}\n", VERSION, input_sa_file_path.display(), input_bpap_mat_file_path.display(), input_upp_mat_file_path.display(), gamma);
+  let mut buf_4_writer_2_output_file = format!("# STOCKHOLM 1.0\n#=GF CC The version {} of the NeoAliFold program\n#=GF CC The path to the input CLUSTAL file for computing the consensus secondary structure (= CSS) in this file = \"{}\"\n#=GF CC The path to the input base-pairing probability matrix file for computing this structure = \"{}\"\n#=GF CC The path to the input unpairing probability matrix file for computing this structure = \"{}\"\n#=GF CC The values of the parameters used for computing this structure are as follows\n#=GF CC \"gamma\" = {}\n", VERSION, input_sa_file_path.display(), input_bpp_mat_file_path.display(), input_upp_mat_file_path.display(), gamma);
   let sa_len = sa.cols.len();
   let max_seq_id_len = seq_ids.iter().map(|seq_id| {seq_id.len()}).max().expect("Failed to find the maximum length of sequence IDs.");
   for rna_id in 0 .. num_of_rnas {
     let ref seq_id = seq_ids[rna_id];
     buf_4_writer_2_output_file.push_str(seq_id);
     let mut stockholm_row = vec![' ' as Char; max_seq_id_len - seq_id.len() + 2];
-    let mut sa_row = (1 .. sa_len - 1).map(|x| {sa.cols[x][rna_id]}).collect::<Seq>();
+    let mut sa_row = (0 .. sa_len).map(|x| {sa.cols[x][rna_id]}).collect::<Seq>();
     stockholm_row.append(&mut sa_row);
     let mut stockholm_row = unsafe {from_utf8_unchecked(&stockholm_row)};
     buf_4_writer_2_output_file.push_str(&stockholm_row);
@@ -291,11 +319,37 @@ fn read_sa_from_clustal_file(clustal_file_path: &Path) -> (SeqAlign, SeqIds) {
       }
     }
   }
-  let num_of_rnas = sa.cols[0].len();
+  /* let num_of_rnas = sa.cols[0].len();
   let pseudo_bases = vec![PSEUDO_BASE; num_of_rnas];
   sa.cols.insert(0, pseudo_bases.clone());
-  sa.cols.push(pseudo_bases);
+  sa.cols.push(pseudo_bases); */
   (sa, seq_ids)
+}
+
+#[inline]
+fn get_mean_bpp_mat(bpp_mats_with_rna_ids: &ProbMatsWithRnaIds, sa: &SeqAlign) -> ProbMat {
+  let sa_len = sa.cols.len();
+  let num_of_rnas = sa.cols[0].len();
+  let mut mean_bpp_mat = vec![vec![0.; sa_len]; sa_len];
+  for i in 0 .. sa_len {
+    for j in i + 1 .. sa_len {
+      let mut mean_bpp = 0.;
+      let mut effective_num_of_rnas = 0;
+      for k in 0 .. num_of_rnas {
+        if sa.cols[i][k] == GAP || sa.cols[j][k] == GAP {continue;}
+        let ref bpp_mat = bpp_mats_with_rna_ids[k];
+        let pos_pair = (sa.pos_map_sets[i][k], sa.pos_map_sets[j][k]);
+        if bpp_mat.contains_key(&pos_pair) {
+          mean_bpp += bpp_mat[&pos_pair];
+          effective_num_of_rnas += 1;
+        }
+      }
+      if effective_num_of_rnas > 0 {
+        mean_bpp_mat[i][j] = mean_bpp / effective_num_of_rnas as Prob;
+      }
+    }
+  }
+  mean_bpp_mat
 }
 
 #[inline]
@@ -305,11 +359,15 @@ fn get_mean_upp_mat(upp_mats_with_rna_ids: &ProbsWithRnaIds, sa: &SeqAlign) -> P
   let mut mean_upp_mat = vec![0.; sa_len];
   for i in 0 .. sa_len {
     let mut mean_upp = 0.;
+    let mut effective_num_of_rnas = 0;
     for j in 0 .. num_of_rnas {
       if sa.cols[i][j] == GAP {continue;}
       mean_upp += upp_mats_with_rna_ids[j][sa.pos_map_sets[i][j]];
+      effective_num_of_rnas += 1;
     }
-    mean_upp_mat[i] = mean_upp / num_of_rnas as Prob;
+    if effective_num_of_rnas > 0 {
+      mean_upp_mat[i] = mean_upp / num_of_rnas as Prob;
+    }
   }
   mean_upp_mat
 }
@@ -370,14 +428,11 @@ fn get_mea_css_of_node(guide_tree: &GuideTree, node: &NodeIndex<usize>, mea_csss
 
 #[inline]
 fn get_mea_css_str(mea_css: &MeaCss, sa_len: usize) -> MeaCssStr {
-  let mut mea_css_str = vec![UNPAIRING_BASE; sa_len - 2];
-  let pseudo_pos_pair = (0, sa_len - 1);
-  for bpa_pos_pair in &mea_css.bpa_pos_pairs {
-    let (i, j) = bpa_pos_pair;
-    if *bpa_pos_pair != pseudo_pos_pair {
-      mea_css_str[i - 1] = BASE_PAIRING_LEFT_BASE;
-      mea_css_str[j - 1] = BASE_PAIRING_RIGHT_BASE;
-    }
+  let mut mea_css_str = vec![UNPAIRING_BASE; sa_len];
+  // let pseudo_pos_pair = (0, sa_len - 1);
+  for &(i, j) in &mea_css.bpa_pos_pairs {
+    mea_css_str[i] = BASE_PAIRING_LEFT_BASE;
+    mea_css_str[j] = BASE_PAIRING_RIGHT_BASE;
   }
   mea_css_str
 }

@@ -38,6 +38,7 @@ pub struct MeaCss {
 pub type Prob4dMatsWithRnaIdPairs = HashMap<RnaIdPair, Prob4dMat, Hasher>;
 pub type ProbsWithRnaIds = Vec<Probs>;
 pub type ProbsWithPosPairs = HashMap<PosPair, Prob, Hasher>;
+pub type ProbMatsWithRnaIds = Vec<SparseProbMat>;
 /* pub type MeaCssPair<'a> = (&'a MeaCss, &'a MeaCss);
 pub type Meas = Vec<Mea>;
 pub type MeaMat = Vec<Meas>;
@@ -137,24 +138,28 @@ impl MeaCss {
 pub const GAP: Char = '-' as Char;
 
 #[inline]
-pub fn neoalifold(bpap_mats_with_rna_id_pairs: &Prob4dMatsWithRnaIdPairs, mean_upp_mat: &Probs, gamma: Prob, sa: &SeqAlign) -> MeaCss {
+pub fn neoalifold(mean_bpp_mat: &ProbMat, mean_upp_mat: &Probs, gamma: Prob, sa: &SeqAlign) -> MeaCss {
   let sa_len = sa.cols.len();
   // let mut mea_mat_4_bpa_pos_pairs = MeaMat::default();
   let mut mea_mat = vec![vec![0.; sa_len]; sa_len];
   // let mut pos_seqs_with_poss_4_forward_bpas = PosSeqsWithPoss::default();
-  let num_of_rnas = sa.cols[0].len();
-  let combination_num = (num_of_rnas * (num_of_rnas - 1)) as Prob / 2.;
-  let mut mean_bpaps_with_pos_pairs = ProbsWithPosPairs::default();
-  for sub_sa_len in 2 .. sa_len + 1 {
+  // let num_of_rnas = sa.cols[0].len();
+  // let combination_num = (num_of_rnas * (num_of_rnas - 1)) as Prob / 2.;
+  // let mut mean_bpaps_with_pos_pairs = ProbsWithPosPairs::default();
+  for sub_sa_len in 1 .. sa_len + 1 {
     for i in 0 .. sa_len + 1 - sub_sa_len {
       let j = i + sub_sa_len - 1;
-      let pos_pair = (i, j);
+      // let pos_pair = (i, j);
+      if i == j {
+        mea_mat[i][j] = mean_upp_mat[i];
+        continue;
+      }
       let mut mea = mea_mat[i + 1][j] + mean_upp_mat[i];
       let ea = mea_mat[i][j - 1] + mean_upp_mat[j];
       if ea > mea {
         mea = ea;
       }
-      let mut mean_bpap = 0.;
+      /* let mut mean_bpap = 0.;
       for rna_id_1 in 0 .. num_of_rnas {
         for rna_id_2 in rna_id_1 + 1 .. num_of_rnas {
           let rna_id_pair = (rna_id_1, rna_id_2);
@@ -173,8 +178,8 @@ pub fn neoalifold(bpap_mats_with_rna_id_pairs: &Prob4dMatsWithRnaIdPairs, mean_u
         }
       }
       mean_bpap /= combination_num;
-      mean_bpaps_with_pos_pairs.insert(pos_pair, mean_bpap);
-      let ea = mea_mat[i + 1][j - 1] + gamma * mean_bpap;
+      mean_bpaps_with_pos_pairs.insert(pos_pair, mean_bpap); */
+      let ea = mea_mat[i + 1][j - 1] + gamma * mean_bpp_mat[i][j];
       if ea > mea {
         mea = ea;
       }
@@ -188,20 +193,19 @@ pub fn neoalifold(bpap_mats_with_rna_id_pairs: &Prob4dMatsWithRnaIdPairs, mean_u
     }
   }
   let mut mea_css = MeaCss::new();
-  let pseudo_pos_pair = (0, sa_len - 1);
-  let mut pos_pair_stack = vec![pseudo_pos_pair];
+  let mut pos_pair_stack = vec![(0, sa_len - 1)];
   while pos_pair_stack.len() > 0 {
     let pos_pair = pos_pair_stack.pop().expect("Failed to pop an element of a vector.");
     let (i, j) = pos_pair;
     let mea = mea_mat[i][j];
-    if mea == 0. {continue;}
-    let contains_mean_bpap = mean_bpaps_with_pos_pairs.contains_key(&pos_pair);
-    let mean_bpap = if contains_mean_bpap {mean_bpaps_with_pos_pairs[&pos_pair]} else {0.};
+    if j <= i {continue;}
+    /* let contains_mean_bpap = mean_bpaps_with_pos_pairs.contains_key(&pos_pair);
+    let mean_bpap = if contains_mean_bpap {mean_bpaps_with_pos_pairs[&pos_pair]} else {0.}; */
     if mea == mea_mat[i + 1][j] + mean_upp_mat[i] {
       pos_pair_stack.push((i + 1, j));
     } else if mea == mea_mat[i][j - 1] + mean_upp_mat[j] {
       pos_pair_stack.push((i, j - 1));
-    } else if contains_mean_bpap && mea == mea_mat[i + 1][j - 1] + gamma * mean_bpap {
+    } else if mea == mea_mat[i + 1][j - 1] + gamma * mean_bpp_mat[i][j] {
       pos_pair_stack.push((i + 1, j - 1));
       mea_css.bpa_pos_pairs.push(pos_pair);
     } else {

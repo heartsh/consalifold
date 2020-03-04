@@ -1,5 +1,5 @@
-# NeoAliFold Program, Program for Maximum-expected-accuracy Estimations of RNA Consensus Secondary Structures 
-This project provides the NeoAliFold Program, a program for the maximum-expected-accuracy estimations of RNA consensus secondary structures.
+# PhyloAliFold Program, Program for Maximum-expected-accuracy Estimations of RNA Consensus Secondary Structures 
+This project provides the PhyloAliFold Program, a program for the maximum-expected-accuracy estimations of RNA consensus secondary structures.
 
 # Installation
 This project has been written in mainly Rust, a systems programming language.

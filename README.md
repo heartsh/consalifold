@@ -10,13 +10,21 @@ You can install these 3 components with 1 line as follows:
 $ curl https://sh.rustup.rs -sSf | sh
 ```
 The above installation is done by [Rustup](https://github.com/rust-lang-nursery/rustup.rs), so you can easily switch a compiler to use. 
-Now you can install the NeoAliFold program as follows: 
+Also you need to install the [Centroid package](https://github.com/satoken/centroid-rna-package) to predict pairing probabilities by the RNAalipfold algorithm.
+Now you can install the PhyloAliFold program and its dependent, the PhyloProb program, as follows: 
 ```bash
-$ cargo install neoalifold
+$ cargo install phyloprob # You input the probabilities computed by this program to "phylofold"
+$ cargo install phyloalifold
 ```
 Check if this program has been installed properly as follows:
 ```bash
-$ neoalifold
+$ phyloprob
+$ phyloalifold
+```
+After the test, the figures shown in the paper of the PhyloFold program can be reproduced:
+```bash
+$ cd src
+$ ./run_all.py # Install python packages required to the reproduction. Saved figures will appear at the "../assets/images" directory.
 ```
 
 # Author

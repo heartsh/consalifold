@@ -1,23 +1,15 @@
 [package]
-name = "neoalifold"
+name = "phyloalifold"
 version = "0.1.0"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "NeoAliFold Program, Program for Maximum-expected-accuracy Estimations of RNA Consensus Secondary Structures"
+description = "PhyloAliFold Program, which predicts RNA Consensus Secondary Structures to Incorporate Phylogeny among Homologs"
 
 [dependencies]
 rna-algos = "0.1"
-# itertools = "0.8"
-# lazy_static = "0.1"
-# time = "0.1"
-# scoped_threadpool = "0.1"
 getopts = "0.2"
-# bio = "0.20"
-# num_cpus = "1.0"
-rnafamprob = {path = "../rnafamprob"}
-# petgraph = "0.4"
-# rand = "0.6"
-neofold = {path = "../neofold"}
+phyloprob = "0.1"
+phylofold = "0.1"
 
 [lib]
 path = "src/lib.rs"
-name = "neoalifold"
+name = "phyloalifold"

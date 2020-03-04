@@ -23,7 +23,7 @@ def main():
   rfam_seed_sta_file_path = asset_dir_path + "/rfam_seed_stas.sth"
   max_seq_num = 10
   max_sa_len = 200
-  stas = [sta for sta in AlignIO.parse(rfam_seed_sta_file_path, "stockholm") if len(sta) <= max_seq_num and len(sta[0]) <= max_sa_len]
+  stas = [sta for sta in AlignIO.parse(rfam_seed_sta_file_path, "stockholm") if len(sta) <= max_seq_num and len(sta[0]) <= max_sa_len and is_valid(sta)]
   num_of_stas = len(stas)
   print(num_of_stas)
   sample_rate = 0.1
@@ -39,6 +39,12 @@ def main():
     rna_seq_file = open(rna_seq_file_path, "w")
     for i, rec in enumerate(sta):
       rna_seq_file.write(">%d(%s)\n%s\n" % (i, rec.id, str(rec.seq).replace("-", "")))
+
+def is_valid(sta):
+  for row in sta:
+    if any(char in str(row.seq) for char in "RYWSMKHBVDN"):
+      return False
+  return True
 
 if __name__ == "__main__":
   main()

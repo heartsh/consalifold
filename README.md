@@ -1,6 +1,4 @@
-# PhyloAliFold Program, Program for Maximum-expected-accuracy Estimations of RNA Consensus Secondary Structures 
-This project provides the PhyloAliFold Program, a program for the maximum-expected-accuracy estimations of RNA consensus secondary structures.
-
+# PhyloAliFold Program, which Predicts RNA Consensus Secondary Structures to Incorporate Phylogeny among Homologs 
 # Installation
 This project has been written in mainly Rust, a systems programming language.
 So first, you need to install the Rust compiler, package manager, and standard library. 
@@ -10,7 +8,7 @@ You can install these 3 components with 1 line as follows:
 $ curl https://sh.rustup.rs -sSf | sh
 ```
 The above installation is done by [Rustup](https://github.com/rust-lang-nursery/rustup.rs), so you can easily switch a compiler to use. 
-Also you need to install the [Centroid package](https://github.com/satoken/centroid-rna-package) to predict pairing probabilities by the RNAalipfold algorithm.
+Also you need to install the [Centroid RNA package](https://github.com/satoken/centroid-rna-package) to predict pairing probabilities by the RNAalipfold algorithm.
 Now you can install the PhyloAliFold program and its dependent, the PhyloProb program, as follows: 
 ```bash
 $ cargo install phyloprob # You input the probabilities computed by this program to "phylofold"

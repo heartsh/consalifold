@@ -17,9 +17,9 @@ $ cargo install phyloalifold
 Check if this program has been installed properly as follows:
 ```bash
 $ phyloprob
-$ phyloalifold
+$ phyloalifold # Its available command options will be displayed.
 ```
-After the test, the figures shown in the paper of the PhyloFold program can be reproduced:
+After the test, the figures shown in the paper of the PhyloAliFold program can be reproduced:
 ```bash
 $ cd src
 $ ./run_all.py # Install python packages required to the reproduction. Saved figures will appear at the "../assets/images" directory.

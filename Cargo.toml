@@ -2,7 +2,7 @@
 name = "phyloalifold"
 version = "0.1.0"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "PhyloAliFold Program, which predicts RNA Consensus Secondary Structures to Incorporate Phylogeny among Homologs"
+description = "PhyloAliFold Program, which Predicts RNA Consensus Secondary Structures to Incorporate Phylogeny among Homologs"
 repository = "https://github.com/heartsh/phyloalifold"
 readme = "README.md"
 keywords = ["bioinformatics", "rna", "secondary-structure"]

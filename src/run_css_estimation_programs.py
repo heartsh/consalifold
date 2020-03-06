@@ -58,6 +58,9 @@ def main():
   bpp_mat_file = "bpp_mats_on_sta.dat"
   upp_mat_file = "upp_mats_on_sta.dat"
   gammas = [2. ** i for i in range(-7, 11)]
+  mafft_ginsi_plus_centroidalifold_params_4_bpp_mat = []
+  mafft_xinsi_plus_centroidalifold_params_4_bpp_mat = []
+  ref_sa_plus_centroidalifold_params_4_bpp_mat = []
   mafft_ginsi_plus_phyloalifold_commands = []
   mafft_xinsi_plus_phyloalifold_commands = []
   ref_sa_plus_phyloalifold_commands = []
@@ -86,15 +89,15 @@ def main():
     ref_sa_plus_centroidalifold_bpp_mat_file_path = os.path.join(ref_sa_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
     mafft_ginsi_output_file_path = os.path.join(mafft_ginsi_dir_path, rna_family_name + ".aln")
     mafft_xinsi_output_file_path = os.path.join(mafft_xinsi_dir_path, rna_family_name + ".aln")
-    run_mafft((rna_seq_file_path, mafft_ginsi_output_file_path, "ginsi"))
-    run_mafft((rna_seq_file_path, mafft_xinsi_output_file_path, "xinsi"))
+    run_mafft((rna_seq_file_path, mafft_ginsi_output_file_path, "ginsi", num_of_threads))
+    run_mafft((rna_seq_file_path, mafft_xinsi_output_file_path, "xinsi", num_of_threads))
     ref_sa_file_path = os.path.join(ref_sa_dir_path, rna_family_name + ".aln")
     mafft_ginsi_plus_centroidalifold_command = "centroid_alifold -e McCaskill -w 0 -e Alifold -w 1 --posteriors 0 --posteriors-output " + mafft_ginsi_plus_centroidalifold_bpp_mat_file_path + " " + mafft_ginsi_output_file_path
-    utils.run_command(mafft_ginsi_plus_centroidalifold_command)
+    mafft_ginsi_plus_centroidalifold_params_4_bpp_mat.insert(0, mafft_ginsi_plus_centroidalifold_command)
     mafft_xinsi_plus_centroidalifold_command = "centroid_alifold -e McCaskill -w 0 -e Alifold -w 1 --posteriors 0 --posteriors-output " + mafft_xinsi_plus_centroidalifold_bpp_mat_file_path + " " + mafft_xinsi_output_file_path
-    utils.run_command(mafft_xinsi_plus_centroidalifold_command)
+    mafft_xinsi_plus_centroidalifold_params_4_bpp_mat.insert(0, mafft_xinsi_plus_centroidalifold_command)
     ref_sa_plus_centroidalifold_command = "centroid_alifold -e McCaskill -w 0 -e Alifold -w 1 --posteriors 0 --posteriors-output " + ref_sa_plus_centroidalifold_bpp_mat_file_path + " " + ref_sa_file_path
-    utils.run_command(ref_sa_plus_centroidalifold_command)
+    ref_sa_plus_centroidalifold_params_4_bpp_mat.insert(0, ref_sa_plus_centroidalifold_command)
     mafft_ginsi_plus_phyloalifold_output_dir_path = os.path.join(mafft_ginsi_plus_phyloalifold_dir_path, "csss_of_" + rna_family_name)
     mafft_xinsi_plus_phyloalifold_output_dir_path = os.path.join(mafft_xinsi_plus_phyloalifold_dir_path, "csss_of_" + rna_family_name)
     ref_sa_plus_phyloalifold_output_dir_path = os.path.join(ref_sa_plus_phyloalifold_dir_path, "csss_of_" + rna_family_name)
@@ -136,6 +139,11 @@ def main():
       if gamma == 1:
         centroidalifold_params_4_elapsed_time.insert(0, (mafft_xinsi_output_file_path, mafft_xinsi_plus_centroidalifold_output_file_path, gamma_str))
   pool = multiprocessing.Pool(num_of_threads)
+  pool.map(utils.run_command, mafft_ginsi_plus_centroidalifold_params_4_bpp_mat)
+  begin = time.time()
+  pool.map(utils.run_command, mafft_xinsi_plus_centroidalifold_params_4_bpp_mat)
+  phyloprob_and_phyloalifold_elapsed_time += time.time() - begin
+  pool.map(utils.run_command, ref_sa_plus_centroidalifold_params_4_bpp_mat)
   pool.map(utils.run_command, mafft_ginsi_plus_phyloalifold_commands)
   pool.map(utils.run_command, mafft_xinsi_plus_phyloalifold_commands)
   pool.map(utils.run_command, ref_sa_plus_phyloalifold_commands)
@@ -152,8 +160,8 @@ def main():
   print("The elapsed time of the CentroidAlifold program for a test set = %f [s]." % centroidalifold_elapsed_time)
 
 def run_mafft(mafft_params):
-  (rna_seq_file_path, mafft_output_file_path, mafft_type) = mafft_params
-  mafft_command = "mafft-%s " % mafft_type + "--clustalout " + rna_seq_file_path + " > " + mafft_output_file_path
+  (rna_seq_file_path, mafft_output_file_path, mafft_type, num_of_threads) = mafft_params
+  mafft_command = "mafft-%s --thread %d --quiet " % (mafft_type, num_of_threads) + "--clustalout " + rna_seq_file_path + " > " + mafft_output_file_path
   utils.run_command(mafft_command)
 
 def run_centroidalifold(centroidalifold_params):

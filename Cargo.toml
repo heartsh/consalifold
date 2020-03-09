@@ -9,8 +9,8 @@ keywords = ["bioinformatics", "rna", "secondary-structure"]
 license = "MIT"
 
 [dependencies]
-rna-algos = "0.1"
-getopts = "0.2"
+num_cpus = "1.0"
+bio = "0.20"
 phyloprob = "0.1"
 phylofold = "0.1"
 

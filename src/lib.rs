@@ -45,7 +45,7 @@ impl MeaCss {
 pub const GAP: Char = '-' as Char;
 
 #[inline]
-pub fn neoalifold(mean_bpp_mat: &ProbMat, mean_upp_mat: &Probs, centroidalifold_bpp_mat: &ProbMat, gamma: Prob, prob_weight: Prob, sa: &SeqAlign) -> MeaCss {
+pub fn phyloalifold(mean_bpp_mat: &ProbMat, mean_upp_mat: &Probs, centroidalifold_bpp_mat: &ProbMat, gamma: Prob, prob_weight: Prob, sa: &SeqAlign) -> MeaCss {
   let sa_len = sa.cols.len();
   let mut centroidalifold_upp_mat = vec![0.; sa_len];
   let mut mea_mat = vec![vec![0.; sa_len]; sa_len];

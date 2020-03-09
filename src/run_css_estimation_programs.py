@@ -56,13 +56,9 @@ def main():
   mafft_ginsi_plus_centroidalifold_params_4_bpp_mat = []
   mafft_xinsi_plus_centroidalifold_params_4_bpp_mat = []
   ref_sa_plus_centroidalifold_params_4_bpp_mat = []
-  mafft_ginsi_plus_phyloalifold_commands = []
-  mafft_xinsi_plus_phyloalifold_commands = []
-  ref_sa_plus_phyloalifold_commands = []
   mafft_ginsi_plus_centroidalifold_params = []
   mafft_xinsi_plus_centroidalifold_params = []
   ref_sa_plus_centroidalifold_params = []
-  phyloalifold_commands_4_elapsed_time = []
   centroidalifold_params_4_elapsed_time = []
   phyloalifold_elapsed_time = 0.
   for rna_seq_file in os.listdir(rna_seq_dir_path):
@@ -124,15 +120,17 @@ def main():
       output_file = "gamma=" + gamma_str + ".sth"
       mafft_ginsi_plus_phyloalifold_output_file_path = os.path.join(mafft_ginsi_plus_phyloalifold_output_dir_path, output_file)
       phyloalifold_command = "phyloalifold -i " + rna_seq_file_path + " -a " + mafft_ginsi_output_file_path + " -c " + mafft_ginsi_plus_centroidalifold_bpp_mat_file_path + " -o " + mafft_ginsi_plus_phyloalifold_output_file_path + " --gamma " + gamma_str
-      mafft_ginsi_plus_phyloalifold_commands.insert(0, phyloalifold_command)
+      utils.run_command(phyloalifold_command)
       mafft_xinsi_plus_phyloalifold_output_file_path = os.path.join(mafft_xinsi_plus_phyloalifold_output_dir_path, output_file)
       phyloalifold_command = "phyloalifold -i " + rna_seq_file_path + " -a " + mafft_xinsi_output_file_path + " -c " + mafft_xinsi_plus_centroidalifold_bpp_mat_file_path + " -o " + mafft_xinsi_plus_phyloalifold_output_file_path + " --gamma " + gamma_str
-      mafft_xinsi_plus_phyloalifold_commands.insert(0, phyloalifold_command)
+      begin = time.time()
+      utils.run_command(phyloalifold_command)
+      elapsed_time = time.time() - begin
       if gamma == 1:
-        phyloalifold_commands_4_elapsed_time.insert(0, phyloalifold_command)
+        phyloalifold_elapsed_time += elapsed_time
       ref_sa_plus_phyloalifold_output_file_path = os.path.join(ref_sa_plus_phyloalifold_output_dir_path, output_file)
       phyloalifold_command = "phyloalifold -i " + rna_seq_file_path + " -a " + ref_sa_file_path + " -c " + ref_sa_plus_centroidalifold_bpp_mat_file_path + " -o " + ref_sa_plus_phyloalifold_output_file_path + " --gamma " + gamma_str
-      ref_sa_plus_phyloalifold_commands.insert(0, phyloalifold_command)
+      utils.run_command(phyloalifold_command)
       mafft_ginsi_plus_centroidalifold_output_file_path = os.path.join(mafft_ginsi_plus_centroidalifold_output_dir_path, output_file)
       mafft_xinsi_plus_centroidalifold_output_file_path = os.path.join(mafft_xinsi_plus_centroidalifold_output_dir_path, output_file)
       ref_sa_plus_centroidalifold_output_file_path = os.path.join(ref_sa_plus_centroidalifold_output_dir_path, output_file)
@@ -141,19 +139,13 @@ def main():
       ref_sa_plus_centroidalifold_params.insert(0, (ref_sa_file_path, ref_sa_plus_centroidalifold_output_file_path, gamma_str))
       if gamma == 1:
         centroidalifold_params_4_elapsed_time.insert(0, (mafft_xinsi_output_file_path, mafft_xinsi_plus_centroidalifold_output_file_path, gamma_str))
-  pool.map(utils.run_command, mafft_ginsi_plus_phyloalifold_commands)
-  pool.map(utils.run_command, mafft_xinsi_plus_phyloalifold_commands)
-  pool.map(utils.run_command, ref_sa_plus_phyloalifold_commands)
   pool.map(run_centroidalifold, mafft_ginsi_plus_centroidalifold_params)
   pool.map(run_centroidalifold, mafft_xinsi_plus_centroidalifold_params)
   pool.map(run_centroidalifold, ref_sa_plus_centroidalifold_params)
   begin = time.time()
-  pool.map(utils.run_command, phyloalifold_commands_4_elapsed_time)
-  phyloprob_and_phyloalifold_elapsed_time += time.time() - begin
-  begin = time.time()
   pool.map(run_centroidalifold, centroidalifold_params_4_elapsed_time)
   centroidalifold_elapsed_time = time.time() - begin
-  print("The elapsed time of the PhyloAliFold program for a test set = %f [s]." % phyloprob_and_phyloalifold_elapsed_time)
+  print("The elapsed time of the PhyloAliFold program for a test set = %f [s]." % phyloalifold_elapsed_time)
   print("The elapsed time of the CentroidAlifold program for a test set = %f [s]." % centroidalifold_elapsed_time)
 
 def run_mafft(mafft_params):

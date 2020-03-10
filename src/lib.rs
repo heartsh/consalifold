@@ -44,38 +44,24 @@ impl MeaCss {
 
 pub const GAP: Char = '-' as Char;
 
-#[inline]
-pub fn phyloalifold(mean_bpp_mat: &ProbMat, mean_upp_mat: &Probs, centroidalifold_bpp_mat: &ProbMat, gamma: Prob, prob_weight: Prob, sa: &SeqAlign) -> MeaCss {
+pub fn phyloalifold(mix_bpp_mat: &ProbMat, mix_upp_mat: &Probs, gamma: Prob, sa: &SeqAlign) -> MeaCss {
   let sa_len = sa.cols.len();
-  let mut centroidalifold_upp_mat = vec![0.; sa_len];
   let mut mea_mat = vec![vec![0.; sa_len]; sa_len];
   let sa_len = sa_len as Pos;
-  for i in 0 .. sa_len {
-    let long_i = i as usize;
-    let mut centroidalifold_upp = 1.;
-    for j in 0 .. sa_len {
-      if i == j {continue;}
-      let long_j = j as usize;
-      let pos_pair = if long_i < long_j {(long_i, long_j)} else {(long_j, long_i)};
-      let centroidalifold_bpp = centroidalifold_bpp_mat[pos_pair.0][pos_pair.1];
-      centroidalifold_upp -= centroidalifold_bpp;
-    }
-    centroidalifold_upp_mat[long_i] = centroidalifold_upp;
-  }
   for sub_sa_len in 1 .. sa_len + 1 {
     for i in 0 .. sa_len + 1 - sub_sa_len {
       let j = i + sub_sa_len - 1;
       let (long_i, long_j) = (i as usize, j as usize);
       if i == j {
-        mea_mat[long_i][long_j] = prob_weight * mean_upp_mat[long_i] + (1. - prob_weight) * centroidalifold_upp_mat[long_i];
+        mea_mat[long_i][long_j] = mix_upp_mat[long_i];
         continue;
       }
-      let mut mea = mea_mat[long_i + 1][long_j] + prob_weight * mean_upp_mat[long_i] + (1. - prob_weight) * centroidalifold_upp_mat[long_i];
-      let ea = mea_mat[long_i][long_j - 1] + prob_weight * mean_upp_mat[long_j] + (1. - prob_weight) * centroidalifold_upp_mat[long_j];
+      let mut mea = mea_mat[long_i + 1][long_j] + mix_upp_mat[long_i];
+      let ea = mea_mat[long_i][long_j - 1] + mix_upp_mat[long_j];
       if ea > mea {
         mea = ea;
       }
-      let ea = mea_mat[long_i + 1][long_j - 1] + gamma * (prob_weight * mean_bpp_mat[long_i][long_j] + (1. - prob_weight) * centroidalifold_bpp_mat[long_i][long_j]);
+      let ea = mea_mat[long_i + 1][long_j - 1] + gamma * mix_bpp_mat[long_i][long_j];
       if ea > mea {
         mea = ea;
       }
@@ -96,11 +82,11 @@ pub fn phyloalifold(mean_bpp_mat: &ProbMat, mean_upp_mat: &Probs, centroidalifol
     if j <= i {continue;}
     let (long_i, long_j) = (i as usize, j as usize);
     let mea = mea_mat[long_i][long_j];
-    if mea == mea_mat[long_i + 1][long_j] + prob_weight * mean_upp_mat[long_i] + (1. - prob_weight) * centroidalifold_upp_mat[long_i] {
+    if mea == mea_mat[long_i + 1][long_j] + mix_upp_mat[long_i] {
       pos_pair_stack.push((i + 1, j));
-    } else if mea == mea_mat[long_i][long_j - 1] + prob_weight * mean_upp_mat[long_j] + (1. - prob_weight) * centroidalifold_upp_mat[long_j] {
+    } else if mea == mea_mat[long_i][long_j - 1] + mix_upp_mat[long_j] {
       pos_pair_stack.push((i, j - 1));
-    } else if mea == mea_mat[long_i + 1][long_j - 1] + gamma * (prob_weight * mean_bpp_mat[long_i][long_j] + (1. - prob_weight) * centroidalifold_bpp_mat[long_i][long_j]) {
+    } else if mea == mea_mat[long_i + 1][long_j - 1] + gamma * mix_bpp_mat[long_i][long_j] {
       pos_pair_stack.push((i + 1, j - 1));
       mea_css.bpa_pos_pairs.push(pos_pair);
     } else {

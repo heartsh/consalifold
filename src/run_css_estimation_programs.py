@@ -56,6 +56,9 @@ def main():
   mafft_ginsi_plus_centroidalifold_params_4_bpp_mat = []
   mafft_xinsi_plus_centroidalifold_params_4_bpp_mat = []
   ref_sa_plus_centroidalifold_params_4_bpp_mat = []
+  mafft_ginsi_plus_phyloalifold_params = []
+  mafft_xinsi_plus_phyloalifold_params = []
+  ref_sa_plus_phyloalifold_params = []
   mafft_ginsi_plus_centroidalifold_params = []
   mafft_xinsi_plus_centroidalifold_params = []
   ref_sa_plus_centroidalifold_params = []
@@ -86,6 +89,7 @@ def main():
   pool.map(utils.run_command, mafft_xinsi_plus_centroidalifold_params_4_bpp_mat)
   phyloalifold_elapsed_time += time.time() - begin
   pool.map(utils.run_command, ref_sa_plus_centroidalifold_params_4_bpp_mat)
+  sub_thread_num = 4
   for rna_seq_file in os.listdir(rna_seq_dir_path):
     if not rna_seq_file.endswith(".fa"):
       continue
@@ -115,22 +119,16 @@ def main():
       os.mkdir(mafft_xinsi_plus_centroidalifold_output_dir_path)
     if not os.path.isdir(ref_sa_plus_centroidalifold_output_dir_path):
       os.mkdir(ref_sa_plus_centroidalifold_output_dir_path)
+    phyloalifold_command = "phyloalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + mafft_ginsi_output_file_path + " -c " + mafft_ginsi_plus_centroidalifold_bpp_mat_file_path + " -o " + mafft_ginsi_plus_phyloalifold_output_dir_path
+    mafft_ginsi_plus_phyloalifold_params.insert(0, phyloalifold_command)
+    mafft_ginsi_plus_centroidalifold_bpp_mat_file_path = os.path.join(mafft_ginsi_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
+    phyloalifold_command = "phyloalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + mafft_xinsi_output_file_path + " -c " + mafft_xinsi_plus_centroidalifold_bpp_mat_file_path + " -o " + mafft_xinsi_plus_phyloalifold_output_dir_path
+    mafft_xinsi_plus_phyloalifold_params.insert(0, phyloalifold_command)
+    phyloalifold_command = "phyloalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + ref_sa_file_path + " -c " + ref_sa_plus_centroidalifold_bpp_mat_file_path + " -o " + ref_sa_plus_phyloalifold_output_dir_path
+    ref_sa_plus_phyloalifold_params.insert(0, phyloalifold_command)
     for gamma in gammas:
-      gamma_str = str(gamma)
+      gamma_str = str(gamma) if gamma < 1 else str(int(gamma))
       output_file = "gamma=" + gamma_str + ".sth"
-      mafft_ginsi_plus_phyloalifold_output_file_path = os.path.join(mafft_ginsi_plus_phyloalifold_output_dir_path, output_file)
-      phyloalifold_command = "phyloalifold -i " + rna_seq_file_path + " -a " + mafft_ginsi_output_file_path + " -c " + mafft_ginsi_plus_centroidalifold_bpp_mat_file_path + " -o " + mafft_ginsi_plus_phyloalifold_output_file_path + " --gamma " + gamma_str
-      utils.run_command(phyloalifold_command)
-      mafft_xinsi_plus_phyloalifold_output_file_path = os.path.join(mafft_xinsi_plus_phyloalifold_output_dir_path, output_file)
-      phyloalifold_command = "phyloalifold -i " + rna_seq_file_path + " -a " + mafft_xinsi_output_file_path + " -c " + mafft_xinsi_plus_centroidalifold_bpp_mat_file_path + " -o " + mafft_xinsi_plus_phyloalifold_output_file_path + " --gamma " + gamma_str
-      begin = time.time()
-      utils.run_command(phyloalifold_command)
-      elapsed_time = time.time() - begin
-      if gamma == 1:
-        phyloalifold_elapsed_time += elapsed_time
-      ref_sa_plus_phyloalifold_output_file_path = os.path.join(ref_sa_plus_phyloalifold_output_dir_path, output_file)
-      phyloalifold_command = "phyloalifold -i " + rna_seq_file_path + " -a " + ref_sa_file_path + " -c " + ref_sa_plus_centroidalifold_bpp_mat_file_path + " -o " + ref_sa_plus_phyloalifold_output_file_path + " --gamma " + gamma_str
-      utils.run_command(phyloalifold_command)
       mafft_ginsi_plus_centroidalifold_output_file_path = os.path.join(mafft_ginsi_plus_centroidalifold_output_dir_path, output_file)
       mafft_xinsi_plus_centroidalifold_output_file_path = os.path.join(mafft_xinsi_plus_centroidalifold_output_dir_path, output_file)
       ref_sa_plus_centroidalifold_output_file_path = os.path.join(ref_sa_plus_centroidalifold_output_dir_path, output_file)
@@ -139,6 +137,13 @@ def main():
       ref_sa_plus_centroidalifold_params.insert(0, (ref_sa_file_path, ref_sa_plus_centroidalifold_output_file_path, gamma_str))
       if gamma == 1:
         centroidalifold_params_4_elapsed_time.insert(0, (mafft_xinsi_output_file_path, mafft_xinsi_plus_centroidalifold_output_file_path, gamma_str))
+  pool = multiprocessing.Pool(int(num_of_threads / sub_thread_num))
+  pool.map(utils.run_command, mafft_ginsi_plus_phyloalifold_params)
+  begin = time.time()
+  pool.map(utils.run_command, mafft_xinsi_plus_phyloalifold_params)
+  phyloalifold_elapsed_time += time.time() - begin
+  pool.map(utils.run_command, ref_sa_plus_phyloalifold_params)
+  pool = multiprocessing.Pool(num_of_threads)
   pool.map(run_centroidalifold, mafft_ginsi_plus_centroidalifold_params)
   pool.map(run_centroidalifold, mafft_xinsi_plus_centroidalifold_params)
   pool.map(run_centroidalifold, ref_sa_plus_centroidalifold_params)

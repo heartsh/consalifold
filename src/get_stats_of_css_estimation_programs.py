@@ -40,7 +40,7 @@ def main():
   ref_sa_plus_centroidalifold_fprs = []
   gammas = [2. ** i for i in range(-7, 11)]
   for gamma in gammas:
-    gamma_str = str(gamma)
+    gamma_str = str(gamma) if gamma < 1 else str(int(gamma))
     mafft_ginsi_plus_phyloalifold_tp = mafft_ginsi_plus_phyloalifold_tn = mafft_ginsi_plus_phyloalifold_fp = mafft_ginsi_plus_phyloalifold_fn = 0.
     mafft_xinsi_plus_phyloalifold_tp = mafft_xinsi_plus_phyloalifold_tn = mafft_xinsi_plus_phyloalifold_fp = mafft_xinsi_plus_phyloalifold_fn = 0.
     ref_sa_plus_phyloalifold_tp = ref_sa_plus_phyloalifold_tn = ref_sa_plus_phyloalifold_fp = ref_sa_plus_phyloalifold_fn = 0.

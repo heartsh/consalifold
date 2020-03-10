@@ -9,12 +9,14 @@ use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 use std::fs::File;
 use bio::io::fasta::Reader;
+use std::fs::create_dir;
 
 type MeaCssStr = MeaSsStr;
 type Strings = Vec<String>;
 
-const DEFAULT_GAMMA: Prob = 1.;
-const DEFAULT_PROB_WEIGHT: Prob = 0.5;
+const DEFAULT_MIX_WEIGHT: Prob = 0.5;
+const DEFAULT_MIN_POW_OF_2: i32 = -7;
+const DEFAULT_MAX_POW_OF_2: i32 = 10;
 
 fn main() {
   let args = env::args().collect::<Vec<Arg>>();
@@ -23,13 +25,14 @@ fn main() {
   opts.reqopt("i", "input_file_path", "The path to an input FASTA file that contains RNA sequences", "STR");
   opts.reqopt("a", "input_seq_align_file_path", "The path to an input CLUSTAL file containing a sequence alignment of RNA sequences", "STR");
   opts.reqopt("c", "input_pair_prob_matrix_file_path", "The path to an input file containing pairing probability matrices computed by the RNAalipfold algorithm", "STR");
-  opts.reqopt("o", "output_file_path", "The path to an output STOCKHOLM file which will contain estimated consensus secondary structures", "STR");
+  opts.reqopt("o", "output_dir_path", "The path to an output directory", "STR");
   opts.optopt("", "opening_gap_penalty", &format!("An opening-gap penalty (Uses {} by default)", DEFAULT_OPENING_GAP_PENALTY), "FLOAT");
   opts.optopt("", "extending_gap_penalty", &format!("An extending-gap penalty (Uses {} by default)", DEFAULT_EXTENDING_GAP_PENALTY), "FLOAT");
   opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
   opts.optopt("", "offset_4_max_gap_num", &format!("An offset for maximum numbers of gaps (Uses {} by default)", DEFAULT_OFFSET_4_MAX_GAP_NUM), "UINT");
-  opts.optopt("", "gamma", &format!("An MEA gamma (Uses {} by default)", DEFAULT_GAMMA), "FLOAT");
-  opts.optopt("", "prob_weight", &format!("A probability weight (Uses {} by default)", DEFAULT_PROB_WEIGHT), "FLOAT");
+  opts.optopt("", "min_pow_of_2", &format!("A minimum power of 2 to calculate a gamma parameter (Uses {} by default)", DEFAULT_MIN_POW_OF_2), "FLOAT");
+  opts.optopt("", "max_pow_of_2", &format!("A maximum power of 2 to calculate a gamma parameter (Uses {} by default)", DEFAULT_MAX_POW_OF_2), "FLOAT");
+  opts.optopt("", "mix_weight", &format!("A mixture weight (Uses {} by default)", DEFAULT_MIX_WEIGHT), "FLOAT");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of all the threads of this computer by default)", "UINT");
   opts.optflag("h", "help", "Print a help menu");
   let matches = match opts.parse(&args[1 ..]) {
@@ -46,8 +49,10 @@ fn main() {
   let input_sa_file_path = Path::new(&input_sa_file_path);
   let input_bpp_mat_file_path = matches.opt_str("c").unwrap();
   let input_bpp_mat_file_path = Path::new(&input_bpp_mat_file_path);
-  let output_file_path = matches.opt_str("o").unwrap();
-  let output_file_path = Path::new(&output_file_path);
+  let output_dir_path = matches.opt_str("o").unwrap();
+  let output_dir_path = Path::new(&output_dir_path);
+  /* let output_file_path = matches.opt_str("o").unwrap();
+  let output_file_path = Path::new(&output_file_path); */
   let opening_gap_penalty = if matches.opt_present("opening_gap_penalty") {
     matches.opt_str("opening_gap_penalty").unwrap().parse().unwrap()
   } else {
@@ -68,15 +73,25 @@ fn main() {
   } else {
     DEFAULT_OFFSET_4_MAX_GAP_NUM
   };
-  let gamma = if matches.opt_present("gamma") {
+  /* let gamma = if matches.opt_present("gamma") {
     matches.opt_str("gamma").unwrap().parse().unwrap()
   } else {
     DEFAULT_GAMMA
-  };
-  let prob_weight = if matches.opt_present("prob_weight") {
-    matches.opt_str("prob_weight").unwrap().parse().unwrap()
+  }; */
+  let min_pow_of_2 = if matches.opt_present("min_pow_of_2") {
+    matches.opt_str("min_pow_of_2").unwrap().parse().unwrap()
   } else {
-    DEFAULT_PROB_WEIGHT
+    DEFAULT_MIN_POW_OF_2
+  };
+  let max_pow_of_2 = if matches.opt_present("max_pow_of_2") {
+    matches.opt_str("max_pow_of_2").unwrap().parse().unwrap()
+  } else {
+    DEFAULT_MAX_POW_OF_2
+  };
+  let mix_weight = if matches.opt_present("mix_weight") {
+    matches.opt_str("mix_weight").unwrap().parse().unwrap()
+  } else {
+    DEFAULT_MIX_WEIGHT
   };
   let num_of_threads = if matches.opt_present("t") {
     matches.opt_str("t").unwrap().parse().unwrap()
@@ -110,10 +125,7 @@ fn main() {
       }
     }
   }
-  let mean_bpp_mat = get_mean_bpp_mat(&bpp_mats, &sa);
-  let mean_upp_mat = get_mean_upp_mat(&upp_mats, &sa);
   let sa_len = sa.cols.len();
-  let num_of_rnas = sa.cols[0].len();
   let mut rnaalipfold_bpp_mat = vec![vec![0.; sa_len]; sa_len];
   let reader_2_input_bpp_mat_file = BufReader::new(File::open(input_bpp_mat_file_path).unwrap());
   for (i, vec) in reader_2_input_bpp_mat_file.split(b'\n').enumerate() {
@@ -125,31 +137,24 @@ fn main() {
       rnaalipfold_bpp_mat[i][j] = subsubsubstrings[1].parse().unwrap();
     }
   }
-  let mea_css = phyloalifold(&mean_bpp_mat, &mean_upp_mat, &rnaalipfold_bpp_mat, gamma, prob_weight, &sa);
-  let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).unwrap());
-  let mut buf_4_writer_2_output_file = format!("# STOCKHOLM 1.0\n");
-  let sa_len = sa.cols.len();
-  let max_seq_id_len = seq_ids.iter().map(|seq_id| {seq_id.len()}).max().unwrap();
-  for rna_id in 0 .. num_of_rnas {
-    let ref seq_id = seq_ids[rna_id];
-    buf_4_writer_2_output_file.push_str(seq_id);
-    let mut stockholm_row = vec![' ' as Char; max_seq_id_len - seq_id.len() + 2];
-    let mut sa_row = (0 .. sa_len).map(|x| {sa.cols[x][rna_id]}).collect::<Vec<u8>>();
-    stockholm_row.append(&mut sa_row);
-    let stockholm_row = unsafe {from_utf8_unchecked(&stockholm_row)};
-    buf_4_writer_2_output_file.push_str(&stockholm_row);
-    buf_4_writer_2_output_file.push_str("\n");
+  let mix_bpp_mat = get_mix_bpp_mat(&bpp_mats, &rnaalipfold_bpp_mat, &sa, mix_weight);
+  let mix_upp_mat = get_mix_upp_mat(&upp_mats, &rnaalipfold_bpp_mat, &sa, mix_weight);
+  if !output_dir_path.exists() {
+    let _ = create_dir(output_dir_path);
   }
-  let descriptor = "#=GC SS_cons";
-  let descriptor_len = descriptor.len();
-  buf_4_writer_2_output_file.push_str(descriptor);
-  let mut stockholm_row = vec![' ' as Char; max_seq_id_len - descriptor_len + 2];
-  let mut mea_css_str = get_mea_css_str(&mea_css, sa_len);
-  stockholm_row.append(&mut mea_css_str);
-  let stockholm_row = unsafe {from_utf8_unchecked(&stockholm_row)};
-  buf_4_writer_2_output_file.push_str(&stockholm_row);
-  buf_4_writer_2_output_file.push_str("\n//");
-  let _ = writer_2_output_file.write_all(buf_4_writer_2_output_file.as_bytes());
+  for pow_of_2 in min_pow_of_2 .. max_pow_of_2 + 1 {
+    let gamma = (2. as Prob).powi(pow_of_2);
+    let ref ref_2_mix_bpp_mat = mix_bpp_mat;
+    let ref ref_2_mix_upp_mat = mix_upp_mat;
+    let ref ref_2_sa = sa;
+    let ref ref_2_seq_ids = seq_ids;
+    thread_pool.scoped(|scope| {
+      let output_file_path = output_dir_path.join(&format!("gamma={}.sth", gamma));
+      scope.execute(move || {
+        compute_and_write_mea_css(ref_2_mix_bpp_mat, ref_2_mix_upp_mat, ref_2_sa, gamma, &output_file_path, ref_2_seq_ids);
+      });
+    });
+  }
 }
 
 #[inline]
@@ -191,10 +196,10 @@ fn read_sa_from_clustal_file(clustal_file_path: &Path) -> (SeqAlign, SeqIds) {
 }
 
 #[inline]
-fn get_mean_bpp_mat(bpp_mats: &ProbMatsWithRnaIds, sa: &SeqAlign) -> ProbMat {
+fn get_mix_bpp_mat(bpp_mats: &ProbMats, rnaalipfold_bpp_mat: &ProbMat, sa: &SeqAlign, mix_weight: Prob) -> ProbMat {
   let sa_len = sa.cols.len();
   let num_of_rnas = sa.cols[0].len();
-  let mut mean_bpp_mat = vec![vec![0.; sa_len]; sa_len];
+  let mut mix_bpp_mat = vec![vec![0.; sa_len]; sa_len];
   for i in 0 .. sa_len {
     for j in i + 1 .. sa_len {
       let mut mean_bpp = 0.;
@@ -210,20 +215,28 @@ fn get_mean_bpp_mat(bpp_mats: &ProbMatsWithRnaIds, sa: &SeqAlign) -> ProbMat {
           }, None => {},
         }
       }
-      if effective_num_of_rnas > 0 {
-        mean_bpp_mat[i][j] = mean_bpp / effective_num_of_rnas as Prob;
-      }
+      mix_bpp_mat[i][j] = if effective_num_of_rnas > 0 {
+        mix_weight * mean_bpp / effective_num_of_rnas as Prob + (1. - mix_weight) * rnaalipfold_bpp_mat[i][j]
+      } else {
+        rnaalipfold_bpp_mat[i][j]
+      };
     }
   }
-  mean_bpp_mat
+  mix_bpp_mat
 }
 
 #[inline]
-fn get_mean_upp_mat(upp_mats: &ProbsWithRnaIds, sa: &SeqAlign) -> Probs {
+fn get_mix_upp_mat(upp_mats: &ProbsWithRnaIds, rnaalipfold_bpp_mat: &ProbMat, sa: &SeqAlign, mix_weight: Prob) -> Probs {
   let sa_len = sa.cols.len();
   let num_of_rnas = sa.cols[0].len();
-  let mut mean_upp_mat = vec![0.; sa_len];
+  let mut mix_upp_mat = vec![0.; sa_len];
   for i in 0 .. sa_len {
+    let mut rnaalipfold_upp = 1.;
+    for j in 0 .. sa_len {
+      if i == j {continue;}
+      let pos_pair = if i < j {(i, j)} else {(j, i)};
+      rnaalipfold_upp -= rnaalipfold_bpp_mat[pos_pair.0][pos_pair.1];
+    }
     let mut mean_upp = 0.;
     let mut effective_num_of_rnas = 0;
     for j in 0 .. num_of_rnas {
@@ -231,11 +244,42 @@ fn get_mean_upp_mat(upp_mats: &ProbsWithRnaIds, sa: &SeqAlign) -> Probs {
       mean_upp += upp_mats[j][sa.pos_map_sets[i][j] as usize + 1];
       effective_num_of_rnas += 1;
     }
-    if effective_num_of_rnas > 0 {
-      mean_upp_mat[i] = mean_upp / num_of_rnas as Prob;
-    }
+    mix_upp_mat[i] = if effective_num_of_rnas > 0 {
+      mix_weight * mean_upp / num_of_rnas as Prob + (1. - mix_weight) * rnaalipfold_upp
+    } else {
+      rnaalipfold_upp
+    };
   }
-  mean_upp_mat
+  mix_upp_mat
+}
+
+fn compute_and_write_mea_css(mix_bpp_mat: &ProbMat, mix_upp_mat: &Probs, sa: &SeqAlign, gamma: Prob, output_file_path: &Path, seq_ids: &SeqIds) {
+  let mea_css = phyloalifold(mix_bpp_mat, mix_upp_mat, gamma, sa);
+  let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).unwrap());
+  let mut buf_4_writer_2_output_file = format!("# STOCKHOLM 1.0\n");
+  let sa_len = sa.cols.len();
+  let max_seq_id_len = seq_ids.iter().map(|seq_id| {seq_id.len()}).max().unwrap();
+  let num_of_rnas = sa.cols[0].len();
+  for rna_id in 0 .. num_of_rnas {
+    let ref seq_id = seq_ids[rna_id];
+    buf_4_writer_2_output_file.push_str(seq_id);
+    let mut stockholm_row = vec![' ' as Char; max_seq_id_len - seq_id.len() + 2];
+    let mut sa_row = (0 .. sa_len).map(|x| {sa.cols[x][rna_id]}).collect::<Vec<u8>>();
+    stockholm_row.append(&mut sa_row);
+    let stockholm_row = unsafe {from_utf8_unchecked(&stockholm_row)};
+    buf_4_writer_2_output_file.push_str(&stockholm_row);
+    buf_4_writer_2_output_file.push_str("\n");
+  }
+  let descriptor = "#=GC SS_cons";
+  let descriptor_len = descriptor.len();
+  buf_4_writer_2_output_file.push_str(descriptor);
+  let mut stockholm_row = vec![' ' as Char; max_seq_id_len - descriptor_len + 2];
+  let mut mea_css_str = get_mea_css_str(&mea_css, sa_len);
+  stockholm_row.append(&mut mea_css_str);
+  let stockholm_row = unsafe {from_utf8_unchecked(&stockholm_row)};
+  buf_4_writer_2_output_file.push_str(&stockholm_row);
+  buf_4_writer_2_output_file.push_str("\n//");
+  let _ = writer_2_output_file.write_all(buf_4_writer_2_output_file.as_bytes());
 }
 
 #[inline]

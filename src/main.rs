@@ -142,19 +142,19 @@ fn main() {
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }
-  for pow_of_2 in min_pow_of_2 .. max_pow_of_2 + 1 {
-    let gamma = (2. as Prob).powi(pow_of_2);
-    let ref ref_2_mix_bpp_mat = mix_bpp_mat;
-    let ref ref_2_mix_upp_mat = mix_upp_mat;
-    let ref ref_2_sa = sa;
-    let ref ref_2_seq_ids = seq_ids;
-    thread_pool.scoped(|scope| {
+  thread_pool.scoped(|scope| {
+    for pow_of_2 in min_pow_of_2 .. max_pow_of_2 + 1 {
+      let gamma = (2. as Prob).powi(pow_of_2);
+      let ref ref_2_mix_bpp_mat = mix_bpp_mat;
+      let ref ref_2_mix_upp_mat = mix_upp_mat;
+      let ref ref_2_sa = sa;
+      let ref ref_2_seq_ids = seq_ids;
       let output_file_path = output_dir_path.join(&format!("gamma={}.sth", gamma));
       scope.execute(move || {
         compute_and_write_mea_css(ref_2_mix_bpp_mat, ref_2_mix_upp_mat, ref_2_sa, gamma, &output_file_path, ref_2_seq_ids);
       });
-    });
-  }
+    }
+  });
 }
 
 #[inline]

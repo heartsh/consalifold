@@ -1,11 +1,10 @@
-extern crate phyloalifold;
+extern crate consalifold;
 extern crate bio;
 extern crate num_cpus;
 
-use phyloalifold::*;
+use consalifold::*;
 use std::env;
 use std::path::Path;
-use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 use std::fs::File;
 use bio::io::fasta::Reader;
@@ -17,6 +16,7 @@ type Strings = Vec<String>;
 const DEFAULT_MIX_WEIGHT: Prob = 0.5;
 const DEFAULT_MIN_POW_OF_2: i32 = -7;
 const DEFAULT_MAX_POW_OF_2: i32 = 10;
+const GAMMA_4_BENCH: Prob = 1.;
 
 fn main() {
   let args = env::args().collect::<Vec<Arg>>();
@@ -26,14 +26,16 @@ fn main() {
   opts.reqopt("a", "input_seq_align_file_path", "The path to an input CLUSTAL file containing a sequence alignment of RNA sequences", "STR");
   opts.reqopt("c", "input_pair_prob_matrix_file_path", "The path to an input file containing pairing probability matrices computed by the RNAalipfold algorithm", "STR");
   opts.reqopt("o", "output_dir_path", "The path to an output directory", "STR");
-  opts.optopt("", "opening_gap_penalty", &format!("An opening-gap penalty (Uses {} by default)", DEFAULT_OPENING_GAP_PENALTY), "FLOAT");
-  opts.optopt("", "extending_gap_penalty", &format!("An extending-gap penalty (Uses {} by default)", DEFAULT_EXTENDING_GAP_PENALTY), "FLOAT");
   opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
   opts.optopt("", "offset_4_max_gap_num", &format!("An offset for maximum numbers of gaps (Uses {} by default)", DEFAULT_OFFSET_4_MAX_GAP_NUM), "UINT");
   opts.optopt("", "min_pow_of_2", &format!("A minimum power of 2 to calculate a gamma parameter (Uses {} by default)", DEFAULT_MIN_POW_OF_2), "FLOAT");
   opts.optopt("", "max_pow_of_2", &format!("A maximum power of 2 to calculate a gamma parameter (Uses {} by default)", DEFAULT_MAX_POW_OF_2), "FLOAT");
   opts.optopt("", "mix_weight", &format!("A mixture weight (Uses {} by default)", DEFAULT_MIX_WEIGHT), "FLOAT");
+  opts.optflag("u", "uses_bpp_score", "Uses base-pairing probabilities as scores of secondary structures (Not recommended due to poor accuracy)");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of all the threads of this computer by default)", "UINT");
+  opts.optflag("b", "takes_bench", &format!("Compute for only gamma = {} to measure running time", GAMMA_4_BENCH));
+  opts.optflag("a", "produces_access_probs", &format!("Also compute accessible probabilities"));
+  opts.optflag("p", "outputs_probs", &format!("Output probabilities"));
   opts.optflag("h", "help", "Print a help menu");
   let matches = match opts.parse(&args[1 ..]) {
     Ok(opt) => {opt}
@@ -51,18 +53,6 @@ fn main() {
   let input_bpp_mat_file_path = Path::new(&input_bpp_mat_file_path);
   let output_dir_path = matches.opt_str("o").unwrap();
   let output_dir_path = Path::new(&output_dir_path);
-  /* let output_file_path = matches.opt_str("o").unwrap();
-  let output_file_path = Path::new(&output_file_path); */
-  let opening_gap_penalty = if matches.opt_present("opening_gap_penalty") {
-    matches.opt_str("opening_gap_penalty").unwrap().parse().unwrap()
-  } else {
-    DEFAULT_OPENING_GAP_PENALTY
-  };
-  let extending_gap_penalty = if matches.opt_present("extending_gap_penalty") {
-    matches.opt_str("extending_gap_penalty").unwrap().parse().unwrap()
-  } else {
-    DEFAULT_EXTENDING_GAP_PENALTY
-  };
   let min_bpp = if matches.opt_present("min_base_pair_prob") {
     matches.opt_str("min_base_pair_prob").unwrap().parse().unwrap()
   } else {
@@ -73,11 +63,6 @@ fn main() {
   } else {
     DEFAULT_OFFSET_4_MAX_GAP_NUM
   };
-  /* let gamma = if matches.opt_present("gamma") {
-    matches.opt_str("gamma").unwrap().parse().unwrap()
-  } else {
-    DEFAULT_GAMMA
-  }; */
   let min_pow_of_2 = if matches.opt_present("min_pow_of_2") {
     matches.opt_str("min_pow_of_2").unwrap().parse().unwrap()
   } else {
@@ -93,6 +78,10 @@ fn main() {
   } else {
     DEFAULT_MIX_WEIGHT
   };
+  let uses_bpps = matches.opt_present("u");
+  let takes_bench = matches.opt_present("b");
+  let produces_access_probs = matches.opt_present("a");
+  let outputs_probs = matches.opt_present("p");
   let num_of_threads = if matches.opt_present("t") {
     matches.opt_str("t").unwrap().parse().unwrap()
   } else {
@@ -108,7 +97,7 @@ fn main() {
     fasta_records.push(FastaRecord::new(String::from(fasta_record.id()), seq));
   }
   let mut thread_pool = Pool::new(num_of_threads);
-  let (bpp_mats, upp_mats) = phyloprob(&mut thread_pool, &fasta_records, opening_gap_penalty, extending_gap_penalty, min_bpp, offset_4_max_gap_num);
+  let prob_mat_sets = consprob(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num, uses_bpps, produces_access_probs);
   let (mut sa, seq_ids) = read_sa_from_clustal_file(input_sa_file_path);
   let num_of_rnas = sa.cols[0].len();
   let mut seq_lens = vec![0 as usize; num_of_rnas];
@@ -137,24 +126,32 @@ fn main() {
       rnaalipfold_bpp_mat[i][j] = subsubsubstrings[1].parse().unwrap();
     }
   }
-  let mix_bpp_mat = get_mix_bpp_mat(&bpp_mats, &rnaalipfold_bpp_mat, &sa, mix_weight);
-  let mix_upp_mat = get_mix_upp_mat(&upp_mats, &rnaalipfold_bpp_mat, &sa, mix_weight);
+  let mix_bpp_mat = get_mix_bpp_mat(&prob_mat_sets, &rnaalipfold_bpp_mat, &sa, mix_weight);
+  let mix_upp_mat = get_mix_upp_mat(&prob_mat_sets, &rnaalipfold_bpp_mat, &sa, mix_weight);
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }
-  thread_pool.scoped(|scope| {
-    for pow_of_2 in min_pow_of_2 .. max_pow_of_2 + 1 {
-      let gamma = (2. as Prob).powi(pow_of_2);
-      let ref ref_2_mix_bpp_mat = mix_bpp_mat;
-      let ref ref_2_mix_upp_mat = mix_upp_mat;
-      let ref ref_2_sa = sa;
-      let ref ref_2_seq_ids = seq_ids;
-      let output_file_path = output_dir_path.join(&format!("gamma={}.sth", gamma));
-      scope.execute(move || {
-        compute_and_write_mea_css(ref_2_mix_bpp_mat, ref_2_mix_upp_mat, ref_2_sa, gamma, &output_file_path, ref_2_seq_ids);
-      });
-    }
-  });
+  if takes_bench {
+    let output_file_path = output_dir_path.join(&format!("gamma={}.sth", GAMMA_4_BENCH));
+    compute_and_write_mea_css(&mix_bpp_mat, &mix_upp_mat, &sa, GAMMA_4_BENCH, &output_file_path, &seq_ids);
+  } else {
+    thread_pool.scoped(|scope| {
+      for pow_of_2 in min_pow_of_2 .. max_pow_of_2 + 1 {
+        let gamma = (2. as Prob).powi(pow_of_2);
+        let ref ref_2_mix_bpp_mat = mix_bpp_mat;
+        let ref ref_2_mix_upp_mat = mix_upp_mat;
+        let ref ref_2_sa = sa;
+        let ref ref_2_seq_ids = seq_ids;
+        let output_file_path = output_dir_path.join(&format!("gamma={}.sth", gamma));
+        scope.execute(move || {
+          compute_and_write_mea_css(ref_2_mix_bpp_mat, ref_2_mix_upp_mat, ref_2_sa, gamma, &output_file_path, ref_2_seq_ids);
+        });
+      }
+    });
+  }
+  if outputs_probs {
+    write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_access_probs);
+  }
 }
 
 #[inline]
@@ -196,7 +193,7 @@ fn read_sa_from_clustal_file(clustal_file_path: &Path) -> (SeqAlign, SeqIds) {
 }
 
 #[inline]
-fn get_mix_bpp_mat(bpp_mats: &ProbMats, rnaalipfold_bpp_mat: &ProbMat, sa: &SeqAlign, mix_weight: Prob) -> ProbMat {
+fn get_mix_bpp_mat(prob_mat_sets: &ProbMatSets, rnaalipfold_bpp_mat: &ProbMat, sa: &SeqAlign, mix_weight: Prob) -> ProbMat {
   let sa_len = sa.cols.len();
   let num_of_rnas = sa.cols[0].len();
   let mut mix_bpp_mat = vec![vec![0.; sa_len]; sa_len];
@@ -206,7 +203,7 @@ fn get_mix_bpp_mat(bpp_mats: &ProbMats, rnaalipfold_bpp_mat: &ProbMat, sa: &SeqA
       let mut effective_num_of_rnas = 0;
       for k in 0 .. num_of_rnas {
         if sa.cols[i][k] == GAP || sa.cols[j][k] == GAP {continue;}
-        let ref bpp_mat = bpp_mats[k];
+        let ref bpp_mat = prob_mat_sets[k].bpp_mat;
         let pos_pair = (sa.pos_map_sets[i][k] + 1, sa.pos_map_sets[j][k] + 1);
         match bpp_mat.get(&pos_pair) {
           Some(&bpp) => {
@@ -226,7 +223,7 @@ fn get_mix_bpp_mat(bpp_mats: &ProbMats, rnaalipfold_bpp_mat: &ProbMat, sa: &SeqA
 }
 
 #[inline]
-fn get_mix_upp_mat(upp_mats: &ProbsWithRnaIds, rnaalipfold_bpp_mat: &ProbMat, sa: &SeqAlign, mix_weight: Prob) -> Probs {
+fn get_mix_upp_mat(prob_mat_sets: &ProbMatSets, rnaalipfold_bpp_mat: &ProbMat, sa: &SeqAlign, mix_weight: Prob) -> Probs {
   let sa_len = sa.cols.len();
   let num_of_rnas = sa.cols[0].len();
   let mut mix_upp_mat = vec![0.; sa_len];
@@ -241,7 +238,7 @@ fn get_mix_upp_mat(upp_mats: &ProbsWithRnaIds, rnaalipfold_bpp_mat: &ProbMat, sa
     let mut effective_num_of_rnas = 0;
     for j in 0 .. num_of_rnas {
       if sa.cols[i][j] == GAP {continue;}
-      mean_upp += upp_mats[j][sa.pos_map_sets[i][j] as usize + 1];
+      mean_upp += prob_mat_sets[j].upp_mat[sa.pos_map_sets[i][j] as usize + 1];
       effective_num_of_rnas += 1;
     }
     mix_upp_mat[i] = if effective_num_of_rnas > 0 {
@@ -254,7 +251,7 @@ fn get_mix_upp_mat(upp_mats: &ProbsWithRnaIds, rnaalipfold_bpp_mat: &ProbMat, sa
 }
 
 fn compute_and_write_mea_css(mix_bpp_mat: &ProbMat, mix_upp_mat: &Probs, sa: &SeqAlign, gamma: Prob, output_file_path: &Path, seq_ids: &SeqIds) {
-  let mea_css = phyloalifold(mix_bpp_mat, mix_upp_mat, gamma, sa);
+  let mea_css = consalifold(mix_bpp_mat, mix_upp_mat, gamma, sa);
   let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).unwrap());
   let mut buf_4_writer_2_output_file = format!("# STOCKHOLM 1.0\n");
   let sa_len = sa.cols.len();

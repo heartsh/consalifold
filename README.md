@@ -1,4 +1,4 @@
-# PhyloAliFold Program, which Predicts RNA Consensus Secondary Structures to Incorporate Phylogeny among Homologs 
+# ConsAlifold, which Predicts RNA Consensus Secondary Structures to Consider Sparse RNA Structural Alignments
 # Installation
 This project has been written in mainly Rust, a systems programming language.
 So first, you need to install the Rust compiler, package manager, and standard library. 
@@ -9,15 +9,15 @@ $ curl https://sh.rustup.rs -sSf | sh
 ```
 The above installation is done by [Rustup](https://github.com/rust-lang-nursery/rustup.rs), so you can easily switch a compiler to use. 
 Also you need to install the [Centroid RNA package](https://github.com/satoken/centroid-rna-package) to predict pairing probabilities by the RNAalipfold algorithm.
-Now you can install the PhyloAliFold program as follows: 
+Now you can install the ConsAlifold program as follows: 
 ```bash
-$ cargo install phyloalifold
+$ cargo install consalifold
 ```
 Check if this program has been installed properly as follows:
 ```bash
-$ phyloalifold # Its available command options will be displayed.
+$ consalifold # Its available command options will be displayed.
 ```
-After the test, the figures shown in the paper of the PhyloAliFold program can be reproduced:
+After the test, the figures shown in the paper of the ConsAlifold program can be reproduced:
 ```bash
 $ cd src
 $ ./run_all.py # Install python packages required to the reproduction. Saved figures will appear at the "../assets/images" directory.

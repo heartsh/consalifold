@@ -1,12 +1,12 @@
-extern crate phyloprob;
-extern crate phylofold;
+extern crate consprob;
+extern crate conshomfold;
 
-pub use phyloprob::*;
-pub use phylofold::*;
-pub use phylofold::{RnaId, RnaIdPair, Prob4dMat, SparseProbMat};
-pub type Prob4dMatsWithRnaIdPairs = FxHashMap<RnaIdPair, Prob4dMat>;
+pub use consprob::*;
+pub use conshomfold::*;
+pub use conshomfold::{RnaId, RnaIdPair, Prob4dMat, SparseProbMat};
+pub type Prob4dMatsWithRnaIdPairs = HashMap<RnaIdPair, Prob4dMat>;
 pub type ProbsWithRnaIds = Vec<Probs>;
-pub type ProbsWithPosPairs = FxHashMap<PosPair, Prob>;
+pub type ProbsWithPosPairs = HashMap<PosPair, Prob>;
 pub type ProbMatsWithRnaIds = Vec<SparseProbMat>;
 pub type Col = Vec<Char>;
 pub type Cols = Vec<Col>;
@@ -44,7 +44,7 @@ impl MeaCss {
 
 pub const GAP: Char = '-' as Char;
 
-pub fn phyloalifold(mix_bpp_mat: &ProbMat, mix_upp_mat: &Probs, gamma: Prob, sa: &SeqAlign) -> MeaCss {
+pub fn consalifold(mix_bpp_mat: &ProbMat, mix_upp_mat: &Probs, gamma: Prob, sa: &SeqAlign) -> MeaCss {
   let sa_len = sa.cols.len();
   let mut mea_mat = vec![vec![0.; sa_len]; sa_len];
   let sa_len = sa_len as Pos;

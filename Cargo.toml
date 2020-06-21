@@ -1,9 +1,9 @@
 [package]
-name = "phyloalifold"
-version = "0.1.3"
+name = "consalifold"
+version = "0.1.0"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "PhyloAliFold Program, which Predicts RNA Consensus Secondary Structures to Incorporate Phylogeny among Homologs"
-repository = "https://github.com/heartsh/phyloalifold"
+description = "ConsAlifold, which Predicts RNA Consensus Secondary Structures to Consider Sparse RNA Structural Alignments"
+repository = "https://github.com/heartsh/consalifold"
 readme = "README.md"
 keywords = ["bioinformatics", "rna", "secondary-structure"]
 license = "MIT"
@@ -11,9 +11,11 @@ license = "MIT"
 [dependencies]
 num_cpus = "1.0"
 bio = "0.20"
-phyloprob = "0.1"
-phylofold = "0.1"
+# consprob = "0.1"
+consprob = {path = "../consprob"}
+# conshomfold = "0.1"
+conshomfold = {path = "../conshomfold"}
 
 [lib]
 path = "src/lib.rs"
-name = "phyloalifold"
+name = "consalifold"

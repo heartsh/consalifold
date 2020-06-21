@@ -7,5 +7,3 @@ target
 !.gitignore
 !README.md
 !assets/rfam_seed_stas.sth
-!assets/ref_sas/*
-!assets/sampled_rna_fams/*

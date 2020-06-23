@@ -1,11 +1,11 @@
 #! /usr/bin/env python
 
-import sample_rna_fams
+import compile_rna_fams
 import run_css_estimation_programs
 import get_stats_of_css_estimation_programs
 
 def main():
-  # sample_rna_fams.main() # If you resample data, different figures to the figures shown in the paper might be reproduced.
+  # compile_rna_fams.main()
   run_css_estimation_programs.main()
   get_stats_of_css_estimation_programs.main()
 

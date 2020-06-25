@@ -37,8 +37,8 @@ def main():
   probcons_plus_petfold_params = []
   clustalw_plus_petfold_params = []
   consalifold_elapsed_time = 0.
-  # rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
-  rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
+  rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
+  # rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
   mafft_dir_path = asset_dir_path + "/mafft"
   probcons_dir_path = asset_dir_path + "/probcons"
   clustalw_dir_path = asset_dir_path + "/clustalw"
@@ -123,8 +123,8 @@ def main():
   consalifold_elapsed_time += time.time() - begin
   pool.map(utils.run_command, clustalw_plus_centroidalifold_params_4_bpp_mat)
   sub_thread_num = 4
-  # rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
-  rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
+  rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
+  # rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
   for rna_seq_file in os.listdir(rna_seq_dir_path):
     if not rna_seq_file.endswith(".fa"):
       continue

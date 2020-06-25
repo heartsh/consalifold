@@ -32,7 +32,7 @@ def main():
   stas = [sta for sta in AlignIO.parse(rfam_seed_sta_file_path, "stockholm") if len(sta) <= max_seq_num and len(sta[0]) <= max_sa_len and is_valid(sta)]
   num_of_stas = len(stas)
   print("# RNA families: %d" % num_of_stas)
-  sample_rate = 0.05
+  sample_rate = 0.02
   num_of_samples = int(sample_rate * num_of_stas)
   print("# RNA families for micro benchmark: %d" % num_of_samples)
   sampled_stas = numpy.random.choice(stas, num_of_samples, replace = False)

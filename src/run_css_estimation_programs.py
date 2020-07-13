@@ -36,6 +36,7 @@ def main():
   mafft_plus_petfold_params = []
   probcons_plus_petfold_params = []
   clustalw_plus_petfold_params = []
+  petfold_params_4_elapsed_time = []
   consalifold_elapsed_time = 0.
   rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
   # rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
@@ -122,7 +123,7 @@ def main():
   pool.map(utils.run_command, probcons_plus_centroidalifold_params_4_bpp_mat)
   consalifold_elapsed_time += time.time() - begin
   pool.map(utils.run_command, clustalw_plus_centroidalifold_params_4_bpp_mat)
-  sub_thread_num = 4
+  sub_thread_num = 4 if num_of_threads <= 8 else 8
   rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
   # rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
   for rna_seq_file in os.listdir(rna_seq_dir_path):
@@ -142,6 +143,9 @@ def main():
     mafft_plus_centroidalifold_output_dir_path = os.path.join(mafft_plus_centroidalifold_dir_path, rna_family_name)
     probcons_plus_centroidalifold_output_dir_path = os.path.join(probcons_plus_centroidalifold_dir_path, rna_family_name)
     clustalw_plus_centroidalifold_output_dir_path = os.path.join(clustalw_plus_centroidalifold_dir_path, rna_family_name)
+    mafft_plus_petfold_output_dir_path = os.path.join(mafft_plus_petfold_dir_path, rna_family_name)
+    probcons_plus_petfold_output_dir_path = os.path.join(probcons_plus_petfold_dir_path, rna_family_name)
+    clustalw_plus_petfold_output_dir_path = os.path.join(clustalw_plus_petfold_dir_path, rna_family_name)
     if not os.path.isdir(mafft_plus_consalifold_output_dir_path):
       os.mkdir(mafft_plus_consalifold_output_dir_path)
     if not os.path.isdir(probcons_plus_consalifold_output_dir_path):
@@ -154,6 +158,12 @@ def main():
       os.mkdir(probcons_plus_centroidalifold_output_dir_path)
     if not os.path.isdir(clustalw_plus_centroidalifold_output_dir_path):
       os.mkdir(clustalw_plus_centroidalifold_output_dir_path)
+    if not os.path.isdir(mafft_plus_petfold_output_dir_path):
+      os.mkdir(mafft_plus_petfold_output_dir_path)
+    if not os.path.isdir(probcons_plus_petfold_output_dir_path):
+      os.mkdir(probcons_plus_petfold_output_dir_path)
+    if not os.path.isdir(clustalw_plus_petfold_output_dir_path):
+      os.mkdir(clustalw_plus_petfold_output_dir_path)
     mafft_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + mafft_output_file_path + " -c " + mafft_plus_centroidalifold_bpp_mat_file_path + " -o " + mafft_plus_consalifold_output_dir_path
     probcons_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + probcons_output_file_path + " -c " + probcons_plus_centroidalifold_bpp_mat_file_path + " -o " + probcons_plus_consalifold_output_dir_path
     clustalw_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + clustalw_output_file_path + " -c " + clustalw_plus_centroidalifold_bpp_mat_file_path + " -o " + clustalw_plus_consalifold_output_dir_path
@@ -172,15 +182,10 @@ def main():
     mafft_output_file_path_2 = os.path.join(mafft_dir_path, rna_family_name + ".fa")
     probcons_output_file_path_2 = os.path.join(probcons_dir_path, rna_family_name + ".fa")
     clustalw_file_path_2 = os.path.join(clustalw_dir_path, rna_family_name + ".fa")
-    mafft_plus_petfold_output_file_path = os.path.join(mafft_plus_petfold_dir_path, output_file)
-    probcons_plus_petfold_output_file_path = os.path.join(probcons_plus_petfold_dir_path, output_file)
-    clustalw_plus_petfold_output_file_path = os.path.join(clustalw_plus_petfold_dir_path, output_file)
-    mafft_plus_petfold_params.insert(0, (mafft_output_file_path_2, mafft_plus_petfold_output_file_path))
-    probcons_plus_petfold_params.insert(0, (probcons_output_file_path_2, probcons_plus_petfold_output_file_path))
-    clustalw_plus_petfold_params.insert(0, (clustalw_file_path_2, clustalw_plus_petfold_output_file_path))
     for gamma in gammas:
       gamma_str = str(gamma) if gamma < 1 else str(int(gamma))
       output_file = "gamma=" + gamma_str + ".sth"
+      petfold_gamma_str = str(1 / gamma) if gamma > 1 else str(int(1 / gamma))
       mafft_plus_centroidalifold_output_file_path = os.path.join(mafft_plus_centroidalifold_output_dir_path, output_file)
       probcons_plus_centroidalifold_output_file_path = os.path.join(probcons_plus_centroidalifold_output_dir_path, output_file)
       clustalw_plus_centroidalifold_output_file_path = os.path.join(clustalw_plus_centroidalifold_output_dir_path, output_file)
@@ -189,6 +194,15 @@ def main():
       clustalw_plus_centroidalifold_params.insert(0, (clustalw_output_file_path, clustalw_plus_centroidalifold_output_file_path, gamma_str))
       if gamma == 1:
         centroidalifold_params_4_elapsed_time.insert(0, (probcons_output_file_path, probcons_plus_centroidalifold_output_file_path, gamma_str))
+      mafft_plus_petfold_output_file_path = os.path.join(mafft_plus_petfold_output_dir_path, output_file)
+      probcons_plus_petfold_output_file_path = os.path.join(probcons_plus_petfold_output_dir_path, output_file)
+      clustalw_plus_petfold_output_file_path = os.path.join(clustalw_plus_petfold_output_dir_path, output_file)
+      mafft_plus_petfold_params.insert(0, (mafft_output_file_path_2, mafft_plus_petfold_output_file_path, petfold_gamma_str))
+      probcons_plus_petfold_params.insert(0, (probcons_output_file_path_2, probcons_plus_petfold_output_file_path, petfold_gamma_str))
+      clustalw_plus_petfold_params.insert(0, (clustalw_file_path_2, clustalw_plus_petfold_output_file_path, petfold_gamma_str))
+      if gamma == 1:
+        petfold_params_4_elapsed_time.insert(0, (probcons_output_file_path_2, probcons_plus_petfold_output_file_path, petfold_gamma_str))
+  # ConsAliFold's execution.
   pool = multiprocessing.Pool(int(num_of_threads / sub_thread_num))
   pool.map(utils.run_command, mafft_plus_consalifold_params)
   pool.map(utils.run_command, probcons_plus_consalifold_params)
@@ -196,6 +210,7 @@ def main():
   begin = time.time()
   pool.map(utils.run_command, consalifold_params_4_elapsed_time)
   consalifold_elapsed_time += time.time() - begin
+  # CentroidAlifold's execution.
   pool = multiprocessing.Pool(num_of_threads)
   pool.map(run_centroidalifold, mafft_plus_centroidalifold_params)
   pool.map(run_centroidalifold, probcons_plus_centroidalifold_params)
@@ -203,16 +218,19 @@ def main():
   begin = time.time()
   pool.map(run_centroidalifold, centroidalifold_params_4_elapsed_time)
   centroidalifold_elapsed_time = time.time() - begin
+  # PetFold's execution.
+  pool.map(run_petfold, mafft_plus_petfold_params)
+  pool.map(run_petfold, probcons_plus_petfold_params)
+  pool.map(run_petfold, clustalw_plus_petfold_params)
+  begin = time.time()
+  pool.map(run_petfold, petfold_params_4_elapsed_time)
+  petfold_elapsed_time = time.time() - begin
+  # RNAalifold's execution.
   pool.map(run_rnaalifold, mafft_plus_rnaalifold_params)
   begin = time.time()
   pool.map(run_rnaalifold, probcons_plus_rnaalifold_params)
   rnaalifold_elapsed_time = time.time() - begin
   pool.map(run_rnaalifold, clustalw_plus_rnaalifold_params)
-  pool.map(run_petfold, mafft_plus_petfold_params)
-  begin = time.time()
-  pool.map(run_petfold, probcons_plus_petfold_params)
-  petfold_elapsed_time = time.time() - begin
-  pool.map(run_petfold, clustalw_plus_petfold_params)
   print("The elapsed time of ConsAlifold = %f [s]." % consalifold_elapsed_time)
   print("The elapsed time of CentroidAlifold = %f [s]." % centroidalifold_elapsed_time)
   print("The elapsed time of RNAalifold = %f [s]." % rnaalifold_elapsed_time)
@@ -266,8 +284,8 @@ def run_rnaalifold(rnaalifold_params):
   AlignIO.write(sta, rnaalifold_output_file_path, "stockholm")
 
 def run_petfold(petfold_params):
-  (sa_file_path, petfold_output_file_path) = petfold_params
-  petfold_command = "PETfold -f " + sa_file_path
+  (sa_file_path, petfold_output_file_path, gamma_str) = petfold_params
+  petfold_command = "PETfold -f " + sa_file_path + " -a " + gamma_str
   (output, _, _) = utils.run_command(petfold_command)
   css = str(output).strip().split("\\n")[2].split("\\t")[1].strip()
   sta = AlignIO.read(sa_file_path, "fasta")

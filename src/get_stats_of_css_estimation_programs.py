@@ -5,11 +5,12 @@ from Bio import SeqIO
 import seaborn
 from matplotlib import pyplot
 import os
-from sklearn.metrics import roc_curve
-from sklearn.metrics import auc
 import math
 from math import sqrt
 import multiprocessing
+
+seaborn.set()
+pyplot.rcParams['legend.handlelength'] = 0
 
 def main():
   (current_work_dir_path, asset_dir_path, program_dir_path, conda_program_dir_path) = utils.get_dir_paths()
@@ -29,6 +30,11 @@ def main():
   clustalw_plus_consalifold_fprs = []
   clustalw_plus_consalifold_f1_scores = []
   clustalw_plus_consalifold_mccs = []
+  ref_sa_plus_consalifold_ppvs = []
+  ref_sa_plus_consalifold_senss = []
+  ref_sa_plus_consalifold_fprs = []
+  ref_sa_plus_consalifold_f1_scores = []
+  ref_sa_plus_consalifold_mccs = []
   mafft_plus_centroidalifold_ppvs = []
   mafft_plus_centroidalifold_senss = []
   mafft_plus_centroidalifold_fprs = []
@@ -44,6 +50,11 @@ def main():
   clustalw_plus_centroidalifold_fprs = []
   clustalw_plus_centroidalifold_f1_scores = []
   clustalw_plus_centroidalifold_mccs = []
+  ref_sa_plus_centroidalifold_ppvs = []
+  ref_sa_plus_centroidalifold_senss = []
+  ref_sa_plus_centroidalifold_fprs = []
+  ref_sa_plus_centroidalifold_f1_scores = []
+  ref_sa_plus_centroidalifold_mccs = []
   mafft_plus_petfold_ppvs = []
   mafft_plus_petfold_senss = []
   mafft_plus_petfold_fprs = []
@@ -59,88 +70,54 @@ def main():
   clustalw_plus_petfold_fprs = []
   clustalw_plus_petfold_f1_scores = []
   clustalw_plus_petfold_mccs = []
+  ref_sa_plus_petfold_ppvs = []
+  ref_sa_plus_petfold_senss = []
+  ref_sa_plus_petfold_fprs = []
+  ref_sa_plus_petfold_f1_scores = []
+  ref_sa_plus_petfold_mccs = []
   mafft_plus_rnaalifold_ppv = mafft_plus_rnaalifold_sens = mafft_plus_rnaalifold_fpr = mafft_plus_rnaalifold_f1_score = mafft_plus_rnaalifold_mcc = 0.
   probcons_plus_rnaalifold_ppv = probcons_plus_rnaalifold_sens = probcons_plus_rnaalifold_fpr = probcons_plus_rnaalifold_f1_score = probcons_plus_rnaalifold_mcc = 0.
   clustalw_plus_rnaalifold_ppv = clustalw_plus_rnaalifold_sens = clustalw_plus_rnaalifold_fpr = clustalw_plus_rnaalifold_f1_score = clustalw_plus_rnaalifold_mcc = 0.
-  col_mafft_plus_consalifold_ppvs = []
-  col_mafft_plus_consalifold_senss = []
-  col_mafft_plus_consalifold_fprs = []
-  col_mafft_plus_consalifold_f1_scores = []
-  col_mafft_plus_consalifold_mccs = []
-  col_probcons_plus_consalifold_ppvs = []
-  col_probcons_plus_consalifold_senss = []
-  col_probcons_plus_consalifold_fprs = []
-  col_probcons_plus_consalifold_f1_scores = []
-  col_probcons_plus_consalifold_mccs = []
-  col_clustalw_plus_consalifold_ppvs = []
-  col_clustalw_plus_consalifold_senss = []
-  col_clustalw_plus_consalifold_fprs = []
-  col_clustalw_plus_consalifold_f1_scores = []
-  col_clustalw_plus_consalifold_mccs = []
-  col_mafft_plus_centroidalifold_ppvs = []
-  col_mafft_plus_centroidalifold_senss = []
-  col_mafft_plus_centroidalifold_fprs = []
-  col_mafft_plus_centroidalifold_f1_scores = []
-  col_mafft_plus_centroidalifold_mccs = []
-  col_probcons_plus_centroidalifold_ppvs = []
-  col_probcons_plus_centroidalifold_senss = []
-  col_probcons_plus_centroidalifold_fprs = []
-  col_probcons_plus_centroidalifold_f1_scores = []
-  col_probcons_plus_centroidalifold_mccs = []
-  col_clustalw_plus_centroidalifold_ppvs = []
-  col_clustalw_plus_centroidalifold_senss = []
-  col_clustalw_plus_centroidalifold_fprs = []
-  col_clustalw_plus_centroidalifold_f1_scores = []
-  col_clustalw_plus_centroidalifold_mccs = []
-  col_mafft_plus_petfold_ppvs = []
-  col_mafft_plus_petfold_senss = []
-  col_mafft_plus_petfold_fprs = []
-  col_mafft_plus_petfold_f1_scores = []
-  col_mafft_plus_petfold_mccs = []
-  col_probcons_plus_petfold_ppvs = []
-  col_probcons_plus_petfold_senss = []
-  col_probcons_plus_petfold_fprs = []
-  col_probcons_plus_petfold_f1_scores = []
-  col_probcons_plus_petfold_mccs = []
-  col_clustalw_plus_petfold_ppvs = []
-  col_clustalw_plus_petfold_senss = []
-  col_clustalw_plus_petfold_fprs = []
-  col_clustalw_plus_petfold_f1_scores = []
-  col_clustalw_plus_petfold_mccs = []
-  col_mafft_plus_rnaalifold_ppv = mafft_plus_rnaalifold_sens = mafft_plus_rnaalifold_fpr = mafft_plus_rnaalifold_f1_score = mafft_plus_rnaalifold_mcc = 0.
-  col_probcons_plus_rnaalifold_ppv = probcons_plus_rnaalifold_sens = probcons_plus_rnaalifold_fpr = probcons_plus_rnaalifold_f1_score = probcons_plus_rnaalifold_mcc = 0.
-  col_clustalw_plus_rnaalifold_ppv = clustalw_plus_rnaalifold_sens = clustalw_plus_rnaalifold_fpr = clustalw_plus_rnaalifold_f1_score = clustalw_plus_rnaalifold_mcc = 0.
+  ref_sa_plus_rnaalifold_ppv = ref_sa_plus_rnaalifold_sens = ref_sa_plus_rnaalifold_fpr = ref_sa_plus_rnaalifold_f1_score = ref_sa_plus_rnaalifold_mcc = 0.
   gammas = [2. ** i for i in range(-7, 11)]
-  rna_fam_dir_path = asset_dir_path + "/compiled_rna_fams"
-  # rna_fam_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
-  ref_sa_dir_path = asset_dir_path + "/ref_sas"
-  # ref_sa_dir_path = asset_dir_path + "/ref_sas_4_micro_bench"
+  # rna_fam_dir_path = asset_dir_path + "/compiled_rna_fams"
+  rna_fam_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
+  # ref_sa_dir_path = asset_dir_path + "/ref_sas"
+  ref_sa_dir_path = asset_dir_path + "/ref_sas_4_micro_bench"
   mafft_plus_consalifold_css_dir_path = asset_dir_path + "/mafft_plus_consalifold"
   probcons_plus_consalifold_css_dir_path = asset_dir_path + "/probcons_plus_consalifold"
   clustalw_plus_consalifold_css_dir_path = asset_dir_path + "/clustalw_plus_consalifold"
+  ref_sa_plus_consalifold_css_dir_path = asset_dir_path + "/ref_sa_plus_consalifold"
   mafft_plus_centroidalifold_css_dir_path = asset_dir_path + "/mafft_plus_centroidalifold"
   probcons_plus_centroidalifold_css_dir_path = asset_dir_path + "/probcons_plus_centroidalifold"
   clustalw_plus_centroidalifold_css_dir_path = asset_dir_path + "/clustalw_plus_centroidalifold"
+  ref_sa_plus_centroidalifold_css_dir_path = asset_dir_path + "/ref_sa_plus_centroidalifold"
   mafft_plus_rnaalifold_css_dir_path = asset_dir_path + "/mafft_plus_rnaalifold"
   probcons_plus_rnaalifold_css_dir_path = asset_dir_path + "/probcons_plus_rnaalifold"
   clustalw_plus_rnaalifold_css_dir_path = asset_dir_path + "/clustalw_plus_rnaalifold"
+  ref_sa_plus_rnaalifold_css_dir_path = asset_dir_path + "/ref_sa_plus_rnaalifold"
   mafft_plus_petfold_css_dir_path = asset_dir_path + "/mafft_plus_petfold"
   probcons_plus_petfold_css_dir_path = asset_dir_path + "/probcons_plus_petfold"
   clustalw_plus_petfold_css_dir_path = asset_dir_path + "/clustalw_plus_petfold"
+  ref_sa_plus_petfold_css_dir_path = asset_dir_path + "/ref_sa_plus_petfold"
   pool = multiprocessing.Pool(num_of_threads)
   for gamma in gammas:
     mafft_plus_consalifold_count_params = []
     probcons_plus_consalifold_count_params = []
     clustalw_plus_consalifold_count_params = []
+    ref_sa_plus_consalifold_count_params = []
     mafft_plus_centroidalifold_count_params = []
     probcons_plus_centroidalifold_count_params = []
     clustalw_plus_centroidalifold_count_params = []
+    ref_sa_plus_centroidalifold_count_params = []
     mafft_plus_petfold_count_params = []
     probcons_plus_petfold_count_params = []
     clustalw_plus_petfold_count_params = []
+    ref_sa_plus_petfold_count_params = []
     mafft_plus_rnaalifold_count_params = []
     probcons_plus_rnaalifold_count_params = []
     clustalw_plus_rnaalifold_count_params = []
+    ref_sa_plus_rnaalifold_count_params = []
     gamma_str = str(gamma) if gamma < 1 else str(int(gamma))
     for rna_fam_file in os.listdir(rna_fam_dir_path):
       if not rna_fam_file.endswith(".fa"):
@@ -156,12 +133,15 @@ def main():
       mafft_plus_consalifold_estimated_css_dir_path = os.path.join(mafft_plus_consalifold_css_dir_path, rna_fam_name)
       probcons_plus_consalifold_estimated_css_dir_path = os.path.join(probcons_plus_consalifold_css_dir_path, rna_fam_name)
       clustalw_plus_consalifold_estimated_css_dir_path = os.path.join(clustalw_plus_consalifold_css_dir_path, rna_fam_name)
+      ref_sa_plus_consalifold_estimated_css_dir_path = os.path.join(ref_sa_plus_consalifold_css_dir_path, rna_fam_name)
       mafft_plus_centroidalifold_estimated_css_dir_path = os.path.join(mafft_plus_centroidalifold_css_dir_path, rna_fam_name)
       probcons_plus_centroidalifold_estimated_css_dir_path = os.path.join(probcons_plus_centroidalifold_css_dir_path, rna_fam_name)
       clustalw_plus_centroidalifold_estimated_css_dir_path = os.path.join(clustalw_plus_centroidalifold_css_dir_path, rna_fam_name)
+      ref_sa_plus_centroidalifold_estimated_css_dir_path = os.path.join(ref_sa_plus_centroidalifold_css_dir_path, rna_fam_name)
       mafft_plus_petfold_estimated_css_dir_path = os.path.join(mafft_plus_petfold_css_dir_path, rna_fam_name)
       probcons_plus_petfold_estimated_css_dir_path = os.path.join(probcons_plus_petfold_css_dir_path, rna_fam_name)
       clustalw_plus_petfold_estimated_css_dir_path = os.path.join(clustalw_plus_petfold_css_dir_path, rna_fam_name)
+      ref_sa_plus_petfold_estimated_css_dir_path = os.path.join(ref_sa_plus_petfold_css_dir_path, rna_fam_name)
       mafft_plus_consalifold_estimated_css_file_path = os.path.join(mafft_plus_consalifold_estimated_css_dir_path, "gamma=" + gamma_str + ".sth")
       estimated_css_and_flat_css = utils.get_css_and_flat_css(mafft_plus_consalifold_estimated_css_file_path)
       mafft_plus_consalifold_count_params.insert(0, (rna_seq_lens, estimated_css_and_flat_css, ref_csss_and_flat_csss, sta_len))
@@ -171,6 +151,9 @@ def main():
       clustalw_plus_consalifold_estimated_css_file_path = os.path.join(clustalw_plus_consalifold_estimated_css_dir_path, "gamma=" + gamma_str + ".sth")
       estimated_css_and_flat_css = utils.get_css_and_flat_css(clustalw_plus_consalifold_estimated_css_file_path)
       clustalw_plus_consalifold_count_params.insert(0, (rna_seq_lens, estimated_css_and_flat_css, ref_csss_and_flat_csss, sta_len))
+      ref_sa_plus_consalifold_estimated_css_file_path = os.path.join(ref_sa_plus_consalifold_estimated_css_dir_path, "gamma=" + gamma_str + ".sth")
+      estimated_css_and_flat_css = utils.get_css_and_flat_css(ref_sa_plus_consalifold_estimated_css_file_path)
+      ref_sa_plus_consalifold_count_params.insert(0, (rna_seq_lens, estimated_css_and_flat_css, ref_csss_and_flat_csss, sta_len))
       mafft_plus_centroidalifold_estimated_css_file_path = os.path.join(mafft_plus_centroidalifold_estimated_css_dir_path, "gamma=" + gamma_str + ".sth")
       estimated_css_and_flat_css = utils.get_css_and_flat_css(mafft_plus_centroidalifold_estimated_css_file_path)
       mafft_plus_centroidalifold_count_params.insert(0, (rna_seq_lens, estimated_css_and_flat_css, ref_csss_and_flat_csss, sta_len))
@@ -180,6 +163,9 @@ def main():
       clustalw_plus_centroidalifold_estimated_css_file_path = os.path.join(clustalw_plus_centroidalifold_estimated_css_dir_path, "gamma=" + gamma_str + ".sth")
       estimated_css_and_flat_css = utils.get_css_and_flat_css(clustalw_plus_centroidalifold_estimated_css_file_path)
       clustalw_plus_centroidalifold_count_params.insert(0, (rna_seq_lens, estimated_css_and_flat_css, ref_csss_and_flat_csss, sta_len))
+      ref_sa_plus_centroidalifold_estimated_css_file_path = os.path.join(ref_sa_plus_centroidalifold_estimated_css_dir_path, "gamma=" + gamma_str + ".sth")
+      estimated_css_and_flat_css = utils.get_css_and_flat_css(ref_sa_plus_centroidalifold_estimated_css_file_path)
+      ref_sa_plus_centroidalifold_count_params.insert(0, (rna_seq_lens, estimated_css_and_flat_css, ref_csss_and_flat_csss, sta_len))
       mafft_plus_petfold_estimated_css_file_path = os.path.join(mafft_plus_petfold_estimated_css_dir_path, "gamma=" + gamma_str + ".sth")
       estimated_css_and_flat_css = utils.get_css_and_flat_css(mafft_plus_petfold_estimated_css_file_path)
       mafft_plus_petfold_count_params.insert(0, (rna_seq_lens, estimated_css_and_flat_css, ref_csss_and_flat_csss, sta_len))
@@ -189,6 +175,9 @@ def main():
       clustalw_plus_petfold_estimated_css_file_path = os.path.join(clustalw_plus_petfold_estimated_css_dir_path, "gamma=" + gamma_str + ".sth")
       estimated_css_and_flat_css = utils.get_css_and_flat_css(clustalw_plus_petfold_estimated_css_file_path)
       clustalw_plus_petfold_count_params.insert(0, (rna_seq_lens, estimated_css_and_flat_css, ref_csss_and_flat_csss, sta_len))
+      ref_sa_plus_petfold_estimated_css_file_path = os.path.join(ref_sa_plus_petfold_estimated_css_dir_path, "gamma=" + gamma_str + ".sth")
+      estimated_css_and_flat_css = utils.get_css_and_flat_css(ref_sa_plus_petfold_estimated_css_file_path)
+      ref_sa_plus_petfold_count_params.insert(0, (rna_seq_lens, estimated_css_and_flat_css, ref_csss_and_flat_csss, sta_len))
       if gamma == 1.:
         mafft_plus_rnaalifold_estimated_css_file_path = os.path.join(mafft_plus_rnaalifold_css_dir_path, rna_fam_name + ".sth")
         estimated_css_and_flat_css = utils.get_css_and_flat_css(mafft_plus_rnaalifold_estimated_css_file_path)
@@ -199,6 +188,9 @@ def main():
         clustalw_plus_rnaalifold_estimated_css_file_path = os.path.join(clustalw_plus_rnaalifold_css_dir_path, rna_fam_name + ".sth")
         estimated_css_and_flat_css = utils.get_css_and_flat_css(clustalw_plus_rnaalifold_estimated_css_file_path)
         clustalw_plus_rnaalifold_count_params.insert(0, (rna_seq_lens, estimated_css_and_flat_css, ref_csss_and_flat_csss, sta_len))
+        ref_sa_plus_rnaalifold_estimated_css_file_path = os.path.join(ref_sa_plus_rnaalifold_css_dir_path, rna_fam_name + ".sth")
+        estimated_css_and_flat_css = utils.get_css_and_flat_css(ref_sa_plus_rnaalifold_estimated_css_file_path)
+        ref_sa_plus_rnaalifold_count_params.insert(0, (rna_seq_lens, estimated_css_and_flat_css, ref_csss_and_flat_csss, sta_len))
     results = pool.map(get_bin_counts, mafft_plus_consalifold_count_params)
     ppv, sens, fpr, f1_score, mcc, col_ppv, col_sens, col_fpr, col_f1_score, col_mcc, = get_metrics(final_sum(results))
     mafft_plus_consalifold_ppvs.insert(0, ppv)
@@ -206,11 +198,6 @@ def main():
     mafft_plus_consalifold_fprs.insert(0, fpr)
     mafft_plus_consalifold_f1_scores.append(f1_score)
     mafft_plus_consalifold_mccs.append(mcc)
-    col_mafft_plus_consalifold_ppvs.insert(0, col_ppv)
-    col_mafft_plus_consalifold_senss.insert(0, col_sens)
-    col_mafft_plus_consalifold_fprs.insert(0, col_fpr)
-    col_mafft_plus_consalifold_f1_scores.append(col_f1_score)
-    col_mafft_plus_consalifold_mccs.append(col_mcc)
     results = pool.map(get_bin_counts, probcons_plus_consalifold_count_params)
     ppv, sens, fpr, f1_score, mcc, col_ppv, col_sens, col_fpr, col_f1_score, col_mcc, = get_metrics(final_sum(results))
     probcons_plus_consalifold_ppvs.insert(0, ppv)
@@ -218,11 +205,6 @@ def main():
     probcons_plus_consalifold_fprs.insert(0, fpr)
     probcons_plus_consalifold_f1_scores.append(f1_score)
     probcons_plus_consalifold_mccs.append(mcc)
-    col_probcons_plus_consalifold_ppvs.insert(0, col_ppv)
-    col_probcons_plus_consalifold_senss.insert(0, col_sens)
-    col_probcons_plus_consalifold_fprs.insert(0, col_fpr)
-    col_probcons_plus_consalifold_f1_scores.append(col_f1_score)
-    col_probcons_plus_consalifold_mccs.append(col_mcc)
     results = pool.map(get_bin_counts, clustalw_plus_consalifold_count_params)
     ppv, sens, fpr, f1_score, mcc, col_ppv, col_sens, col_fpr, col_f1_score, col_mcc, = get_metrics(final_sum(results))
     clustalw_plus_consalifold_ppvs.insert(0, ppv)
@@ -230,11 +212,13 @@ def main():
     clustalw_plus_consalifold_fprs.insert(0, fpr)
     clustalw_plus_consalifold_f1_scores.append(f1_score)
     clustalw_plus_consalifold_mccs.append(mcc)
-    col_clustalw_plus_consalifold_ppvs.insert(0, col_ppv)
-    col_clustalw_plus_consalifold_senss.insert(0, col_sens)
-    col_clustalw_plus_consalifold_fprs.insert(0, col_fpr)
-    col_clustalw_plus_consalifold_f1_scores.append(col_f1_score)
-    col_clustalw_plus_consalifold_mccs.append(col_mcc)
+    results = pool.map(get_bin_counts, ref_sa_plus_consalifold_count_params)
+    ppv, sens, fpr, f1_score, mcc, col_ppv, col_sens, col_fpr, col_f1_score, col_mcc, = get_metrics(final_sum(results))
+    ref_sa_plus_consalifold_ppvs.insert(0, ppv)
+    ref_sa_plus_consalifold_senss.insert(0, sens)
+    ref_sa_plus_consalifold_fprs.insert(0, fpr)
+    ref_sa_plus_consalifold_f1_scores.append(f1_score)
+    ref_sa_plus_consalifold_mccs.append(mcc)
     results = pool.map(get_bin_counts, mafft_plus_centroidalifold_count_params)
     ppv, sens, fpr, f1_score, mcc, col_ppv, col_sens, col_fpr, col_f1_score, col_mcc, = get_metrics(final_sum(results))
     mafft_plus_centroidalifold_ppvs.insert(0, ppv)
@@ -242,11 +226,6 @@ def main():
     mafft_plus_centroidalifold_fprs.insert(0, fpr)
     mafft_plus_centroidalifold_f1_scores.append(f1_score)
     mafft_plus_centroidalifold_mccs.append(mcc)
-    col_mafft_plus_centroidalifold_ppvs.insert(0, col_ppv)
-    col_mafft_plus_centroidalifold_senss.insert(0, col_sens)
-    col_mafft_plus_centroidalifold_fprs.insert(0, col_fpr)
-    col_mafft_plus_centroidalifold_f1_scores.append(col_f1_score)
-    col_mafft_plus_centroidalifold_mccs.append(col_mcc)
     results = pool.map(get_bin_counts, probcons_plus_centroidalifold_count_params)
     ppv, sens, fpr, f1_score, mcc, col_ppv, col_sens, col_fpr, col_f1_score, col_mcc, = get_metrics(final_sum(results))
     probcons_plus_centroidalifold_ppvs.insert(0, ppv)
@@ -254,11 +233,6 @@ def main():
     probcons_plus_centroidalifold_fprs.insert(0, fpr)
     probcons_plus_centroidalifold_f1_scores.append(f1_score)
     probcons_plus_centroidalifold_mccs.append(mcc)
-    col_probcons_plus_centroidalifold_ppvs.insert(0, col_ppv)
-    col_probcons_plus_centroidalifold_senss.insert(0, col_sens)
-    col_probcons_plus_centroidalifold_fprs.insert(0, col_fpr)
-    col_probcons_plus_centroidalifold_f1_scores.append(col_f1_score)
-    col_probcons_plus_centroidalifold_mccs.append(col_mcc)
     results = pool.map(get_bin_counts, clustalw_plus_centroidalifold_count_params)
     ppv, sens, fpr, f1_score, mcc, col_ppv, col_sens, col_fpr, col_f1_score, col_mcc, = get_metrics(final_sum(results))
     clustalw_plus_centroidalifold_ppvs.insert(0, ppv)
@@ -266,11 +240,13 @@ def main():
     clustalw_plus_centroidalifold_fprs.insert(0, fpr)
     clustalw_plus_centroidalifold_f1_scores.append(f1_score)
     clustalw_plus_centroidalifold_mccs.append(mcc)
-    col_clustalw_plus_centroidalifold_ppvs.insert(0, col_ppv)
-    col_clustalw_plus_centroidalifold_senss.insert(0, col_sens)
-    col_clustalw_plus_centroidalifold_fprs.insert(0, col_fpr)
-    col_clustalw_plus_centroidalifold_f1_scores.append(col_f1_score)
-    col_clustalw_plus_centroidalifold_mccs.append(col_mcc)
+    results = pool.map(get_bin_counts, ref_sa_plus_centroidalifold_count_params)
+    ppv, sens, fpr, f1_score, mcc, col_ppv, col_sens, col_fpr, col_f1_score, col_mcc, = get_metrics(final_sum(results))
+    ref_sa_plus_centroidalifold_ppvs.insert(0, ppv)
+    ref_sa_plus_centroidalifold_senss.insert(0, sens)
+    ref_sa_plus_centroidalifold_fprs.insert(0, fpr)
+    ref_sa_plus_centroidalifold_f1_scores.append(f1_score)
+    ref_sa_plus_centroidalifold_mccs.append(mcc)
     results = pool.map(get_bin_counts, mafft_plus_petfold_count_params)
     ppv, sens, fpr, f1_score, mcc, col_ppv, col_sens, col_fpr, col_f1_score, col_mcc, = get_metrics(final_sum(results))
     mafft_plus_petfold_ppvs.insert(0, ppv)
@@ -278,11 +254,6 @@ def main():
     mafft_plus_petfold_fprs.insert(0, fpr)
     mafft_plus_petfold_f1_scores.append(f1_score)
     mafft_plus_petfold_mccs.append(mcc)
-    col_mafft_plus_petfold_ppvs.insert(0, col_ppv)
-    col_mafft_plus_petfold_senss.insert(0, col_sens)
-    col_mafft_plus_petfold_fprs.insert(0, col_fpr)
-    col_mafft_plus_petfold_f1_scores.append(col_f1_score)
-    col_mafft_plus_petfold_mccs.append(col_mcc)
     results = pool.map(get_bin_counts, probcons_plus_petfold_count_params)
     ppv, sens, fpr, f1_score, mcc, col_ppv, col_sens, col_fpr, col_f1_score, col_mcc, = get_metrics(final_sum(results))
     probcons_plus_petfold_ppvs.insert(0, ppv)
@@ -290,11 +261,6 @@ def main():
     probcons_plus_petfold_fprs.insert(0, fpr)
     probcons_plus_petfold_f1_scores.append(f1_score)
     probcons_plus_petfold_mccs.append(mcc)
-    col_probcons_plus_petfold_ppvs.insert(0, col_ppv)
-    col_probcons_plus_petfold_senss.insert(0, col_sens)
-    col_probcons_plus_petfold_fprs.insert(0, col_fpr)
-    col_probcons_plus_petfold_f1_scores.append(col_f1_score)
-    col_probcons_plus_petfold_mccs.append(col_mcc)
     results = pool.map(get_bin_counts, clustalw_plus_petfold_count_params)
     ppv, sens, fpr, f1_score, mcc, col_ppv, col_sens, col_fpr, col_f1_score, col_mcc, = get_metrics(final_sum(results))
     clustalw_plus_petfold_ppvs.insert(0, ppv)
@@ -302,11 +268,13 @@ def main():
     clustalw_plus_petfold_fprs.insert(0, fpr)
     clustalw_plus_petfold_f1_scores.append(f1_score)
     clustalw_plus_petfold_mccs.append(mcc)
-    col_clustalw_plus_petfold_ppvs.insert(0, col_ppv)
-    col_clustalw_plus_petfold_senss.insert(0, col_sens)
-    col_clustalw_plus_petfold_fprs.insert(0, col_fpr)
-    col_clustalw_plus_petfold_f1_scores.append(col_f1_score)
-    col_clustalw_plus_petfold_mccs.append(col_mcc)
+    results = pool.map(get_bin_counts, clustalw_plus_petfold_count_params)
+    ppv, sens, fpr, f1_score, mcc, col_ppv, col_sens, col_fpr, col_f1_score, col_mcc, = get_metrics(final_sum(results))
+    ref_sa_plus_petfold_ppvs.insert(0, ppv)
+    ref_sa_plus_petfold_senss.insert(0, sens)
+    ref_sa_plus_petfold_fprs.insert(0, fpr)
+    ref_sa_plus_petfold_f1_scores.append(f1_score)
+    ref_sa_plus_petfold_mccs.append(mcc)
     if gamma == 1.:
       results = pool.map(get_bin_counts, mafft_plus_rnaalifold_count_params)
       mafft_plus_rnaalifold_ppv, mafft_plus_rnaalifold_sens, mafft_plus_rnaalifold_fpr, mafft_plus_rnaalifold_f1_score, mafft_plus_rnaalifold_mcc, col_mafft_plus_rnaalifold_ppv, col_mafft_plus_rnaalifold_sens, col_mafft_plus_rnaalifold_fpr, col_mafft_plus_rnaalifold_f1_score, col_mafft_plus_rnaalifold_mcc, = get_metrics(final_sum(results))
@@ -314,150 +282,190 @@ def main():
       probcons_plus_rnaalifold_ppv, probcons_plus_rnaalifold_sens, probcons_plus_rnaalifold_fpr, probcons_plus_rnaalifold_f1_score, probcons_plus_rnaalifold_mcc, col_probcons_plus_rnaalifold_ppv, col_probcons_plus_rnaalifold_sens, col_probcons_plus_rnaalifold_fpr, col_probcons_plus_rnaalifold_f1_score, col_probcons_plus_rnaalifold_mcc, = get_metrics(final_sum(results))
       results = pool.map(get_bin_counts, clustalw_plus_rnaalifold_count_params)
       clustalw_plus_rnaalifold_ppv, clustalw_plus_rnaalifold_sens, clustalw_plus_rnaalifold_fpr, clustalw_plus_rnaalifold_f1_score, clustalw_plus_rnaalifold_mcc, col_clustalw_plus_rnaalifold_ppv, col_clustalw_plus_rnaalifold_sens, col_clustalw_plus_rnaalifold_fpr, col_clustalw_plus_rnaalifold_f1_score, col_clustalw_plus_rnaalifold_mcc, = get_metrics(final_sum(results))
-  line_1, = pyplot.plot(mafft_plus_consalifold_ppvs, mafft_plus_consalifold_senss, label = "MAFFT + ConsAlifold", marker = "o", linestyle = "-")
-  line_2, = pyplot.plot(probcons_plus_consalifold_ppvs, probcons_plus_consalifold_senss, label = "ProbCons + ConsAlifold", marker = "o", linestyle = "--")
-  line_3, = pyplot.plot(clustalw_plus_consalifold_ppvs, clustalw_plus_consalifold_senss, label = "ClustalW + ConsAlifold", marker = "o", linestyle = ":")
-  line_4, = pyplot.plot(mafft_plus_centroidalifold_ppvs, mafft_plus_centroidalifold_senss, label = "MAFFT + CentroidAlifold", marker = "s", linestyle = "-")
-  line_5, = pyplot.plot(probcons_plus_centroidalifold_ppvs, probcons_plus_centroidalifold_senss, label = "ProbCons + CentroidAlifold", marker = "s", linestyle = "--")
-  line_6, = pyplot.plot(clustalw_plus_centroidalifold_ppvs, clustalw_plus_centroidalifold_senss, label = "ClustalW + CentroidAlifold", marker = "s", linestyle = ":")
-  line_7, = pyplot.plot(mafft_plus_petfold_ppvs, mafft_plus_petfold_senss, label = "MAFFT + PETfold", marker = "^", linestyle = "-")
-  line_8, = pyplot.plot(probcons_plus_petfold_ppvs, probcons_plus_petfold_senss, label = "ProbCons + PETfold", marker = "^", linestyle = "--")
-  line_9, = pyplot.plot(clustalw_plus_petfold_ppvs, clustalw_plus_petfold_senss, label = "ClustalW + PETfold", marker = "^", linestyle = ":")
-  line_10, = pyplot.plot(mafft_plus_rnaalifold_ppv, mafft_plus_rnaalifold_sens, label = "MAFFT + RNAalifold", marker = "v", linestyle = "-")
-  line_11, = pyplot.plot(probcons_plus_rnaalifold_ppv, probcons_plus_rnaalifold_sens, label = "ProbCons + RNAalifold", marker = "v", linestyle = "--")
-  line_12, = pyplot.plot(clustalw_plus_rnaalifold_ppv, clustalw_plus_rnaalifold_sens, label = "ClustalW + RNAalifold", marker = "v", linestyle = ":")
+      ref_sa_plus_rnaalifold_ppv, ref_sa_plus_rnaalifold_sens, ref_sa_plus_rnaalifold_fpr, ref_sa_plus_rnaalifold_f1_score, ref_sa_plus_rnaalifold_mcc, col_ref_sa_plus_rnaalifold_ppv, col_ref_sa_plus_rnaalifold_sens, col_ref_sa_plus_rnaalifold_fpr, col_ref_sa_plus_rnaalifold_f1_score, col_ref_sa_plus_rnaalifold_mcc, = get_metrics(final_sum(results))
+  # Figure for ProbCons.
+  line_1, = pyplot.plot(probcons_plus_consalifold_ppvs, probcons_plus_consalifold_senss, label = "ProbCons + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(probcons_plus_centroidalifold_ppvs, probcons_plus_centroidalifold_senss, label = "ProbCons + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(probcons_plus_petfold_ppvs, probcons_plus_petfold_senss, label = "ProbCons + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(probcons_plus_rnaalifold_ppv, probcons_plus_rnaalifold_sens, label = "ProbCons + RNAalifold", marker = "v", linestyle = ":")
   pyplot.xlabel("Positive predictive value")
   pyplot.ylabel("Sensitivity")
-  pyplot.legend(handles = [line_1, line_2, line_3, line_4, line_5, line_6], loc = "lower left")
+  pyplot.legend(handles = [line_1, line_2, line_3, line_4], loc = "lower left")
   image_dir_path = asset_dir_path + "/images"
   if not os.path.exists(image_dir_path):
     os.mkdir(image_dir_path)
   pyplot.tight_layout()
-  pyplot.savefig(image_dir_path + "/ppvs_vs_senss_on_css_estimation.eps", bbox_inches = "tight")
+  pyplot.savefig(image_dir_path + "/ppvs_vs_senss_on_css_estimation_probcons.eps", bbox_inches = "tight")
+  pyplot.clf()
+  # Figure for MAFFT.
   pyplot.figure()
-  line_1, = pyplot.plot(mafft_plus_consalifold_fprs, mafft_plus_consalifold_senss, label = "MAFFT + ConsAlifold", marker = "o", linestyle = "-")
-  line_2, = pyplot.plot(probcons_plus_consalifold_fprs, probcons_plus_consalifold_senss, label = "ProbCons + ConsAlifold", marker = "o", linestyle = "--")
-  line_3, = pyplot.plot(clustalw_plus_consalifold_fprs, clustalw_plus_consalifold_senss, label = "ClustalW + ConsAlifold", marker = "o", linestyle = ":")
-  line_4, = pyplot.plot(mafft_plus_centroidalifold_fprs, mafft_plus_centroidalifold_senss, label = "MAFFT + CentroidAlifold", marker = "s", linestyle = "-")
-  line_5, = pyplot.plot(probcons_plus_centroidalifold_fprs, probcons_plus_centroidalifold_senss, label = "ProbCons + CentroidAlifold", marker = "s", linestyle = "--")
-  line_6, = pyplot.plot(clustalw_plus_centroidalifold_fprs, clustalw_plus_centroidalifold_senss, label = "ClustalW + CentroidAlifold", marker = "s", linestyle = ":")
-  line_7, = pyplot.plot(mafft_plus_petfold_fprs, mafft_plus_petfold_senss, label = "MAFFT + PETfold", marker = "^", linestyle = "-")
-  line_8, = pyplot.plot(probcons_plus_petfold_fprs, probcons_plus_petfold_senss, label = "ProbCons + PETfold", marker = "^", linestyle = "--")
-  line_9, = pyplot.plot(clustalw_plus_petfold_fprs, clustalw_plus_petfold_senss, label = "ClustalW + PETfold", marker = "^", linestyle = ":")
-  line_10, = pyplot.plot(mafft_plus_rnaalifold_fpr, mafft_plus_rnaalifold_sens, label = "MAFFT + RNAAlifold", marker = "v", linestyle = "-")
-  line_11, = pyplot.plot(probcons_plus_rnaalifold_fpr, probcons_plus_rnaalifold_sens, label = "ProbCons + RNAAlifold", marker = "v", linestyle = "--")
-  line_12, = pyplot.plot(clustalw_plus_rnaalifold_fpr, clustalw_plus_rnaalifold_sens, label = "ClustalW + RNAAlifold", marker = "v", linestyle = ":")
-  pyplot.xlabel("False positive rate")
-  pyplot.ylabel("Sensitivity")
-  pyplot.legend(handles = [line_7, line_8, line_9, line_10, line_11, line_12], loc = "lower right")
-  pyplot.tight_layout()
-  pyplot.savefig(image_dir_path + "/fprs_vs_senss_on_css_estimation.eps", bbox_inches = "tight")
-  pyplot.clf()
-  gammas = [i for i in range(-7, 11)]
-  line_1, = pyplot.plot(gammas, mafft_plus_consalifold_f1_scores, label = "MAFFT + ConsAlifold", marker = "o", linestyle = "-")
-  line_2, = pyplot.plot(gammas, probcons_plus_consalifold_f1_scores, label = "ProbCons + ConsAlifold", marker = "o", linestyle = "--")
-  line_3, = pyplot.plot(gammas, clustalw_plus_consalifold_f1_scores, label = "ClustalW + ConsAlifold", marker = "o", linestyle = ":")
-  line_4, = pyplot.plot(gammas, mafft_plus_centroidalifold_f1_scores, label = "MAFFT + CentroidAlifold", marker = "s", linestyle = "-")
-  line_5, = pyplot.plot(gammas, probcons_plus_centroidalifold_f1_scores, label = "ProbCons + CentroidAlifold", marker = "s", linestyle = "--")
-  line_6, = pyplot.plot(gammas, clustalw_plus_centroidalifold_f1_scores, label = "ClustalW + CentroidAlifold", marker = "s", linestyle = ":")
-  line_7, = pyplot.plot(gammas, mafft_plus_petfold_f1_scores, label = "MAFFT + PETfold", marker = "^", linestyle = "-")
-  line_8, = pyplot.plot(gammas, probcons_plus_petfold_f1_scores, label = "ProbCons + PETfold", marker = "^", linestyle = "--")
-  line_9, = pyplot.plot(gammas, clustalw_plus_petfold_f1_scores, label = "ClustalW + PETfold", marker = "^", linestyle = ":")
-  line_10, = pyplot.plot(-3., mafft_plus_rnaalifold_f1_score, label = "MAFFT + RNAAlifold", marker = "v", linestyle = "-")
-  line_11, = pyplot.plot(-4., probcons_plus_rnaalifold_f1_score, label = "ProbCons + RNAAlifold", marker = "v", linestyle = "--")
-  line_12, = pyplot.plot(-5., clustalw_plus_rnaalifold_f1_score, label = "ClustalW + RNAAlifold", marker = "v", linestyle = ":")
-  pyplot.xlabel("$\log_2 \gamma$")
-  pyplot.ylabel("F1 score")
-  pyplot.legend(handles = [line_1, line_2, line_3, line_4, line_5, line_6, line_7, line_8, line_9, line_10, line_11, line_12], loc = "lower right")
-  pyplot.tight_layout()
-  pyplot.savefig(image_dir_path + "/gammas_vs_f1_scores_on_css_estimation.eps", bbox_inches = "tight")
-  pyplot.clf()
-  line_1, = pyplot.plot(gammas, mafft_plus_consalifold_mccs, label = "MAFFT + ConsAlifold", marker = "o", linestyle = "-")
-  line_2, = pyplot.plot(gammas, probcons_plus_consalifold_mccs, label = "ProbCons + ConsAlifold", marker = "o", linestyle = "--")
-  line_3, = pyplot.plot(gammas, clustalw_plus_consalifold_mccs, label = "ClustalW + ConsAlifold", marker = "o", linestyle = ":")
-  line_4, = pyplot.plot(gammas, mafft_plus_centroidalifold_mccs, label = "MAFFT + CentroidAlifold", marker = "s", linestyle = "-")
-  line_5, = pyplot.plot(gammas, probcons_plus_centroidalifold_mccs, label = "ProbCons + CentroidAlifold", marker = "s", linestyle = "--")
-  line_6, = pyplot.plot(gammas, clustalw_plus_centroidalifold_mccs, label = "ClustalW + CentroidAlifold", marker = "s", linestyle = ":")
-  line_7, = pyplot.plot(gammas, mafft_plus_petfold_mccs, label = "MAFFT + PETfold", marker = "^", linestyle = "-")
-  line_8, = pyplot.plot(gammas, probcons_plus_petfold_mccs, label = "ProbCons + PETfold", marker = "^", linestyle = "--")
-  line_9, = pyplot.plot(gammas, clustalw_plus_petfold_mccs, label = "ClustalW + PETfold", marker = "^", linestyle = ":")
-  line_10, = pyplot.plot(-3., mafft_plus_rnaalifold_mcc, label = "MAFFT + RNAAlifold", marker = "v", linestyle = "-")
-  line_11, = pyplot.plot(-4., probcons_plus_rnaalifold_mcc, label = "ProbCons + RNAAlifold", marker = "v", linestyle = "--")
-  line_12, = pyplot.plot(-5., clustalw_plus_rnaalifold_mcc, label = "ClustalW + RNAAlifold", marker = "v", linestyle = ":")
-  pyplot.xlabel("$\log_2 \gamma$")
-  pyplot.ylabel("MCC")
-  pyplot.tight_layout()
-  pyplot.savefig(image_dir_path + "/gammas_vs_mccs_on_css_estimation.eps", bbox_inches = "tight")
-  pyplot.clf()
-  line_1, = pyplot.plot(col_mafft_plus_consalifold_ppvs, col_mafft_plus_consalifold_senss, label = "MAFFT + ConsAlifold", marker = "o", linestyle = "-")
-  line_2, = pyplot.plot(col_probcons_plus_consalifold_ppvs, col_probcons_plus_consalifold_senss, label = "ProbCons + ConsAlifold", marker = "o", linestyle = "--")
-  line_3, = pyplot.plot(col_clustalw_plus_consalifold_ppvs, col_clustalw_plus_consalifold_senss, label = "ClustalW + ConsAlifold", marker = "o", linestyle = ":")
-  line_4, = pyplot.plot(col_mafft_plus_centroidalifold_ppvs, col_mafft_plus_centroidalifold_senss, label = "MAFFT + CentroidAlifold", marker = "s", linestyle = "-")
-  line_5, = pyplot.plot(col_probcons_plus_centroidalifold_ppvs, col_probcons_plus_centroidalifold_senss, label = "ProbCons + CentroidAlifold", marker = "s", linestyle = "--")
-  line_6, = pyplot.plot(col_clustalw_plus_centroidalifold_ppvs, col_clustalw_plus_centroidalifold_senss, label = "ClustalW + CentroidAlifold", marker = "s", linestyle = ":")
-  line_7, = pyplot.plot(col_mafft_plus_petfold_ppvs, col_mafft_plus_petfold_senss, label = "MAFFT + PETfold", marker = "^", linestyle = "-")
-  line_8, = pyplot.plot(col_probcons_plus_petfold_ppvs, col_probcons_plus_petfold_senss, label = "ProbCons + PETfold", marker = "^", linestyle = "--")
-  line_9, = pyplot.plot(col_clustalw_plus_petfold_ppvs, col_clustalw_plus_petfold_senss, label = "ClustalW + PETfold", marker = "^", linestyle = ":")
-  line_10, = pyplot.plot(col_mafft_plus_rnaalifold_ppv, col_mafft_plus_rnaalifold_sens, label = "MAFFT + RNAalifold", marker = "v", linestyle = "-")
-  line_11, = pyplot.plot(col_probcons_plus_rnaalifold_ppv, col_probcons_plus_rnaalifold_sens, label = "ProbCons + RNAalifold", marker = "v", linestyle = "--")
-  line_12, = pyplot.plot(col_clustalw_plus_rnaalifold_ppv, col_clustalw_plus_rnaalifold_sens, label = "ClustalW + RNAalifold", marker = "v", linestyle = ":")
+  line_1, = pyplot.plot(mafft_plus_consalifold_ppvs, mafft_plus_consalifold_senss, label = "MAFFT + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(mafft_plus_centroidalifold_ppvs, mafft_plus_centroidalifold_senss, label = "MAFFT + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(mafft_plus_petfold_ppvs, mafft_plus_petfold_senss, label = "MAFFT + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(mafft_plus_rnaalifold_ppv, mafft_plus_rnaalifold_sens, label = "MAFFT + RNAalifold", marker = "v", linestyle = ":")
   pyplot.xlabel("Positive predictive value")
   pyplot.ylabel("Sensitivity")
-  pyplot.legend(handles = [line_1, line_2, line_3, line_4, line_5, line_6], loc = "upper right")
+  pyplot.legend(handles = [line_1, line_2, line_3, line_4], loc = "lower left")
   pyplot.tight_layout()
-  pyplot.savefig(image_dir_path + "/col_ppvs_vs_senss_on_css_estimation.eps", bbox_inches = "tight")
+  pyplot.savefig(image_dir_path + "/ppvs_vs_senss_on_css_estimation_mafft.eps", bbox_inches = "tight")
+  pyplot.clf()
+  # Figure for ClustalW.
   pyplot.figure()
-  line_1, = pyplot.plot(col_mafft_plus_consalifold_fprs, col_mafft_plus_consalifold_senss, label = "MAFFT + ConsAlifold", marker = "o", linestyle = "-")
-  line_2, = pyplot.plot(col_probcons_plus_consalifold_fprs, col_probcons_plus_consalifold_senss, label = "ProbCons + ConsAlifold", marker = "o", linestyle = "--")
-  line_3, = pyplot.plot(col_clustalw_plus_consalifold_fprs, col_clustalw_plus_consalifold_senss, label = "ClustalW + ConsAlifold", marker = "o", linestyle = ":")
-  line_4, = pyplot.plot(col_mafft_plus_centroidalifold_fprs, col_mafft_plus_centroidalifold_senss, label = "MAFFT + CentroidAlifold", marker = "s", linestyle = "-")
-  line_5, = pyplot.plot(col_probcons_plus_centroidalifold_fprs, col_probcons_plus_centroidalifold_senss, label = "ProbCons + CentroidAlifold", marker = "s", linestyle = "--")
-  line_6, = pyplot.plot(col_clustalw_plus_centroidalifold_fprs, col_clustalw_plus_centroidalifold_senss, label = "ClustalW + CentroidAlifold", marker = "s", linestyle = ":")
-  line_7, = pyplot.plot(col_mafft_plus_petfold_fprs, col_mafft_plus_petfold_senss, label = "MAFFT + PETfold", marker = "^", linestyle = "-")
-  line_8, = pyplot.plot(col_probcons_plus_petfold_fprs, col_probcons_plus_petfold_senss, label = "ProbCons + PETfold", marker = "^", linestyle = "--")
-  line_9, = pyplot.plot(col_clustalw_plus_petfold_fprs, col_clustalw_plus_petfold_senss, label = "ClustalW + PETfold", marker = "^", linestyle = ":")
-  line_10, = pyplot.plot(col_mafft_plus_rnaalifold_fpr, col_mafft_plus_rnaalifold_sens, label = "MAFFT + RNAAlifold", marker = "v", linestyle = "-")
-  line_11, = pyplot.plot(col_probcons_plus_rnaalifold_fpr, col_probcons_plus_rnaalifold_sens, label = "ProbCons + RNAAlifold", marker = "v", linestyle = "--")
-  line_12, = pyplot.plot(col_clustalw_plus_rnaalifold_fpr, col_clustalw_plus_rnaalifold_sens, label = "ClustalW + RNAAlifold", marker = "v", linestyle = ":")
+  line_1, = pyplot.plot(clustalw_plus_consalifold_ppvs, clustalw_plus_consalifold_senss, label = "ClustalW + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(clustalw_plus_centroidalifold_ppvs, clustalw_plus_centroidalifold_senss, label = "ClustalW + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(clustalw_plus_petfold_ppvs, clustalw_plus_petfold_senss, label = "ClustalW + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(clustalw_plus_rnaalifold_ppv, clustalw_plus_rnaalifold_sens, label = "ClustalW + RNAalifold", marker = "v", linestyle = ":")
+  pyplot.xlabel("Positive predictive value")
+  pyplot.ylabel("Sensitivity")
+  pyplot.legend(handles = [line_1, line_2, line_3, line_4], loc = "lower left")
+  pyplot.tight_layout()
+  pyplot.savefig(image_dir_path + "/ppvs_vs_senss_on_css_estimation_clustalw.eps", bbox_inches = "tight")
+  pyplot.clf()
+  # Figure for reference sequence alignments.
+  pyplot.figure()
+  line_1, = pyplot.plot(ref_sa_plus_consalifold_ppvs, ref_sa_plus_consalifold_senss, label = "Reference + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(ref_sa_plus_centroidalifold_ppvs, ref_sa_plus_centroidalifold_senss, label = "Reference + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(ref_sa_plus_petfold_ppvs, ref_sa_plus_petfold_senss, label = "Reference + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(ref_sa_plus_rnaalifold_ppv, ref_sa_plus_rnaalifold_sens, label = "Reference + RNAalifold", marker = "v", linestyle = ":")
+  pyplot.xlabel("Positive predictive value")
+  pyplot.ylabel("Sensitivity")
+  pyplot.legend(handles = [line_1, line_2, line_3, line_4], loc = "lower left")
+  pyplot.tight_layout()
+  pyplot.savefig(image_dir_path + "/ppvs_vs_senss_on_css_estimation_ref_sa.eps", bbox_inches = "tight")
+  pyplot.clf()
+  # Figure for ProbCons.
+  pyplot.figure()
+  line_1, = pyplot.plot(probcons_plus_consalifold_fprs, probcons_plus_consalifold_senss, label = "ProbCons + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(probcons_plus_centroidalifold_fprs, probcons_plus_centroidalifold_senss, label = "ProbCons + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(probcons_plus_petfold_fprs, probcons_plus_petfold_senss, label = "ProbCons + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(probcons_plus_rnaalifold_fpr, probcons_plus_rnaalifold_sens, label = "ProbCons + RNAalifold", marker = "v", linestyle = ":")
   pyplot.xlabel("False positive rate")
   pyplot.ylabel("Sensitivity")
-  pyplot.legend(handles = [line_7, line_8, line_9, line_10, line_11, line_12], loc = "upper left")
   pyplot.tight_layout()
-  pyplot.savefig(image_dir_path + "/col_fprs_vs_senss_on_css_estimation.eps", bbox_inches = "tight")
+  pyplot.savefig(image_dir_path + "/fprs_vs_senss_on_css_estimation_probcons.eps", bbox_inches = "tight")
   pyplot.clf()
-  line_1, = pyplot.plot(gammas, col_mafft_plus_consalifold_f1_scores, label = "MAFFT + ConsAlifold", marker = "o", linestyle = "-")
-  line_2, = pyplot.plot(gammas, col_probcons_plus_consalifold_f1_scores, label = "ProbCons + ConsAlifold", marker = "o", linestyle = "--")
-  line_3, = pyplot.plot(gammas, col_clustalw_plus_consalifold_f1_scores, label = "ClustalW + ConsAlifold", marker = "o", linestyle = ":")
-  line_4, = pyplot.plot(gammas, col_mafft_plus_centroidalifold_f1_scores, label = "MAFFT + CentroidAlifold", marker = "s", linestyle = "-")
-  line_5, = pyplot.plot(gammas, col_probcons_plus_centroidalifold_f1_scores, label = "ProbCons + CentroidAlifold", marker = "s", linestyle = "--")
-  line_6, = pyplot.plot(gammas, col_clustalw_plus_centroidalifold_f1_scores, label = "ClustalW + CentroidAlifold", marker = "s", linestyle = ":")
-  line_7, = pyplot.plot(gammas, col_mafft_plus_petfold_f1_scores, label = "MAFFT + PETfold", marker = "^", linestyle = "-")
-  line_8, = pyplot.plot(gammas, col_probcons_plus_petfold_f1_scores, label = "ProbCons + PETfold", marker = "^", linestyle = "--")
-  line_9, = pyplot.plot(gammas, col_clustalw_plus_petfold_f1_scores, label = "ClustalW + PETfold", marker = "^", linestyle = ":")
-  line_10, = pyplot.plot(-3., col_mafft_plus_rnaalifold_f1_score, label = "MAFFT + RNAAlifold", marker = "v", linestyle = "-")
-  line_11, = pyplot.plot(-4., col_probcons_plus_rnaalifold_f1_score, label = "ProbCons + RNAAlifold", marker = "v", linestyle = "--")
-  line_12, = pyplot.plot(-5., col_clustalw_plus_rnaalifold_f1_score, label = "ClustalW + RNAAlifold", marker = "v", linestyle = ":")
+  # Figure for MAFFT.
+  pyplot.figure()
+  line_1, = pyplot.plot(mafft_plus_consalifold_fprs, mafft_plus_consalifold_senss, label = "MAFFT + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(mafft_plus_centroidalifold_fprs, mafft_plus_centroidalifold_senss, label = "MAFFT + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(mafft_plus_petfold_fprs, mafft_plus_petfold_senss, label = "MAFFT + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(mafft_plus_rnaalifold_fpr, mafft_plus_rnaalifold_sens, label = "MAFFT + RNAalifold", marker = "v", linestyle = ":")
+  pyplot.xlabel("False positive rate")
+  pyplot.ylabel("Sensitivity")
+  pyplot.tight_layout()
+  pyplot.savefig(image_dir_path + "/fprs_vs_senss_on_css_estimation_mafft.eps", bbox_inches = "tight")
+  pyplot.clf()
+  # Figure for ClustalW.
+  pyplot.figure()
+  line_1, = pyplot.plot(clustalw_plus_consalifold_fprs, clustalw_plus_consalifold_senss, label = "ClustalW + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(clustalw_plus_centroidalifold_fprs, clustalw_plus_centroidalifold_senss, label = "ClustalW + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(clustalw_plus_petfold_fprs, clustalw_plus_petfold_senss, label = "ClustalW + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(clustalw_plus_rnaalifold_fpr, clustalw_plus_rnaalifold_sens, label = "ClustalW + RNAalifold", marker = "v", linestyle = ":")
+  pyplot.xlabel("False positive rate")
+  pyplot.ylabel("Sensitivity")
+  pyplot.tight_layout()
+  pyplot.savefig(image_dir_path + "/fprs_vs_senss_on_css_estimation_clustalw.eps", bbox_inches = "tight")
+  pyplot.clf()
+  # Figure for reference sequence alignments.
+  pyplot.figure()
+  line_1, = pyplot.plot(ref_sa_plus_consalifold_fprs, ref_sa_plus_consalifold_senss, label = "Reference + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(ref_sa_plus_centroidalifold_fprs, ref_sa_plus_centroidalifold_senss, label = "Reference + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(ref_sa_plus_petfold_fprs, ref_sa_plus_petfold_senss, label = "Reference + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(ref_sa_plus_rnaalifold_fpr, ref_sa_plus_rnaalifold_sens, label = "Reference + RNAalifold", marker = "v", linestyle = ":")
+  pyplot.xlabel("False positive rate")
+  pyplot.ylabel("Sensitivity")
+  pyplot.tight_layout()
+  pyplot.savefig(image_dir_path + "/fprs_vs_senss_on_css_estimation_ref_sa.eps", bbox_inches = "tight")
+  pyplot.clf()
+  # Figure for ProbCons.
+  gammas = [i for i in range(-7, 11)]
+  pyplot.figure()
+  line_1, = pyplot.plot(gammas, probcons_plus_consalifold_f1_scores, label = "ProbCons + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(gammas, probcons_plus_centroidalifold_f1_scores, label = "ProbCons + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(gammas, probcons_plus_petfold_f1_scores, label = "ProbCons + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(0., probcons_plus_rnaalifold_f1_score, label = "ProbCons + RNAalifold", marker = "v", linestyle = ":")
   pyplot.xlabel("$\log_2 \gamma$")
   pyplot.ylabel("F1 score")
   pyplot.tight_layout()
-  pyplot.savefig(image_dir_path + "/col_gammas_vs_f1_scores_on_css_estimation.eps", bbox_inches = "tight")
+  pyplot.savefig(image_dir_path + "/gammas_vs_f1_scores_on_css_estimation_probcons.eps", bbox_inches = "tight")
   pyplot.clf()
-  line_1, = pyplot.plot(gammas, col_mafft_plus_consalifold_mccs, label = "MAFFT + ConsAlifold", marker = "o", linestyle = "-")
-  line_2, = pyplot.plot(gammas, col_probcons_plus_consalifold_mccs, label = "ProbCons + ConsAlifold", marker = "o", linestyle = "--")
-  line_3, = pyplot.plot(gammas, col_clustalw_plus_consalifold_mccs, label = "ClustalW + ConsAlifold", marker = "o", linestyle = ":")
-  line_4, = pyplot.plot(gammas, col_mafft_plus_centroidalifold_mccs, label = "MAFFT + CentroidAlifold", marker = "s", linestyle = "-")
-  line_5, = pyplot.plot(gammas, col_probcons_plus_centroidalifold_mccs, label = "ProbCons + CentroidAlifold", marker = "s", linestyle = "--")
-  line_6, = pyplot.plot(gammas, col_clustalw_plus_centroidalifold_mccs, label = "ClustalW + CentroidAlifold", marker = "s", linestyle = ":")
-  line_7, = pyplot.plot(gammas, col_mafft_plus_petfold_mccs, label = "MAFFT + PETfold", marker = "^", linestyle = "-")
-  line_8, = pyplot.plot(gammas, col_probcons_plus_petfold_mccs, label = "ProbCons + PETfold", marker = "^", linestyle = "--")
-  line_9, = pyplot.plot(gammas, col_clustalw_plus_petfold_mccs, label = "ClustalW + PETfold", marker = "^", linestyle = ":")
-  line_10, = pyplot.plot(-3., col_mafft_plus_rnaalifold_mcc, label = "MAFFT + RNAAlifold", marker = "v", linestyle = "-")
-  line_11, = pyplot.plot(-4., col_probcons_plus_rnaalifold_mcc, label = "ProbCons + RNAAlifold", marker = "v", linestyle = "--")
-  line_12, = pyplot.plot(-5., col_clustalw_plus_rnaalifold_mcc, label = "ClustalW + RNAAlifold", marker = "v", linestyle = ":")
+  # Figure for MAFFT.
+  pyplot.figure()
+  line_1, = pyplot.plot(gammas, mafft_plus_consalifold_f1_scores, label = "MAFFT + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(gammas, mafft_plus_centroidalifold_f1_scores, label = "MAFFT + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(gammas, mafft_plus_petfold_f1_scores, label = "MAFFT + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(0., mafft_plus_rnaalifold_f1_score, label = "MAFFT + RNAalifold", marker = "v", linestyle = ":")
+  pyplot.xlabel("$\log_2 \gamma$")
+  pyplot.ylabel("F1 score")
+  pyplot.tight_layout()
+  pyplot.savefig(image_dir_path + "/gammas_vs_f1_scores_on_css_estimation_mafft.eps", bbox_inches = "tight")
+  pyplot.clf()
+  # Figure for ClustalW.
+  pyplot.figure()
+  line_1, = pyplot.plot(gammas, clustalw_plus_consalifold_f1_scores, label = "ClustalW + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(gammas, clustalw_plus_centroidalifold_f1_scores, label = "ClustalW + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(gammas, clustalw_plus_petfold_f1_scores, label = "ClustalW + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(0., clustalw_plus_rnaalifold_f1_score, label = "ClustalW + RNAalifold", marker = "v", linestyle = ":")
+  pyplot.xlabel("$\log_2 \gamma$")
+  pyplot.ylabel("F1 score")
+  pyplot.tight_layout()
+  pyplot.savefig(image_dir_path + "/gammas_vs_f1_scores_on_css_estimation_clustalw.eps", bbox_inches = "tight")
+  pyplot.clf()
+  # Figure for reference sequence alignments.
+  pyplot.figure()
+  line_1, = pyplot.plot(gammas, ref_sa_plus_consalifold_f1_scores, label = "Reference + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(gammas, ref_sa_plus_centroidalifold_f1_scores, label = "Reference + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(gammas, ref_sa_plus_petfold_f1_scores, label = "Reference + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(0., ref_sa_plus_rnaalifold_f1_score, label = "Reference + RNAalifold", marker = "v", linestyle = ":")
+  pyplot.xlabel("$\log_2 \gamma$")
+  pyplot.ylabel("F1 score")
+  pyplot.tight_layout()
+  pyplot.savefig(image_dir_path + "/gammas_vs_f1_scores_on_css_estimation_ref_sa.eps", bbox_inches = "tight")
+  pyplot.clf()
+  # Figure for ProbCons.
+  pyplot.figure()
+  line_1, = pyplot.plot(gammas, probcons_plus_consalifold_mccs, label = "ProbCons + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(gammas, probcons_plus_centroidalifold_mccs, label = "ProbCons + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(gammas, probcons_plus_petfold_mccs, label = "ProbCons + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(0., probcons_plus_rnaalifold_mcc, label = "ProbCons + RNAalifold", marker = "v", linestyle = ":")
   pyplot.xlabel("$\log_2 \gamma$")
   pyplot.ylabel("MCC")
   pyplot.tight_layout()
-  pyplot.savefig(image_dir_path + "/col_gammas_vs_mccs_on_css_estimation.eps", bbox_inches = "tight")
+  pyplot.savefig(image_dir_path + "/gammas_vs_mccs_on_css_estimation_probcons.eps", bbox_inches = "tight")
+  pyplot.clf()
+  # Figure for MAFFT.
+  pyplot.figure()
+  line_1, = pyplot.plot(gammas, mafft_plus_consalifold_mccs, label = "MAFFT + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(gammas, mafft_plus_centroidalifold_mccs, label = "MAFFT + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(gammas, mafft_plus_petfold_mccs, label = "MAFFT + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(0., mafft_plus_rnaalifold_mcc, label = "MAFFT + RNAalifold", marker = "v", linestyle = ":")
+  pyplot.xlabel("$\log_2 \gamma$")
+  pyplot.ylabel("MCC")
+  pyplot.tight_layout()
+  pyplot.savefig(image_dir_path + "/gammas_vs_mccs_on_css_estimation_mafft.eps", bbox_inches = "tight")
+  pyplot.clf()
+  # Figure for ClustalW.
+  pyplot.figure()
+  line_1, = pyplot.plot(gammas, clustalw_plus_consalifold_mccs, label = "ClustalW + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(gammas, clustalw_plus_centroidalifold_mccs, label = "ClustalW + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(gammas, clustalw_plus_petfold_mccs, label = "ClustalW + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(0., clustalw_plus_rnaalifold_mcc, label = "ClustalW + RNAalifold", marker = "v", linestyle = ":")
+  pyplot.xlabel("$\log_2 \gamma$")
+  pyplot.ylabel("MCC")
+  pyplot.tight_layout()
+  pyplot.savefig(image_dir_path + "/gammas_vs_mccs_on_css_estimation_clustalw.eps", bbox_inches = "tight")
+  pyplot.clf()
+  # Figure for reference sequence alignments.
+  pyplot.figure()
+  line_1, = pyplot.plot(gammas, ref_sa_plus_consalifold_mccs, label = "Reference + ConsAlifold", marker = "o", linestyle = "-")
+  line_2, = pyplot.plot(gammas, ref_sa_plus_centroidalifold_mccs, label = "Reference + CentroidAlifold", marker = "s", linestyle = "--")
+  line_3, = pyplot.plot(gammas, ref_sa_plus_petfold_mccs, label = "Reference + PETfold", marker = "^", linestyle = "-.")
+  line_4, = pyplot.plot(0., ref_sa_plus_rnaalifold_mcc, label = "Reference + RNAalifold", marker = "v", linestyle = ":")
+  pyplot.xlabel("$\log_2 \gamma$")
+  pyplot.ylabel("MCC")
+  pyplot.tight_layout()
+  pyplot.savefig(image_dir_path + "/gammas_vs_mccs_on_css_estimation_ref_sa.eps", bbox_inches = "tight")
+  pyplot.clf()
 
 def get_metrics(bin_counts):
   (tp, tn, fp, fn, col_tp, col_tn, col_fp, col_fn) = bin_counts

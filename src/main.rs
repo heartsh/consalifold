@@ -154,7 +154,6 @@ fn main() {
   }
 }
 
-#[inline]
 fn read_sa_from_clustal_file(clustal_file_path: &Path) -> (SeqAlign, SeqIds) {
   let mut sa = SeqAlign::new();
   let mut seq_ids = SeqIds::new();
@@ -192,7 +191,6 @@ fn read_sa_from_clustal_file(clustal_file_path: &Path) -> (SeqAlign, SeqIds) {
   (sa, seq_ids)
 }
 
-#[inline]
 fn get_mix_bpp_mat(prob_mat_sets: &ProbMatSets, rnaalipfold_bpp_mat: &ProbMat, sa: &SeqAlign, mix_weight: Prob) -> ProbMat {
   let sa_len = sa.cols.len();
   let num_of_rnas = sa.cols[0].len();
@@ -222,7 +220,6 @@ fn get_mix_bpp_mat(prob_mat_sets: &ProbMatSets, rnaalipfold_bpp_mat: &ProbMat, s
   mix_bpp_mat
 }
 
-#[inline]
 fn get_mix_upp_mat(prob_mat_sets: &ProbMatSets, rnaalipfold_bpp_mat: &ProbMat, sa: &SeqAlign, mix_weight: Prob) -> Probs {
   let sa_len = sa.cols.len();
   let num_of_rnas = sa.cols[0].len();
@@ -279,7 +276,6 @@ fn compute_and_write_mea_css(mix_bpp_mat: &ProbMat, mix_upp_mat: &Probs, sa: &Se
   let _ = writer_2_output_file.write_all(buf_4_writer_2_output_file.as_bytes());
 }
 
-#[inline]
 fn get_mea_css_str(mea_css: &MeaCss, sa_len: usize) -> MeaCssStr {
   let mut mea_css_str = vec![UNPAIRING_BASE; sa_len];
   for &(i, j) in &mea_css.bpa_pos_pairs {

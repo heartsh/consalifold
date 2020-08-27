@@ -22,42 +22,54 @@ def main():
   mafft_plus_centroidalifold_params_4_bpp_mat = []
   probcons_plus_centroidalifold_params_4_bpp_mat = []
   clustalw_plus_centroidalifold_params_4_bpp_mat = []
+  ref_sa_plus_centroidalifold_params_4_bpp_mat = []
   mafft_plus_consalifold_params = []
   probcons_plus_consalifold_params = []
   clustalw_plus_consalifold_params = []
+  ref_sa_plus_consalifold_params = []
   consalifold_params_4_elapsed_time = []
   mafft_plus_centroidalifold_params = []
   probcons_plus_centroidalifold_params = []
   clustalw_plus_centroidalifold_params = []
+  ref_sa_plus_centroidalifold_params = []
   centroidalifold_params_4_elapsed_time = []
   mafft_plus_rnaalifold_params = []
   probcons_plus_rnaalifold_params = []
   clustalw_plus_rnaalifold_params = []
+  ref_sa_plus_rnaalifold_params = []
   mafft_plus_petfold_params = []
   probcons_plus_petfold_params = []
   clustalw_plus_petfold_params = []
+  ref_sa_plus_petfold_params = []
   petfold_params_4_elapsed_time = []
   consalifold_elapsed_time = 0.
-  rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
-  # rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
+  # rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
+  rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
   mafft_dir_path = asset_dir_path + "/mafft"
   probcons_dir_path = asset_dir_path + "/probcons"
   clustalw_dir_path = asset_dir_path + "/clustalw"
+  # ref_sa_dir_path = asset_dir_path + "/ref_sas"
+  ref_sa_dir_path = asset_dir_path + "/ref_sas_4_micro_bench"
   mafft_plus_centroidalifold_bpp_mat_dir_path = asset_dir_path + "/mafft_plus_centroidalifold_bpp_mats"
   probcons_plus_centroidalifold_bpp_mat_dir_path = asset_dir_path + "/probcons_plus_centroidalifold_bpp_mats"
   clustalw_plus_centroidalifold_bpp_mat_dir_path = asset_dir_path + "/clustalw_plus_centroidalifold_bpp_mats"
+  ref_sa_plus_centroidalifold_bpp_mat_dir_path = asset_dir_path + "/ref_sa_plus_centroidalifold_bpp_mats"
   mafft_plus_consalifold_dir_path = asset_dir_path + "/mafft_plus_consalifold"
   probcons_plus_consalifold_dir_path = asset_dir_path + "/probcons_plus_consalifold"
   clustalw_plus_consalifold_dir_path = asset_dir_path + "/clustalw_plus_consalifold"
+  ref_sa_plus_consalifold_dir_path = asset_dir_path + "/ref_sa_plus_consalifold"
   mafft_plus_centroidalifold_dir_path = asset_dir_path + "/mafft_plus_centroidalifold"
   probcons_plus_centroidalifold_dir_path = asset_dir_path + "/probcons_plus_centroidalifold"
   clustalw_plus_centroidalifold_dir_path = asset_dir_path + "/clustalw_plus_centroidalifold"
+  ref_sa_plus_centroidalifold_dir_path = asset_dir_path + "/ref_sa_plus_centroidalifold"
   mafft_plus_rnaalifold_dir_path = asset_dir_path + "/mafft_plus_rnaalifold"
   probcons_plus_rnaalifold_dir_path = asset_dir_path + "/probcons_plus_rnaalifold"
   clustalw_plus_rnaalifold_dir_path = asset_dir_path + "/clustalw_plus_rnaalifold"
+  ref_sa_plus_rnaalifold_dir_path = asset_dir_path + "/ref_sa_plus_rnaalifold"
   mafft_plus_petfold_dir_path = asset_dir_path + "/mafft_plus_petfold"
   probcons_plus_petfold_dir_path = asset_dir_path + "/probcons_plus_petfold"
   clustalw_plus_petfold_dir_path = asset_dir_path + "/clustalw_plus_petfold"
+  ref_sa_plus_petfold_dir_path = asset_dir_path + "/ref_sa_plus_petfold"
   if not os.path.isdir(mafft_dir_path):
     os.mkdir(mafft_dir_path)
   if not os.path.isdir(probcons_dir_path):
@@ -70,30 +82,40 @@ def main():
     os.mkdir(probcons_plus_centroidalifold_bpp_mat_dir_path)
   if not os.path.isdir(clustalw_plus_centroidalifold_bpp_mat_dir_path):
     os.mkdir(clustalw_plus_centroidalifold_bpp_mat_dir_path)
+  if not os.path.isdir(ref_sa_plus_centroidalifold_bpp_mat_dir_path):
+    os.mkdir(ref_sa_plus_centroidalifold_bpp_mat_dir_path)
   if not os.path.isdir(mafft_plus_consalifold_dir_path):
     os.mkdir(mafft_plus_consalifold_dir_path)
   if not os.path.isdir(probcons_plus_consalifold_dir_path):
     os.mkdir(probcons_plus_consalifold_dir_path)
   if not os.path.isdir(clustalw_plus_consalifold_dir_path):
     os.mkdir(clustalw_plus_consalifold_dir_path)
+  if not os.path.isdir(ref_sa_plus_consalifold_dir_path):
+    os.mkdir(ref_sa_plus_consalifold_dir_path)
   if not os.path.isdir(mafft_plus_centroidalifold_dir_path):
     os.mkdir(mafft_plus_centroidalifold_dir_path)
   if not os.path.isdir(probcons_plus_centroidalifold_dir_path):
     os.mkdir(probcons_plus_centroidalifold_dir_path)
   if not os.path.isdir(clustalw_plus_centroidalifold_dir_path):
     os.mkdir(clustalw_plus_centroidalifold_dir_path)
+  if not os.path.isdir(ref_sa_plus_centroidalifold_dir_path):
+    os.mkdir(ref_sa_plus_centroidalifold_dir_path)
   if not os.path.isdir(mafft_plus_rnaalifold_dir_path):
     os.mkdir(mafft_plus_rnaalifold_dir_path)
   if not os.path.isdir(probcons_plus_rnaalifold_dir_path):
     os.mkdir(probcons_plus_rnaalifold_dir_path)
   if not os.path.isdir(clustalw_plus_rnaalifold_dir_path):
     os.mkdir(clustalw_plus_rnaalifold_dir_path)
+  if not os.path.isdir(ref_sa_plus_rnaalifold_dir_path):
+    os.mkdir(ref_sa_plus_rnaalifold_dir_path)
   if not os.path.isdir(mafft_plus_petfold_dir_path):
     os.mkdir(mafft_plus_petfold_dir_path)
   if not os.path.isdir(probcons_plus_petfold_dir_path):
     os.mkdir(probcons_plus_petfold_dir_path)
   if not os.path.isdir(clustalw_plus_petfold_dir_path):
     os.mkdir(clustalw_plus_petfold_dir_path)
+  if not os.path.isdir(ref_sa_plus_petfold_dir_path):
+    os.mkdir(ref_sa_plus_petfold_dir_path)
   for rna_seq_file in os.listdir(rna_seq_dir_path):
     if not rna_seq_file.endswith(".fa"):
       continue
@@ -102,18 +124,22 @@ def main():
     mafft_plus_centroidalifold_bpp_mat_file_path = os.path.join(mafft_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
     probcons_plus_centroidalifold_bpp_mat_file_path = os.path.join(probcons_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
     clustalw_plus_centroidalifold_bpp_mat_file_path = os.path.join(clustalw_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
+    ref_sa_plus_centroidalifold_bpp_mat_file_path = os.path.join(ref_sa_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
     mafft_output_file_path = os.path.join(mafft_dir_path, rna_family_name + ".aln")
     probcons_output_file_path = os.path.join(probcons_dir_path, rna_family_name + ".aln")
     clustalw_output_file_path = os.path.join(clustalw_dir_path, rna_family_name + ".aln")
+    ref_sa_file_path = os.path.join(ref_sa_dir_path, rna_family_name + ".aln")
     mafft_params.insert(0, (rna_seq_file_path, mafft_output_file_path))
     probcons_params.insert(0, (rna_seq_file_path, probcons_output_file_path))
     clustalw_params.insert(0, (rna_seq_file_path, clustalw_output_file_path))
     mafft_plus_centroidalifold_command = "centroid_alifold -e McCaskill -w 0 -e Alifold -w 1 --posteriors 0 --posteriors-output " + mafft_plus_centroidalifold_bpp_mat_file_path + " " + mafft_output_file_path
     probcons_plus_centroidalifold_command = "centroid_alifold -e McCaskill -w 0 -e Alifold -w 1 --posteriors 0 --posteriors-output " + probcons_plus_centroidalifold_bpp_mat_file_path + " " + probcons_output_file_path
     clustalw_plus_centroidalifold_command = "centroid_alifold -e McCaskill -w 0 -e Alifold -w 1 --posteriors 0 --posteriors-output " + clustalw_plus_centroidalifold_bpp_mat_file_path + " " + clustalw_output_file_path
+    ref_sa_plus_centroidalifold_command = "centroid_alifold -e McCaskill -w 0 -e Alifold -w 1 --posteriors 0 --posteriors-output " + ref_sa_plus_centroidalifold_bpp_mat_file_path + " " + ref_sa_file_path
     mafft_plus_centroidalifold_params_4_bpp_mat.insert(0, mafft_plus_centroidalifold_command)
     probcons_plus_centroidalifold_params_4_bpp_mat.insert(0, probcons_plus_centroidalifold_command)
     clustalw_plus_centroidalifold_params_4_bpp_mat.insert(0, clustalw_plus_centroidalifold_command)
+    ref_sa_plus_centroidalifold_params_4_bpp_mat.insert(0, ref_sa_plus_centroidalifold_command)
   pool = multiprocessing.Pool(num_of_threads)
   pool.map(run_mafft, mafft_params)
   pool.map(run_probcons, probcons_params)
@@ -123,9 +149,10 @@ def main():
   pool.map(utils.run_command, probcons_plus_centroidalifold_params_4_bpp_mat)
   consalifold_elapsed_time += time.time() - begin
   pool.map(utils.run_command, clustalw_plus_centroidalifold_params_4_bpp_mat)
+  pool.map(utils.run_command, ref_sa_plus_centroidalifold_params_4_bpp_mat)
   sub_thread_num = 4 if num_of_threads <= 8 else 8
-  rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
-  # rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
+  # rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
+  rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
   for rna_seq_file in os.listdir(rna_seq_dir_path):
     if not rna_seq_file.endswith(".fa"):
       continue
@@ -134,54 +161,70 @@ def main():
     mafft_plus_centroidalifold_bpp_mat_file_path = os.path.join(mafft_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
     probcons_plus_centroidalifold_bpp_mat_file_path = os.path.join(probcons_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
     clustalw_plus_centroidalifold_bpp_mat_file_path = os.path.join(clustalw_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
+    ref_sa_plus_centroidalifold_bpp_mat_file_path = os.path.join(ref_sa_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
     mafft_output_file_path = os.path.join(mafft_dir_path, rna_family_name + ".aln")
     probcons_output_file_path = os.path.join(probcons_dir_path, rna_family_name + ".aln")
     clustalw_output_file_path = os.path.join(clustalw_dir_path, rna_family_name + ".aln")
+    ref_sa_file_path = os.path.join(ref_sa_dir_path, rna_family_name + ".aln")
     mafft_plus_consalifold_output_dir_path = os.path.join(mafft_plus_consalifold_dir_path, rna_family_name)
     probcons_plus_consalifold_output_dir_path = os.path.join(probcons_plus_consalifold_dir_path, rna_family_name)
     clustalw_plus_consalifold_output_dir_path = os.path.join(clustalw_plus_consalifold_dir_path, rna_family_name)
+    ref_sa_plus_consalifold_output_dir_path = os.path.join(ref_sa_plus_consalifold_dir_path, rna_family_name)
     mafft_plus_centroidalifold_output_dir_path = os.path.join(mafft_plus_centroidalifold_dir_path, rna_family_name)
     probcons_plus_centroidalifold_output_dir_path = os.path.join(probcons_plus_centroidalifold_dir_path, rna_family_name)
     clustalw_plus_centroidalifold_output_dir_path = os.path.join(clustalw_plus_centroidalifold_dir_path, rna_family_name)
+    ref_sa_plus_centroidalifold_output_dir_path = os.path.join(ref_sa_plus_centroidalifold_dir_path, rna_family_name)
     mafft_plus_petfold_output_dir_path = os.path.join(mafft_plus_petfold_dir_path, rna_family_name)
     probcons_plus_petfold_output_dir_path = os.path.join(probcons_plus_petfold_dir_path, rna_family_name)
     clustalw_plus_petfold_output_dir_path = os.path.join(clustalw_plus_petfold_dir_path, rna_family_name)
+    ref_sa_plus_petfold_output_dir_path = os.path.join(ref_sa_plus_petfold_dir_path, rna_family_name)
     if not os.path.isdir(mafft_plus_consalifold_output_dir_path):
       os.mkdir(mafft_plus_consalifold_output_dir_path)
     if not os.path.isdir(probcons_plus_consalifold_output_dir_path):
       os.mkdir(probcons_plus_consalifold_output_dir_path)
     if not os.path.isdir(clustalw_plus_consalifold_output_dir_path):
       os.mkdir(clustalw_plus_consalifold_output_dir_path)
+    if not os.path.isdir(ref_sa_plus_consalifold_output_dir_path):
+      os.mkdir(ref_sa_plus_consalifold_output_dir_path)
     if not os.path.isdir(mafft_plus_centroidalifold_output_dir_path):
       os.mkdir(mafft_plus_centroidalifold_output_dir_path)
     if not os.path.isdir(probcons_plus_centroidalifold_output_dir_path):
       os.mkdir(probcons_plus_centroidalifold_output_dir_path)
     if not os.path.isdir(clustalw_plus_centroidalifold_output_dir_path):
       os.mkdir(clustalw_plus_centroidalifold_output_dir_path)
+    if not os.path.isdir(ref_sa_plus_centroidalifold_output_dir_path):
+      os.mkdir(ref_sa_plus_centroidalifold_output_dir_path)
     if not os.path.isdir(mafft_plus_petfold_output_dir_path):
       os.mkdir(mafft_plus_petfold_output_dir_path)
     if not os.path.isdir(probcons_plus_petfold_output_dir_path):
       os.mkdir(probcons_plus_petfold_output_dir_path)
     if not os.path.isdir(clustalw_plus_petfold_output_dir_path):
       os.mkdir(clustalw_plus_petfold_output_dir_path)
+    if not os.path.isdir(ref_sa_plus_petfold_output_dir_path):
+      os.mkdir(ref_sa_plus_petfold_output_dir_path)
     mafft_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + mafft_output_file_path + " -c " + mafft_plus_centroidalifold_bpp_mat_file_path + " -o " + mafft_plus_consalifold_output_dir_path
     probcons_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + probcons_output_file_path + " -c " + probcons_plus_centroidalifold_bpp_mat_file_path + " -o " + probcons_plus_consalifold_output_dir_path
     clustalw_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + clustalw_output_file_path + " -c " + clustalw_plus_centroidalifold_bpp_mat_file_path + " -o " + clustalw_plus_consalifold_output_dir_path
+    ref_sa_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + ref_sa_file_path + " -c " + ref_sa_plus_centroidalifold_bpp_mat_file_path + " -o " + ref_sa_plus_consalifold_output_dir_path
     mafft_plus_consalifold_params.insert(0, mafft_plus_consalifold_command)
     probcons_plus_consalifold_params.insert(0, probcons_plus_consalifold_command)
     clustalw_plus_consalifold_params.insert(0, clustalw_plus_consalifold_command)
+    ref_sa_plus_consalifold_params.insert(0, ref_sa_plus_consalifold_command)
     probcons_plus_consalifold_command = "consalifold -b -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + probcons_output_file_path + " -c " + probcons_plus_centroidalifold_bpp_mat_file_path + " -o " + probcons_plus_consalifold_output_dir_path
     consalifold_params_4_elapsed_time.insert(0, probcons_plus_consalifold_command)
     output_file = rna_family_name + ".sth"
     mafft_plus_rnaalifold_output_file_path = os.path.join(mafft_plus_rnaalifold_dir_path, output_file)
     probcons_plus_rnaalifold_output_file_path = os.path.join(probcons_plus_rnaalifold_dir_path, output_file)
     clustalw_plus_rnaalifold_output_file_path = os.path.join(clustalw_plus_rnaalifold_dir_path, output_file)
+    ref_sa_plus_rnaalifold_output_file_path = os.path.join(ref_sa_plus_rnaalifold_dir_path, output_file)
     mafft_plus_rnaalifold_params.insert(0, (mafft_output_file_path, mafft_plus_rnaalifold_output_file_path))
     probcons_plus_rnaalifold_params.insert(0, (probcons_output_file_path, probcons_plus_rnaalifold_output_file_path))
     clustalw_plus_rnaalifold_params.insert(0, (clustalw_output_file_path, clustalw_plus_rnaalifold_output_file_path))
+    ref_sa_plus_rnaalifold_params.insert(0, (ref_sa_file_path, ref_sa_plus_rnaalifold_output_file_path))
     mafft_output_file_path_2 = os.path.join(mafft_dir_path, rna_family_name + ".fa")
     probcons_output_file_path_2 = os.path.join(probcons_dir_path, rna_family_name + ".fa")
-    clustalw_file_path_2 = os.path.join(clustalw_dir_path, rna_family_name + ".fa")
+    clustalw_output_file_path_2 = os.path.join(clustalw_dir_path, rna_family_name + ".fa")
+    ref_sa_file_path_2 = os.path.join(ref_sa_dir_path, rna_family_name + ".fa")
     for gamma in gammas:
       gamma_str = str(gamma) if gamma < 1 else str(int(gamma))
       output_file = "gamma=" + gamma_str + ".sth"
@@ -189,17 +232,21 @@ def main():
       mafft_plus_centroidalifold_output_file_path = os.path.join(mafft_plus_centroidalifold_output_dir_path, output_file)
       probcons_plus_centroidalifold_output_file_path = os.path.join(probcons_plus_centroidalifold_output_dir_path, output_file)
       clustalw_plus_centroidalifold_output_file_path = os.path.join(clustalw_plus_centroidalifold_output_dir_path, output_file)
+      ref_sa_plus_centroidalifold_output_file_path = os.path.join(ref_sa_plus_centroidalifold_output_dir_path, output_file)
       mafft_plus_centroidalifold_params.insert(0, (mafft_output_file_path, mafft_plus_centroidalifold_output_file_path, gamma_str))
       probcons_plus_centroidalifold_params.insert(0, (probcons_output_file_path, probcons_plus_centroidalifold_output_file_path, gamma_str))
       clustalw_plus_centroidalifold_params.insert(0, (clustalw_output_file_path, clustalw_plus_centroidalifold_output_file_path, gamma_str))
+      ref_sa_plus_centroidalifold_params.insert(0, (ref_sa_file_path, ref_sa_plus_centroidalifold_output_file_path, gamma_str))
       if gamma == 1:
         centroidalifold_params_4_elapsed_time.insert(0, (probcons_output_file_path, probcons_plus_centroidalifold_output_file_path, gamma_str))
       mafft_plus_petfold_output_file_path = os.path.join(mafft_plus_petfold_output_dir_path, output_file)
       probcons_plus_petfold_output_file_path = os.path.join(probcons_plus_petfold_output_dir_path, output_file)
       clustalw_plus_petfold_output_file_path = os.path.join(clustalw_plus_petfold_output_dir_path, output_file)
+      ref_sa_plus_petfold_output_file_path = os.path.join(ref_sa_plus_petfold_output_dir_path, output_file)
       mafft_plus_petfold_params.insert(0, (mafft_output_file_path_2, mafft_plus_petfold_output_file_path, petfold_gamma_str))
       probcons_plus_petfold_params.insert(0, (probcons_output_file_path_2, probcons_plus_petfold_output_file_path, petfold_gamma_str))
-      clustalw_plus_petfold_params.insert(0, (clustalw_file_path_2, clustalw_plus_petfold_output_file_path, petfold_gamma_str))
+      clustalw_plus_petfold_params.insert(0, (clustalw_output_file_path_2, clustalw_plus_petfold_output_file_path, petfold_gamma_str))
+      ref_sa_plus_petfold_params.insert(0, (ref_sa_file_path_2, ref_sa_plus_petfold_output_file_path, petfold_gamma_str))
       if gamma == 1:
         petfold_params_4_elapsed_time.insert(0, (probcons_output_file_path_2, probcons_plus_petfold_output_file_path, petfold_gamma_str))
   # ConsAliFold's execution.
@@ -207,6 +254,7 @@ def main():
   pool.map(utils.run_command, mafft_plus_consalifold_params)
   pool.map(utils.run_command, probcons_plus_consalifold_params)
   pool.map(utils.run_command, clustalw_plus_consalifold_params)
+  pool.map(utils.run_command, ref_sa_plus_consalifold_params)
   begin = time.time()
   pool.map(utils.run_command, consalifold_params_4_elapsed_time)
   consalifold_elapsed_time += time.time() - begin
@@ -215,6 +263,7 @@ def main():
   pool.map(run_centroidalifold, mafft_plus_centroidalifold_params)
   pool.map(run_centroidalifold, probcons_plus_centroidalifold_params)
   pool.map(run_centroidalifold, clustalw_plus_centroidalifold_params)
+  pool.map(run_centroidalifold, ref_sa_plus_centroidalifold_params)
   begin = time.time()
   pool.map(run_centroidalifold, centroidalifold_params_4_elapsed_time)
   centroidalifold_elapsed_time = time.time() - begin
@@ -222,6 +271,7 @@ def main():
   pool.map(run_petfold, mafft_plus_petfold_params)
   pool.map(run_petfold, probcons_plus_petfold_params)
   pool.map(run_petfold, clustalw_plus_petfold_params)
+  pool.map(run_petfold, ref_sa_plus_petfold_params)
   begin = time.time()
   pool.map(run_petfold, petfold_params_4_elapsed_time)
   petfold_elapsed_time = time.time() - begin
@@ -231,6 +281,7 @@ def main():
   pool.map(run_rnaalifold, probcons_plus_rnaalifold_params)
   rnaalifold_elapsed_time = time.time() - begin
   pool.map(run_rnaalifold, clustalw_plus_rnaalifold_params)
+  pool.map(run_rnaalifold, ref_sa_plus_rnaalifold_params)
   print("The elapsed time of ConsAlifold = %f [s]." % consalifold_elapsed_time)
   print("The elapsed time of CentroidAlifold = %f [s]." % centroidalifold_elapsed_time)
   print("The elapsed time of RNAalifold = %f [s]." % rnaalifold_elapsed_time)

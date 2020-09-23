@@ -31,7 +31,8 @@ fn main() {
   opts.optopt("", "min_pow_of_2", &format!("A minimum power of 2 to calculate a gamma parameter (Uses {} by default)", DEFAULT_MIN_POW_OF_2), "FLOAT");
   opts.optopt("", "max_pow_of_2", &format!("A maximum power of 2 to calculate a gamma parameter (Uses {} by default)", DEFAULT_MAX_POW_OF_2), "FLOAT");
   opts.optopt("", "mix_weight", &format!("A mixture weight (Uses {} by default)", DEFAULT_MIX_WEIGHT), "FLOAT");
-  opts.optflag("u", "is_posterior_model", "Uses posterior model to score secondary structures (Not recommended due to poor accuracy)");
+  opts.optopt("", "input_locarnap_pair_prob_matrix_file_path", "The path to an input file containing pairing probability matrices computed by the LocARNA-P algorithm", "STR");
+  opts.optflag("u", "is_posterior_model", "Uses the posterior model to score secondary structures (Must specify the flag \"input_locarnap_pair_prob_matrix_file_path\")");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of all the threads of this computer by default)", "UINT");
   opts.optflag("b", "takes_bench", &format!("Compute for only gamma = {} to measure running time", GAMMA_4_BENCH));
   opts.optflag("q", "produces_access_probs", &format!("Also compute accessible probabilities"));
@@ -79,6 +80,16 @@ fn main() {
     DEFAULT_MIX_WEIGHT
   };
   let is_posterior_model = matches.opt_present("u");
+  if is_posterior_model && !matches.opt_present("input_locarnap_pair_prob_matrix_file_path") {
+    print_program_usage(&program_name, &opts);
+    return;
+  }
+  let input_locarnap_bpp_mat_file_path = if matches.opt_present("input_locarnap_pair_prob_matrix_file_path") {
+    matches.opt_str("input_locarnap_pair_prob_matrix_file_path").unwrap()
+  } else {
+    String::new()
+  };
+  let input_locarnap_bpp_mat_file_path = Path::new(&input_locarnap_bpp_mat_file_path);
   let takes_bench = matches.opt_present("b");
   let produces_access_probs = matches.opt_present("q") && !is_posterior_model;
   let outputs_probs = matches.opt_present("p");
@@ -96,8 +107,6 @@ fn main() {
     seq.push(PSEUDO_BASE);
     fasta_records.push(FastaRecord::new(String::from(fasta_record.id()), seq));
   }
-  let mut thread_pool = Pool::new(num_of_threads);
-  let prob_mat_sets = consprob(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num, is_posterior_model, produces_access_probs);
   let (mut sa, seq_ids) = read_sa_from_clustal_file(input_sa_file_path);
   let num_of_rnas = sa.cols[0].len();
   let mut seq_lens = vec![0 as usize; num_of_rnas];
@@ -115,6 +124,12 @@ fn main() {
     }
   }
   let sa_len = sa.cols.len();
+  let mut thread_pool = Pool::new(num_of_threads);
+  let prob_mat_sets = if is_posterior_model {
+    read_locarnap_bpp_mats(&input_locarnap_bpp_mat_file_path, &seq_lens)
+  } else {
+    consprob(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num, is_posterior_model, produces_access_probs)
+  };
   let mut rnaalipfold_bpp_mat = vec![vec![0.; sa_len]; sa_len];
   let reader_2_input_bpp_mat_file = BufReader::new(File::open(input_bpp_mat_file_path).unwrap());
   for (i, vec) in reader_2_input_bpp_mat_file.split(b'\n').enumerate() {
@@ -152,6 +167,34 @@ fn main() {
   if outputs_probs {
     write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_access_probs);
   }
+}
+
+fn read_locarnap_bpp_mats(input_locarnap_bpp_mat_file_path: &Path, seq_lens: &Vec<usize>) -> ProbMatSets {
+  let mut prob_mat_sets = Vec::new();
+  let reader_2_locarnap_bpp_mat_file = BufReader::new(File::open(input_locarnap_bpp_mat_file_path).unwrap());
+  for (i, string) in reader_2_locarnap_bpp_mat_file.split(b'>').enumerate() {
+    let string = String::from_utf8(string.unwrap()).unwrap();
+    if string.len() == 0 {continue;}
+    let seq_len = seq_lens[i - 1] + 2;
+    let mut prob_mats = PctStaProbMats::new(seq_len);
+    match string.split('\n').skip(1).next() {
+      Some(string) => {
+        let string = string.trim();
+        if string.len() > 0 {
+          for substring in string.split(' ') {
+            let subsubstrings = substring.split(',').map(|subsubstring| {String::from(subsubstring)}).collect::<Vec<String>>();
+            let (m, n, bpp) = (subsubstrings[0].parse::<usize>().unwrap(), subsubstrings[1].parse::<usize>().unwrap(), subsubstrings[2].parse().unwrap());
+            let pos_pair = (m as Pos, n as Pos);
+            prob_mats.bpp_mat.insert(pos_pair, bpp);
+            prob_mats.upp_mat[m] -= bpp;
+            prob_mats.upp_mat[n] -= bpp;
+          }
+        }
+      }, None => {},
+    }
+    prob_mat_sets.push(prob_mats);
+  }
+  prob_mat_sets
 }
 
 fn read_sa_from_clustal_file(clustal_file_path: &Path) -> (SeqAlign, SeqIds) {

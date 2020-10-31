@@ -14,7 +14,7 @@ type MeaCssStr = MeaSsStr;
 type Strings = Vec<String>;
 
 const DEFAULT_MIX_WEIGHT: Prob = 0.5;
-const DEFAULT_MIN_POW_OF_2: i32 = -7;
+const DEFAULT_MIN_POW_OF_2: i32 = -4;
 const DEFAULT_MAX_POW_OF_2: i32 = 10;
 const GAMMA_4_BENCH: Prob = 1.;
 
@@ -142,24 +142,22 @@ fn main() {
     }
   }
   let mix_bpp_mat = get_mix_bpp_mat(&prob_mat_sets, &rnaalipfold_bpp_mat, &sa, mix_weight);
-  let mix_upp_mat = get_mix_upp_mat(&prob_mat_sets, &rnaalipfold_bpp_mat, &sa, mix_weight);
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }
   if takes_bench {
     let output_file_path = output_dir_path.join(&format!("gamma={}.sth", GAMMA_4_BENCH));
-    compute_and_write_mea_css(&mix_bpp_mat, &mix_upp_mat, &sa, GAMMA_4_BENCH, &output_file_path, &seq_ids);
+    compute_and_write_mea_css(&mix_bpp_mat, &sa, GAMMA_4_BENCH, &output_file_path, &seq_ids);
   } else {
     thread_pool.scoped(|scope| {
       for pow_of_2 in min_pow_of_2 .. max_pow_of_2 + 1 {
         let gamma = (2. as Prob).powi(pow_of_2);
         let ref ref_2_mix_bpp_mat = mix_bpp_mat;
-        let ref ref_2_mix_upp_mat = mix_upp_mat;
         let ref ref_2_sa = sa;
         let ref ref_2_seq_ids = seq_ids;
         let output_file_path = output_dir_path.join(&format!("gamma={}.sth", gamma));
         scope.execute(move || {
-          compute_and_write_mea_css(ref_2_mix_bpp_mat, ref_2_mix_upp_mat, ref_2_sa, gamma, &output_file_path, ref_2_seq_ids);
+          compute_and_write_mea_css(ref_2_mix_bpp_mat, ref_2_sa, gamma, &output_file_path, ref_2_seq_ids);
         });
       }
     });
@@ -186,8 +184,6 @@ fn read_locarnap_bpp_mats(input_locarnap_bpp_mat_file_path: &Path, seq_lens: &Ve
             let (m, n, bpp) = (subsubstrings[0].parse::<usize>().unwrap(), subsubstrings[1].parse::<usize>().unwrap(), subsubstrings[2].parse().unwrap());
             let pos_pair = (m as Pos, n as Pos);
             prob_mats.bpp_mat.insert(pos_pair, bpp);
-            prob_mats.upp_mat[m] -= bpp;
-            prob_mats.upp_mat[n] -= bpp;
           }
         }
       }, None => {},
@@ -263,35 +259,8 @@ fn get_mix_bpp_mat(prob_mat_sets: &ProbMatSets, rnaalipfold_bpp_mat: &ProbMat, s
   mix_bpp_mat
 }
 
-fn get_mix_upp_mat(prob_mat_sets: &ProbMatSets, rnaalipfold_bpp_mat: &ProbMat, sa: &SeqAlign, mix_weight: Prob) -> Probs {
-  let sa_len = sa.cols.len();
-  let num_of_rnas = sa.cols[0].len();
-  let mut mix_upp_mat = vec![0.; sa_len];
-  for i in 0 .. sa_len {
-    let mut rnaalipfold_upp = 1.;
-    for j in 0 .. sa_len {
-      if i == j {continue;}
-      let pos_pair = if i < j {(i, j)} else {(j, i)};
-      rnaalipfold_upp -= rnaalipfold_bpp_mat[pos_pair.0][pos_pair.1];
-    }
-    let mut mean_upp = 0.;
-    let mut effective_num_of_rnas = 0;
-    for j in 0 .. num_of_rnas {
-      if sa.cols[i][j] == GAP {continue;}
-      mean_upp += prob_mat_sets[j].upp_mat[sa.pos_map_sets[i][j] as usize + 1];
-      effective_num_of_rnas += 1;
-    }
-    mix_upp_mat[i] = if effective_num_of_rnas > 0 {
-      mix_weight * mean_upp / num_of_rnas as Prob + (1. - mix_weight) * rnaalipfold_upp
-    } else {
-      rnaalipfold_upp
-    };
-  }
-  mix_upp_mat
-}
-
-fn compute_and_write_mea_css(mix_bpp_mat: &ProbMat, mix_upp_mat: &Probs, sa: &SeqAlign, gamma: Prob, output_file_path: &Path, seq_ids: &SeqIds) {
-  let mea_css = consalifold(mix_bpp_mat, mix_upp_mat, gamma, sa);
+fn compute_and_write_mea_css(mix_bpp_mat: &ProbMat, sa: &SeqAlign, gamma: Prob, output_file_path: &Path, seq_ids: &SeqIds) {
+  let mea_css = consalifold(mix_bpp_mat, gamma, sa);
   let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).unwrap());
   let mut buf_4_writer_2_output_file = format!("# STOCKHOLM 1.0\n");
   let sa_len = sa.cols.len();

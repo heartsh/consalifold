@@ -44,24 +44,24 @@ impl MeaCss {
 
 pub const GAP: Char = '-' as Char;
 
-pub fn consalifold(mix_bpp_mat: &ProbMat, mix_upp_mat: &Probs, gamma: Prob, sa: &SeqAlign) -> MeaCss {
+pub fn consalifold(mix_bpp_mat: &ProbMat, gamma: Prob, sa: &SeqAlign) -> MeaCss {
   let sa_len = sa.cols.len();
   let mut mea_mat = vec![vec![0.; sa_len]; sa_len];
   let sa_len = sa_len as Pos;
+  let gamma_plus_1 = gamma + 1.;
   for sub_sa_len in 1 .. sa_len + 1 {
     for i in 0 .. sa_len + 1 - sub_sa_len {
       let j = i + sub_sa_len - 1;
       let (long_i, long_j) = (i as usize, j as usize);
       if i == j {
-        mea_mat[long_i][long_j] = mix_upp_mat[long_i];
         continue;
       }
-      let mut mea = mea_mat[long_i + 1][long_j] + mix_upp_mat[long_i];
-      let ea = mea_mat[long_i][long_j - 1] + mix_upp_mat[long_j];
+      let mut mea = mea_mat[long_i + 1][long_j];
+      let ea = mea_mat[long_i][long_j - 1];
       if ea > mea {
         mea = ea;
       }
-      let ea = mea_mat[long_i + 1][long_j - 1] + gamma * mix_bpp_mat[long_i][long_j];
+      let ea = mea_mat[long_i + 1][long_j - 1] + gamma_plus_1 * mix_bpp_mat[long_i][long_j] - 1.;
       if ea > mea {
         mea = ea;
       }
@@ -82,11 +82,11 @@ pub fn consalifold(mix_bpp_mat: &ProbMat, mix_upp_mat: &Probs, gamma: Prob, sa: 
     if j <= i {continue;}
     let (long_i, long_j) = (i as usize, j as usize);
     let mea = mea_mat[long_i][long_j];
-    if mea == mea_mat[long_i + 1][long_j] + mix_upp_mat[long_i] {
+    if mea == mea_mat[long_i + 1][long_j] {
       pos_pair_stack.push((i + 1, j));
-    } else if mea == mea_mat[long_i][long_j - 1] + mix_upp_mat[long_j] {
+    } else if mea == mea_mat[long_i][long_j - 1] {
       pos_pair_stack.push((i, j - 1));
-    } else if mea == mea_mat[long_i + 1][long_j - 1] + gamma * mix_bpp_mat[long_i][long_j] {
+    } else if mea == mea_mat[long_i + 1][long_j - 1] + gamma_plus_1 * mix_bpp_mat[long_i][long_j] - 1. {
       pos_pair_stack.push((i + 1, j - 1));
       mea_css.bpa_pos_pairs.push(pos_pair);
     } else {

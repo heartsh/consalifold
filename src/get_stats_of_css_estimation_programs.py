@@ -100,7 +100,7 @@ def main():
   clustalw_plus_rnaalifold_ppv = clustalw_plus_rnaalifold_sens = clustalw_plus_rnaalifold_fpr = clustalw_plus_rnaalifold_f1_score = clustalw_plus_rnaalifold_mcc = 0.
   mafft_xinsi_plus_rnaalifold_ppv = mafft_xinsi_plus_rnaalifold_sens = mafft_xinsi_plus_rnaalifold_fpr = mafft_xinsi_plus_rnaalifold_f1_score = mafft_xinsi_plus_rnaalifold_mcc = 0.
   ref_sa_plus_rnaalifold_ppv = ref_sa_plus_rnaalifold_sens = ref_sa_plus_rnaalifold_fpr = ref_sa_plus_rnaalifold_f1_score = ref_sa_plus_rnaalifold_mcc = 0.
-  gammas = [2. ** i for i in range(-7, 11)]
+  gammas = [2. ** i for i in range(-4, 11)]
   rna_fam_dir_path = asset_dir_path + "/compiled_rna_fams"
   # rna_fam_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
   ref_sa_dir_path = asset_dir_path + "/ref_sas"
@@ -370,7 +370,7 @@ def main():
   line_5, = pyplot.plot(posterior_probcons_plus_consalifold_ppvs, posterior_probcons_plus_consalifold_senss, label = "ProbCons + ConsAlifold (LocARNA-P)", marker = "d", linestyle = "-")
   pyplot.xlabel("Positive predictive value")
   pyplot.ylabel("Sensitivity")
-  pyplot.legend(handles = [line_1, line_2, line_3, line_4, line_5], loc = "lower left")
+  pyplot.legend(handles = [line_1, line_2, line_3, line_4, line_5], loc = "center left")
   image_dir_path = asset_dir_path + "/images"
   if not os.path.exists(image_dir_path):
     os.mkdir(image_dir_path)
@@ -482,7 +482,7 @@ def main():
   pyplot.savefig(image_dir_path + "/fprs_vs_senss_on_css_estimation_ref_sa.eps", bbox_inches = "tight")
   pyplot.clf()
   # Figure for ProbCons.
-  gammas = [i for i in range(-7, 11)]
+  gammas = [i for i in range(-4, 11)]
   pyplot.figure()
   line_1, = pyplot.plot(gammas, probcons_plus_consalifold_f1_scores, label = "ProbCons + ConsAlifold (ConsProb)", marker = "o", linestyle = "-")
   line_2, = pyplot.plot(gammas, probcons_plus_centroidalifold_f1_scores, label = "ProbCons + CentroidAlifold", marker = "s", linestyle = "--")
@@ -622,39 +622,33 @@ def get_bin_counts(params):
     sub_ref_flat_css = ref_flat_css[m]
     rna_seq_len_1 = rna_seq_lens[m]
     for i in range(0, rna_seq_len_1):
-      estimated_bin = i in sub_estimated_flat_css
-      ref_bin = i in sub_ref_flat_css
-      if estimated_bin == ref_bin:
-        if estimated_bin == False:
-          tn += 1
-      else:
-        if estimated_bin == True:
-          fp += 1
-        else:
-          fn += 1
       for j in range(i + 1, rna_seq_len_1):
         estimated_bin = (i, j) in sub_estimated_css
         ref_bin = (i, j) in sub_ref_css
         if estimated_bin == ref_bin:
           if estimated_bin == True:
             tp += 1
+          else:
+            tn += 1
+        else:
+          if estimated_bin == True:
+            fp += 1
+          else:
+            fn += 1
   for i in range(sta_len):
-    estimated_bin = i in estimated_flat_col_css
-    ref_bin = i in ref_flat_col_css
-    if estimated_bin == ref_bin:
-      if estimated_bin == False:
-        col_tn += 1
-    else:
-      if estimated_bin == True:
-        col_fp += 1
-      else:
-        col_fn += 1
     for j in range(i + 1, sta_len):
       estimated_bin = (i, j) in estimated_col_css
       ref_bin = (i, j) in ref_col_css
       if estimated_bin == ref_bin:
         if estimated_bin == True:
           col_tp += 1
+        else:
+          col_tn += 1
+      else:
+        if estimated_bin == True:
+          col_fp += 1
+        else:
+          col_fn += 1
   return tp, tn, fp, fn, col_tp, col_tn, col_fp, col_fn
 
 def final_sum(results):

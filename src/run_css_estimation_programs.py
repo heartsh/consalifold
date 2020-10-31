@@ -361,7 +361,7 @@ def main():
   pool.map(run_rnaalifold, clustalw_plus_rnaalifold_params)
   pool.map(run_rnaalifold, mafft_xinsi_plus_rnaalifold_params)
   pool.map(run_rnaalifold, ref_sa_plus_rnaalifold_params)
-  # print("The elapsed time of ConsAlifold = %f [s]." % consalifold_elapsed_time)
+  print("The elapsed time of ConsAlifold = %f [s]." % consalifold_elapsed_time)
   print("The elapsed time of CentroidAlifold = %f [s]." % centroidalifold_elapsed_time)
   print("The elapsed time of RNAalifold = %f [s]." % rnaalifold_elapsed_time)
   print("The elapsed time of PETfold = %f [s]." % petfold_elapsed_time)

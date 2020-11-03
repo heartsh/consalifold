@@ -100,17 +100,35 @@ fn main() {
   };
   let fasta_file_reader = Reader::from_file(Path::new(&input_file_path)).unwrap();
   let mut fasta_records = FastaRecords::new();
+  let mut max_seq_len = 0;
   for fasta_record in fasta_file_reader.records() {
     let fasta_record = fasta_record.unwrap();
     let mut seq = convert(fasta_record.seq());
     seq.insert(0, PSEUDO_BASE);
     seq.push(PSEUDO_BASE);
+    let seq_len = seq.len();
+    if seq_len > max_seq_len {
+      max_seq_len = seq_len;
+    }
     fasta_records.push(FastaRecord::new(String::from(fasta_record.id()), seq));
   }
-  let (mut sa, seq_ids) = read_sa_from_clustal_file(input_sa_file_path);
+  let mut thread_pool = Pool::new(num_of_threads);
+  if max_seq_len <= u8::MAX as usize {
+    multi_threaded_consalifold::<u8>(&mut thread_pool, &fasta_records, offset_4_max_gap_num, min_bpp, produces_access_probs, output_dir_path, min_pow_of_2, max_pow_of_2, takes_bench, outputs_probs, mix_weight, input_bpp_mat_file_path, input_locarnap_bpp_mat_file_path, is_posterior_model, input_sa_file_path);
+  } else {
+    multi_threaded_consalifold::<u16>(&mut thread_pool, &fasta_records, offset_4_max_gap_num, min_bpp, produces_access_probs, output_dir_path, min_pow_of_2, max_pow_of_2, takes_bench, outputs_probs, mix_weight, input_bpp_mat_file_path, input_locarnap_bpp_mat_file_path, is_posterior_model, input_sa_file_path);
+  }
+}
+
+fn multi_threaded_consalifold<T>(thread_pool: &mut Pool, fasta_records: &FastaRecords, offset_4_max_gap_num: usize, min_bpp: Prob, produces_access_probs: bool, output_dir_path: &Path, min_pow_of_2: i32, max_pow_of_2: i32, takes_bench: bool, outputs_probs: bool, mix_weight: Prob, input_bpp_mat_file_path: &Path, input_locarnap_bpp_mat_file_path: &Path, is_posterior_model: bool, input_sa_file_path: &Path)
+where
+  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
+{
+  let (mut sa, seq_ids) = read_sa_from_clustal_file::<u16>(input_sa_file_path);
   let num_of_rnas = sa.cols[0].len();
   let mut seq_lens = vec![0 as usize; num_of_rnas];
   let num_of_cols = sa.cols.len();
+  // sa.pos_map_sets = vec![vec![0; num_of_rnas]; num_of_cols];
   sa.pos_map_sets = vec![vec![0; num_of_rnas]; num_of_cols];
   for i in 0 .. num_of_cols {
     for j in 0 .. num_of_rnas {
@@ -119,16 +137,16 @@ fn main() {
         seq_lens[j] += 1;
       }
       if seq_lens[j] > 0 {
-        sa.pos_map_sets[i][j] = seq_lens[j] as Pos - 1;
+        // sa.pos_map_sets[i][j] = seq_lens[j] as Pos - 1;
+        sa.pos_map_sets[i][j] = seq_lens[j] as u16 - 1;
       }
     }
   }
   let sa_len = sa.cols.len();
-  let mut thread_pool = Pool::new(num_of_threads);
   let prob_mat_sets = if is_posterior_model {
-    read_locarnap_bpp_mats(&input_locarnap_bpp_mat_file_path, &seq_lens)
+    read_locarnap_bpp_mats::<T>(&input_locarnap_bpp_mat_file_path, &seq_lens)
   } else {
-    consprob(&mut thread_pool, &fasta_records, min_bpp, offset_4_max_gap_num, is_posterior_model, produces_access_probs)
+    consprob::<T>(thread_pool, &fasta_records, min_bpp, T::from_usize(offset_4_max_gap_num).unwrap(), produces_access_probs)
   };
   let mut rnaalipfold_bpp_mat = vec![vec![0.; sa_len]; sa_len];
   let reader_2_input_bpp_mat_file = BufReader::new(File::open(input_bpp_mat_file_path).unwrap());
@@ -141,13 +159,13 @@ fn main() {
       rnaalipfold_bpp_mat[i][j] = subsubsubstrings[1].parse().unwrap();
     }
   }
-  let mix_bpp_mat = get_mix_bpp_mat(&prob_mat_sets, &rnaalipfold_bpp_mat, &sa, mix_weight);
+  let mix_bpp_mat = get_mix_bpp_mat::<T, u16>(&prob_mat_sets, &rnaalipfold_bpp_mat, &sa, mix_weight);
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }
   if takes_bench {
     let output_file_path = output_dir_path.join(&format!("gamma={}.sth", GAMMA_4_BENCH));
-    compute_and_write_mea_css(&mix_bpp_mat, &sa, GAMMA_4_BENCH, &output_file_path, &seq_ids);
+    compute_and_write_mea_css::<u16>(&mix_bpp_mat, &sa, GAMMA_4_BENCH, &output_file_path, &seq_ids);
   } else {
     thread_pool.scoped(|scope| {
       for pow_of_2 in min_pow_of_2 .. max_pow_of_2 + 1 {
@@ -157,17 +175,20 @@ fn main() {
         let ref ref_2_seq_ids = seq_ids;
         let output_file_path = output_dir_path.join(&format!("gamma={}.sth", gamma));
         scope.execute(move || {
-          compute_and_write_mea_css(ref_2_mix_bpp_mat, ref_2_sa, gamma, &output_file_path, ref_2_seq_ids);
+          compute_and_write_mea_css::<u16>(ref_2_mix_bpp_mat, ref_2_sa, gamma, &output_file_path, ref_2_seq_ids);
         });
       }
     });
   }
   if outputs_probs {
-    write_prob_mat_sets(&output_dir_path, &prob_mat_sets, produces_access_probs);
+    write_prob_mat_sets::<T>(&output_dir_path, &prob_mat_sets, produces_access_probs);
   }
 }
 
-fn read_locarnap_bpp_mats(input_locarnap_bpp_mat_file_path: &Path, seq_lens: &Vec<usize>) -> ProbMatSets {
+fn read_locarnap_bpp_mats<T>(input_locarnap_bpp_mat_file_path: &Path, seq_lens: &Vec<usize>) -> ProbMatSets<T>
+where
+  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
+{
   let mut prob_mat_sets = Vec::new();
   let reader_2_locarnap_bpp_mat_file = BufReader::new(File::open(input_locarnap_bpp_mat_file_path).unwrap());
   for (i, string) in reader_2_locarnap_bpp_mat_file.split(b'>').enumerate() {
@@ -182,7 +203,8 @@ fn read_locarnap_bpp_mats(input_locarnap_bpp_mat_file_path: &Path, seq_lens: &Ve
           for substring in string.split(' ') {
             let subsubstrings = substring.split(',').map(|subsubstring| {String::from(subsubstring)}).collect::<Vec<String>>();
             let (m, n, bpp) = (subsubstrings[0].parse::<usize>().unwrap(), subsubstrings[1].parse::<usize>().unwrap(), subsubstrings[2].parse().unwrap());
-            let pos_pair = (m as Pos, n as Pos);
+            // let pos_pair = (m as Pos, n as Pos);
+            let pos_pair = (T::from_usize(m).unwrap(), T::from_usize(n).unwrap());
             prob_mats.bpp_mat.insert(pos_pair, bpp);
           }
         }
@@ -193,8 +215,11 @@ fn read_locarnap_bpp_mats(input_locarnap_bpp_mat_file_path: &Path, seq_lens: &Ve
   prob_mat_sets
 }
 
-fn read_sa_from_clustal_file(clustal_file_path: &Path) -> (SeqAlign, SeqIds) {
-  let mut sa = SeqAlign::new();
+fn read_sa_from_clustal_file<T>(clustal_file_path: &Path) -> (SeqAlign<T>, SeqIds)
+where
+  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
+{
+  let mut sa = SeqAlign::<T>::new();
   let mut seq_ids = SeqIds::new();
   let reader_2_clustal_file = BufReader::new(File::open(clustal_file_path).unwrap());
   let mut seq_pointer = 0;
@@ -230,7 +255,11 @@ fn read_sa_from_clustal_file(clustal_file_path: &Path) -> (SeqAlign, SeqIds) {
   (sa, seq_ids)
 }
 
-fn get_mix_bpp_mat(prob_mat_sets: &ProbMatSets, rnaalipfold_bpp_mat: &ProbMat, sa: &SeqAlign, mix_weight: Prob) -> ProbMat {
+fn get_mix_bpp_mat<T, U>(prob_mat_sets: &ProbMatSets<T>, rnaalipfold_bpp_mat: &ProbMat, sa: &SeqAlign<U>, mix_weight: Prob) -> ProbMat
+where
+  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
+  U: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
+{
   let sa_len = sa.cols.len();
   let num_of_rnas = sa.cols[0].len();
   let mut mix_bpp_mat = vec![vec![0.; sa_len]; sa_len];
@@ -241,7 +270,8 @@ fn get_mix_bpp_mat(prob_mat_sets: &ProbMatSets, rnaalipfold_bpp_mat: &ProbMat, s
       for k in 0 .. num_of_rnas {
         if sa.cols[i][k] == GAP || sa.cols[j][k] == GAP {continue;}
         let ref bpp_mat = prob_mat_sets[k].bpp_mat;
-        let pos_pair = (sa.pos_map_sets[i][k] + 1, sa.pos_map_sets[j][k] + 1);
+        // let pos_pair = (sa.pos_map_sets[i][k] + 1, sa.pos_map_sets[j][k] + 1);
+        let pos_pair = (T::from(sa.pos_map_sets[i][k]).unwrap() + T::one(), T::from(sa.pos_map_sets[j][k]).unwrap() + T::one());
         match bpp_mat.get(&pos_pair) {
           Some(&bpp) => {
             mean_bpp += bpp;
@@ -259,8 +289,11 @@ fn get_mix_bpp_mat(prob_mat_sets: &ProbMatSets, rnaalipfold_bpp_mat: &ProbMat, s
   mix_bpp_mat
 }
 
-fn compute_and_write_mea_css(mix_bpp_mat: &ProbMat, sa: &SeqAlign, gamma: Prob, output_file_path: &Path, seq_ids: &SeqIds) {
-  let mea_css = consalifold(mix_bpp_mat, gamma, sa);
+fn compute_and_write_mea_css<T>(mix_bpp_mat: &ProbMat, sa: &SeqAlign<T>, gamma: Prob, output_file_path: &Path, seq_ids: &SeqIds)
+where
+  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
+{
+  let mea_css = consalifold::<T>(mix_bpp_mat, gamma, sa);
   let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).unwrap());
   let mut buf_4_writer_2_output_file = format!("# STOCKHOLM 1.0\n");
   let sa_len = sa.cols.len();
@@ -270,7 +303,7 @@ fn compute_and_write_mea_css(mix_bpp_mat: &ProbMat, sa: &SeqAlign, gamma: Prob, 
     let ref seq_id = seq_ids[rna_id];
     buf_4_writer_2_output_file.push_str(seq_id);
     let mut stockholm_row = vec![' ' as Char; max_seq_id_len - seq_id.len() + 2];
-    let mut sa_row = (0 .. sa_len).map(|x| {sa.cols[x][rna_id]}).collect::<Vec<u8>>();
+    let mut sa_row = (0 .. sa_len).map(|x| {sa.cols[x][rna_id]}).collect::<Vec<Char>>();
     stockholm_row.append(&mut sa_row);
     let stockholm_row = unsafe {from_utf8_unchecked(&stockholm_row)};
     buf_4_writer_2_output_file.push_str(&stockholm_row);
@@ -288,11 +321,16 @@ fn compute_and_write_mea_css(mix_bpp_mat: &ProbMat, sa: &SeqAlign, gamma: Prob, 
   let _ = writer_2_output_file.write_all(buf_4_writer_2_output_file.as_bytes());
 }
 
-fn get_mea_css_str(mea_css: &MeaCss, sa_len: usize) -> MeaCssStr {
+fn get_mea_css_str<T>(mea_css: &MeaCss<T>, sa_len: usize) -> MeaCssStr
+where
+  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
+{
   let mut mea_css_str = vec![UNPAIRING_BASE; sa_len];
   for &(i, j) in &mea_css.bpa_pos_pairs {
-    mea_css_str[i as usize] = BASE_PAIRING_LEFT_BASE;
-    mea_css_str[j as usize] = BASE_PAIRING_RIGHT_BASE;
+    // mea_css_str[i as usize] = BASE_PAIRING_LEFT_BASE;
+    mea_css_str[i.to_usize().unwrap()] = BASE_PAIRING_LEFT_BASE;
+    // mea_css_str[j as usize] = BASE_PAIRING_RIGHT_BASE;
+    mea_css_str[j.to_usize().unwrap()] = BASE_PAIRING_RIGHT_BASE;
   }
   mea_css_str
 }

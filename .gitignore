@@ -1,6 +1,8 @@
 *
 !**/
 target
+!trna.fa
+!sampled_trnas.fa
 !*.rs
 !*.py
 !*.tar.gz

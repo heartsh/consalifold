@@ -128,7 +128,6 @@ where
   let num_of_rnas = sa.cols[0].len();
   let mut seq_lens = vec![0 as usize; num_of_rnas];
   let num_of_cols = sa.cols.len();
-  // sa.pos_map_sets = vec![vec![0; num_of_rnas]; num_of_cols];
   sa.pos_map_sets = vec![vec![0; num_of_rnas]; num_of_cols];
   for i in 0 .. num_of_cols {
     for j in 0 .. num_of_rnas {
@@ -137,7 +136,6 @@ where
         seq_lens[j] += 1;
       }
       if seq_lens[j] > 0 {
-        // sa.pos_map_sets[i][j] = seq_lens[j] as Pos - 1;
         sa.pos_map_sets[i][j] = seq_lens[j] as u16 - 1;
       }
     }
@@ -203,7 +201,6 @@ where
           for substring in string.split(' ') {
             let subsubstrings = substring.split(',').map(|subsubstring| {String::from(subsubstring)}).collect::<Vec<String>>();
             let (m, n, bpp) = (subsubstrings[0].parse::<usize>().unwrap(), subsubstrings[1].parse::<usize>().unwrap(), subsubstrings[2].parse().unwrap());
-            // let pos_pair = (m as Pos, n as Pos);
             let pos_pair = (T::from_usize(m).unwrap(), T::from_usize(n).unwrap());
             prob_mats.bpp_mat.insert(pos_pair, bpp);
           }
@@ -270,7 +267,6 @@ where
       for k in 0 .. num_of_rnas {
         if sa.cols[i][k] == GAP || sa.cols[j][k] == GAP {continue;}
         let ref bpp_mat = prob_mat_sets[k].bpp_mat;
-        // let pos_pair = (sa.pos_map_sets[i][k] + 1, sa.pos_map_sets[j][k] + 1);
         let pos_pair = (T::from(sa.pos_map_sets[i][k]).unwrap() + T::one(), T::from(sa.pos_map_sets[j][k]).unwrap() + T::one());
         match bpp_mat.get(&pos_pair) {
           Some(&bpp) => {
@@ -327,9 +323,7 @@ where
 {
   let mut mea_css_str = vec![UNPAIRING_BASE; sa_len];
   for &(i, j) in &mea_css.bpa_pos_pairs {
-    // mea_css_str[i as usize] = BASE_PAIRING_LEFT_BASE;
     mea_css_str[i.to_usize().unwrap()] = BASE_PAIRING_LEFT_BASE;
-    // mea_css_str[j as usize] = BASE_PAIRING_RIGHT_BASE;
     mea_css_str[j.to_usize().unwrap()] = BASE_PAIRING_RIGHT_BASE;
   }
   mea_css_str

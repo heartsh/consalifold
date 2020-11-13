@@ -1,6 +1,6 @@
 [package]
 name = "consalifold"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["heartsh <heartsh@heartsh.io>"]
 description = "ConsAlifold, which Predicts Global Consensus RNA Secondary Structures to Consider Sparse Global Pairwise RNA Structural Alignments"
 repository = "https://github.com/heartsh/consalifold"

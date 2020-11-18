@@ -7,7 +7,7 @@ from matplotlib import pyplot
 import os
 
 seaborn.set()
-cmap = pyplot.cm.viridis
+cmap = seaborn.diverging_palette(220, 20, n=24)
 
 def main():
   (current_work_dir_path, asset_dir_path, program_dir_path, conda_program_dir_path) = utils.get_dir_paths()
@@ -23,7 +23,7 @@ def main():
   bpp_mat_on_ss = utils.get_bpp_mats(asset_dir_path + "/sampled_trnas/bpp_mats_on_ss.dat", seq_lens)[0]
   xlabels = [str(i + 1) if (i + 1) % 20 == 0 else "" for i in range(seq_len)]
   (_, axes) = pyplot.subplots(nrows = 1, ncols = 2, figsize = (12, 6))
-  seaborn.heatmap(bpp_mat_on_ss, ax = axes[0], xticklabels = xlabels, yticklabels = xlabels, cbar = False, cmap = cmap, vmin = 0, vmax = 1)
+  seaborn.heatmap(bpp_mat_on_ss, ax = axes[0], xticklabels = xlabels, yticklabels = xlabels, cbar = True, cmap = cmap, vmin = 0, vmax = 1)
   seaborn.heatmap(bpp_mat, ax = axes[1], xticklabels = xlabels, yticklabels = xlabels, cbar = False, cmap = cmap, vmin = 0, vmax = 1)
   pyplot.savefig(image_dir_path + "/trna_bpp_mat_comparison.eps", bbox_inches = "tight")
   pyplot.clf()

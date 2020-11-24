@@ -15,8 +15,7 @@ from Bio.Align import MultipleSeqAlignment
 
 def main():
   (current_work_dir_path, asset_dir_path, program_dir_path, conda_program_dir_path) = utils.get_dir_paths()
-  # rfam_seed_sta_file_path = asset_dir_path + "/rfam_seed_stas.sth"
-  rfam_seed_sta_file_path = asset_dir_path + "/Rfam.seed"
+  rfam_seed_sta_file_path = asset_dir_path + "/rfam_seed_stas_v14.3.sth"
   rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
   rna_seq_dir_path_4_micro_bench = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
   ref_sa_dir_path = asset_dir_path + "/ref_sas"

@@ -5,9 +5,7 @@ target
 !sampled_trnas.fa
 !*.rs
 !*.py
-!*.tar.gz
 !Cargo.toml
 !.gitignore
 !README.md
-!assets/rfam_seed_stas.sth
-!assets/homologs_of_pri_miR_16_2.*
+!assets/rfam_seed_stas_v14.3.sth

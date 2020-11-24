@@ -15,7 +15,8 @@ from Bio.Align import MultipleSeqAlignment
 
 def main():
   (current_work_dir_path, asset_dir_path, program_dir_path, conda_program_dir_path) = utils.get_dir_paths()
-  rfam_seed_sta_file_path = asset_dir_path + "/rfam_seed_stas.sth"
+  # rfam_seed_sta_file_path = asset_dir_path + "/rfam_seed_stas.sth"
+  rfam_seed_sta_file_path = asset_dir_path + "/Rfam.seed"
   rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
   rna_seq_dir_path_4_micro_bench = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
   ref_sa_dir_path = asset_dir_path + "/ref_sas"
@@ -28,8 +29,8 @@ def main():
     os.mkdir(ref_sa_dir_path)
   if not os.path.isdir(ref_sa_dir_path_4_micro_bench):
     os.mkdir(ref_sa_dir_path_4_micro_bench)
-  max_sa_len = 400
-  max_seq_num = 15
+  max_sa_len = 500
+  max_seq_num = 20
   stas = [sta for sta in AlignIO.parse(rfam_seed_sta_file_path, "stockholm") if len(sta[0]) <= max_sa_len and len(sta) <= max_seq_num and is_valid(sta)]
   num_of_stas = len(stas)
   print("# RNA families: %d" % num_of_stas)

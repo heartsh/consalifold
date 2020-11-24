@@ -8,10 +8,15 @@ import os
 import math
 from math import sqrt
 import multiprocessing
+import numpy
 
 seaborn.set()
 pyplot.rcParams['legend.handlelength'] = 0
 pyplot.rcParams['legend.fontsize'] = "x-large"
+color_palette = seaborn.color_palette()
+min_gamma = -4
+max_gamma = 10
+white = "#F2F2F2"
 
 def main():
   (current_work_dir_path, asset_dir_path, program_dir_path, conda_program_dir_path) = utils.get_dir_paths()
@@ -101,7 +106,7 @@ def main():
   clustalw_plus_rnaalifold_ppv = clustalw_plus_rnaalifold_sens = clustalw_plus_rnaalifold_fpr = clustalw_plus_rnaalifold_f1_score = clustalw_plus_rnaalifold_mcc = 0.
   mafft_xinsi_plus_rnaalifold_ppv = mafft_xinsi_plus_rnaalifold_sens = mafft_xinsi_plus_rnaalifold_fpr = mafft_xinsi_plus_rnaalifold_f1_score = mafft_xinsi_plus_rnaalifold_mcc = 0.
   ref_sa_plus_rnaalifold_ppv = ref_sa_plus_rnaalifold_sens = ref_sa_plus_rnaalifold_fpr = ref_sa_plus_rnaalifold_f1_score = ref_sa_plus_rnaalifold_mcc = 0.
-  gammas = [2. ** i for i in range(-4, 11)]
+  gammas = [2. ** i for i in range(min_gamma, max_gamma + 1)]
   rna_fam_dir_path = asset_dir_path + "/compiled_rna_fams"
   # rna_fam_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
   ref_sa_dir_path = asset_dir_path + "/ref_sas"
@@ -368,7 +373,7 @@ def main():
   line_2, = pyplot.plot(probcons_plus_centroidalifold_ppvs, probcons_plus_centroidalifold_senss, label = "CentroidAlifold", marker = "s", linestyle = "--")
   line_3, = pyplot.plot(probcons_plus_petfold_ppvs, probcons_plus_petfold_senss, label = "PETfold", marker = "^", linestyle = "-.")
   line_4, = pyplot.plot(probcons_plus_rnaalifold_ppv, probcons_plus_rnaalifold_sens, label = "RNAalifold", marker = "v", linestyle = ":")
-  line_5, = pyplot.plot(posterior_probcons_plus_consalifold_ppvs, posterior_probcons_plus_consalifold_senss, label = "ConsAlifold (LocARNA-P + our PCTs)", marker = "d", linestyle = "-")
+  line_5, = pyplot.plot(posterior_probcons_plus_consalifold_ppvs, posterior_probcons_plus_consalifold_senss, label = "ConsAlifold (LocARNA-P + our PCT)", marker = "d", linestyle = "-")
   pyplot.xlabel("Precision")
   pyplot.ylabel("Recall")
   image_dir_path = asset_dir_path + "/images"
@@ -431,7 +436,7 @@ def main():
   line_2, = pyplot.plot(probcons_plus_centroidalifold_fprs, probcons_plus_centroidalifold_senss, label = "CentroidAlifold", marker = "s", linestyle = "--")
   line_3, = pyplot.plot(probcons_plus_petfold_fprs, probcons_plus_petfold_senss, label = "PETfold", marker = "^", linestyle = "-.")
   line_4, = pyplot.plot(probcons_plus_rnaalifold_fpr, probcons_plus_rnaalifold_sens, label = "RNAalifold", marker = "v", linestyle = ":")
-  line_5, = pyplot.plot(posterior_probcons_plus_consalifold_fprs, posterior_probcons_plus_consalifold_senss, label = "ConsAlifold (LocARNA-P + our PCTs)", marker = "d", linestyle = "-")
+  line_5, = pyplot.plot(posterior_probcons_plus_consalifold_fprs, posterior_probcons_plus_consalifold_senss, label = "ConsAlifold (LocARNA-P + our PCT)", marker = "d", linestyle = "-")
   pyplot.legend(handles = [line_1, line_2, line_3, line_4, line_5], loc = "lower right")
   pyplot.xlabel("Fall-out")
   pyplot.ylabel("Recall")
@@ -483,24 +488,35 @@ def main():
   pyplot.savefig(image_dir_path + "/roc_curves_on_css_estimation_ref_sa.eps", bbox_inches = "tight")
   pyplot.clf()
   # Figure for ProbCons.
-  gammas = [i for i in range(-4, 11)]
+  pyplot.rcParams['legend.fontsize'] = "large"
+  gammas = [i for i in range(min_gamma, max_gamma + 1)]
   pyplot.figure()
   line_1, = pyplot.plot(gammas, probcons_plus_consalifold_f1_scores, label = "ConsAlifold (ConsProb)", marker = "o", linestyle = "-")
   line_2, = pyplot.plot(gammas, probcons_plus_centroidalifold_f1_scores, label = "CentroidAlifold", marker = "s", linestyle = "--")
   line_3, = pyplot.plot(gammas, probcons_plus_petfold_f1_scores, label = "PETfold", marker = "^", linestyle = "-.")
   line_4, = pyplot.plot(-2., probcons_plus_rnaalifold_f1_score, label = "RNAalifold", marker = "v", linestyle = ":")
-  line_5, = pyplot.plot(gammas, posterior_probcons_plus_consalifold_f1_scores, label = "ConsAlifold (LocARNA-P + our PCTs)", marker = "d", linestyle = "-")
+  line_5, = pyplot.plot(gammas, posterior_probcons_plus_consalifold_f1_scores, label = "ConsAlifold (LocARNA-P + our PCT)", marker = "d", linestyle = "-")
+  line_6, = pyplot.plot(min_gamma + numpy.argmax(probcons_plus_consalifold_f1_scores), max(probcons_plus_consalifold_f1_scores), label = "ConsAlifold (ConsProb)", marker = "o", linestyle = "-", markerfacecolor = white, markeredgecolor = color_palette[0])
+  line_7, = pyplot.plot(min_gamma + numpy.argmax(probcons_plus_centroidalifold_f1_scores), max(probcons_plus_centroidalifold_f1_scores), label = "CentroidAlifold", marker = "s", linestyle = "--", markerfacecolor = white, markeredgecolor = color_palette[1])
+  line_8, = pyplot.plot(min_gamma + numpy.argmax(probcons_plus_petfold_f1_scores), max(probcons_plus_petfold_f1_scores), label = "PETfold", marker = "^", linestyle = "-.", markerfacecolor = white, markeredgecolor = color_palette[2])
+  line_9, = pyplot.plot(min_gamma + numpy.argmax(posterior_probcons_plus_consalifold_f1_scores), max(posterior_probcons_plus_consalifold_f1_scores), label = "ConsAlifold (LocARNA-P + our PCT)", marker = "d", linestyle = "-", markerfacecolor = white, markeredgecolor = color_palette[4])
+  pyplot.legend(handles = [line_6, line_7, line_8, line_9], loc = "lower right")
   pyplot.xlabel("$\log_2 \gamma$")
   pyplot.ylabel("F1 score")
   pyplot.tight_layout()
   pyplot.savefig(image_dir_path + "/gammas_vs_f1_scores_on_css_estimation_probcons.eps", bbox_inches = "tight")
   pyplot.clf()
   # Figure for MAFFT.
+  pyplot.rcParams['legend.fontsize'] = "x-large"
   pyplot.figure()
   line_1, = pyplot.plot(gammas, mafft_plus_consalifold_f1_scores, label = "ConsAlifold (ConsProb)", marker = "o", linestyle = "-")
   line_2, = pyplot.plot(gammas, mafft_plus_centroidalifold_f1_scores, label = "CentroidAlifold", marker = "s", linestyle = "--")
   line_3, = pyplot.plot(gammas, mafft_plus_petfold_f1_scores, label = "PETfold", marker = "^", linestyle = "-.")
   line_4, = pyplot.plot(-2., mafft_plus_rnaalifold_f1_score, label = "RNAalifold", marker = "v", linestyle = ":")
+  line_5, = pyplot.plot(min_gamma + numpy.argmax(mafft_plus_consalifold_f1_scores), max(mafft_plus_consalifold_f1_scores), label = "ConsAlifold (ConsProb)", marker = "o", linestyle = "-", markerfacecolor = white, markeredgecolor = color_palette[0])
+  line_6, = pyplot.plot(min_gamma + numpy.argmax(mafft_plus_centroidalifold_f1_scores), max(mafft_plus_centroidalifold_f1_scores), label = "CentroidAlifold", marker = "s", linestyle = "--", markerfacecolor = white, markeredgecolor = color_palette[1])
+  line_7, = pyplot.plot(min_gamma + numpy.argmax(mafft_plus_petfold_f1_scores), max(mafft_plus_petfold_f1_scores), label = "PETfold", marker = "^", linestyle = "-.", markerfacecolor = white, markeredgecolor = color_palette[2])
+  pyplot.legend(handles = [line_5, line_6, line_7], loc = "lower right")
   pyplot.xlabel("$\log_2 \gamma$")
   pyplot.ylabel("F1 score")
   pyplot.tight_layout()
@@ -512,6 +528,10 @@ def main():
   line_2, = pyplot.plot(gammas, clustalw_plus_centroidalifold_f1_scores, label = "CentroidAlifold", marker = "s", linestyle = "--")
   line_3, = pyplot.plot(gammas, clustalw_plus_petfold_f1_scores, label = "PETfold", marker = "^", linestyle = "-.")
   line_4, = pyplot.plot(-2., clustalw_plus_rnaalifold_f1_score, label = "RNAalifold", marker = "v", linestyle = ":")
+  line_5, = pyplot.plot(min_gamma + numpy.argmax(clustalw_plus_consalifold_f1_scores), max(clustalw_plus_consalifold_f1_scores), label = "ConsAlifold (ConsProb)", marker = "o", linestyle = "-", markerfacecolor = white, markeredgecolor = color_palette[0])
+  line_6, = pyplot.plot(min_gamma + numpy.argmax(clustalw_plus_centroidalifold_f1_scores), max(clustalw_plus_centroidalifold_f1_scores), label = "CentroidAlifold", marker = "s", linestyle = "--", markerfacecolor = white, markeredgecolor = color_palette[1])
+  line_7, = pyplot.plot(min_gamma + numpy.argmax(clustalw_plus_petfold_f1_scores), max(clustalw_plus_petfold_f1_scores), label = "PETfold", marker = "^", linestyle = "-.", markerfacecolor = white, markeredgecolor = color_palette[2])
+  pyplot.legend(handles = [line_5, line_6, line_7], loc = "lower right")
   pyplot.xlabel("$\log_2 \gamma$")
   pyplot.ylabel("F1 score")
   pyplot.tight_layout()
@@ -523,6 +543,10 @@ def main():
   line_2, = pyplot.plot(gammas, mafft_xinsi_plus_centroidalifold_f1_scores, label = "CentroidAlifold", marker = "s", linestyle = "--")
   line_3, = pyplot.plot(gammas, mafft_xinsi_plus_petfold_f1_scores, label = "PETfold", marker = "^", linestyle = "-.")
   line_4, = pyplot.plot(-2., mafft_xinsi_plus_rnaalifold_f1_score, label = "RNAalifold", marker = "v", linestyle = ":")
+  line_5, = pyplot.plot(min_gamma + numpy.argmax(mafft_xinsi_plus_consalifold_f1_scores), max(mafft_xinsi_plus_consalifold_f1_scores), label = "ConsAlifold (ConsProb)", marker = "o", linestyle = "-", markerfacecolor = white, markeredgecolor = color_palette[0])
+  line_6, = pyplot.plot(min_gamma + numpy.argmax(mafft_xinsi_plus_centroidalifold_f1_scores), max(mafft_xinsi_plus_centroidalifold_f1_scores), label = "CentroidAlifold", marker = "s", linestyle = "--", markerfacecolor = white, markeredgecolor = color_palette[1])
+  line_7, = pyplot.plot(min_gamma + numpy.argmax(mafft_xinsi_plus_petfold_f1_scores), max(mafft_xinsi_plus_petfold_f1_scores), label = "PETfold", marker = "^", linestyle = "-.", markerfacecolor = white, markeredgecolor = color_palette[2])
+  pyplot.legend(handles = [line_5, line_6, line_7], loc = "lower right")
   pyplot.xlabel("$\log_2 \gamma$")
   pyplot.ylabel("F1 score")
   pyplot.tight_layout()
@@ -534,6 +558,10 @@ def main():
   line_2, = pyplot.plot(gammas, ref_sa_plus_centroidalifold_f1_scores, label = "CentroidAlifold", marker = "s", linestyle = "--")
   line_3, = pyplot.plot(gammas, ref_sa_plus_petfold_f1_scores, label = "PETfold", marker = "^", linestyle = "-.")
   line_4, = pyplot.plot(-2., ref_sa_plus_rnaalifold_f1_score, label = "RNAalifold", marker = "v", linestyle = ":")
+  line_5, = pyplot.plot(min_gamma + numpy.argmax(ref_sa_plus_consalifold_f1_scores), max(ref_sa_plus_consalifold_f1_scores), label = "ConsAlifold (ConsProb)", marker = "o", linestyle = "-", markerfacecolor = white, markeredgecolor = color_palette[0])
+  line_6, = pyplot.plot(min_gamma + numpy.argmax(ref_sa_plus_centroidalifold_f1_scores), max(ref_sa_plus_centroidalifold_f1_scores), label = "CentroidAlifold", marker = "s", linestyle = "--", markerfacecolor = white, markeredgecolor = color_palette[1])
+  line_7, = pyplot.plot(min_gamma + numpy.argmax(ref_sa_plus_petfold_f1_scores), max(ref_sa_plus_petfold_f1_scores), label = "PETfold", marker = "^", linestyle = "-.", markerfacecolor = white, markeredgecolor = color_palette[2])
+  pyplot.legend(handles = [line_5, line_6, line_7], loc = "lower right")
   pyplot.xlabel("$\log_2 \gamma$")
   pyplot.ylabel("F1 score")
   pyplot.tight_layout()
@@ -545,7 +573,11 @@ def main():
   line_2, = pyplot.plot(gammas, probcons_plus_centroidalifold_mccs, label = "CentroidAlifold", marker = "s", linestyle = "--")
   line_3, = pyplot.plot(gammas, probcons_plus_petfold_mccs, label = "PETfold", marker = "^", linestyle = "-.")
   line_4, = pyplot.plot(-2., probcons_plus_rnaalifold_mcc, label = "RNAalifold", marker = "v", linestyle = ":")
-  line_5, = pyplot.plot(gammas, posterior_probcons_plus_consalifold_mccs, label = "ConsAlifold (LocARNA-P + our PCTs)", marker = "d", linestyle = "-")
+  line_5, = pyplot.plot(gammas, posterior_probcons_plus_consalifold_mccs, label = "ConsAlifold (LocARNA-P + our PCT)", marker = "d", linestyle = "-")
+  line_6, = pyplot.plot(min_gamma + numpy.argmax(probcons_plus_consalifold_mccs), max(probcons_plus_consalifold_mccs), label = "ConsAlifold (ConsProb)", marker = "o", linestyle = "-", markerfacecolor = white, markeredgecolor = color_palette[0])
+  line_7, = pyplot.plot(min_gamma + numpy.argmax(probcons_plus_centroidalifold_mccs), max(probcons_plus_centroidalifold_mccs), label = "CentroidAlifold", marker = "s", linestyle = "--", markerfacecolor = white, markeredgecolor = color_palette[1])
+  line_8, = pyplot.plot(min_gamma + numpy.argmax(probcons_plus_petfold_mccs), max(probcons_plus_petfold_mccs), label = "PETfold", marker = "^", linestyle = "-.", markerfacecolor = white, markeredgecolor = color_palette[2])
+  line_9, = pyplot.plot(min_gamma + numpy.argmax(posterior_probcons_plus_consalifold_mccs), max(posterior_probcons_plus_consalifold_mccs), label = "ConsAlifold (LocARNA-P + our PCT)", marker = "d", linestyle = "-", markerfacecolor = white, markeredgecolor = color_palette[4])
   pyplot.xlabel("$\log_2 \gamma$")
   pyplot.ylabel("Matthews correlation coefficient")
   pyplot.tight_layout()
@@ -557,6 +589,9 @@ def main():
   line_2, = pyplot.plot(gammas, mafft_plus_centroidalifold_mccs, label = "CentroidAlifold", marker = "s", linestyle = "--")
   line_3, = pyplot.plot(gammas, mafft_plus_petfold_mccs, label = "PETfold", marker = "^", linestyle = "-.")
   line_4, = pyplot.plot(-2., mafft_plus_rnaalifold_mcc, label = "RNAalifold", marker = "v", linestyle = ":")
+  line_5, = pyplot.plot(min_gamma + numpy.argmax(mafft_plus_consalifold_mccs), max(mafft_plus_consalifold_mccs), label = "ConsAlifold (ConsProb)", marker = "o", linestyle = "-", markerfacecolor = white, markeredgecolor = color_palette[0])
+  line_6, = pyplot.plot(min_gamma + numpy.argmax(mafft_plus_centroidalifold_mccs), max(mafft_plus_centroidalifold_mccs), label = "CentroidAlifold", marker = "s", linestyle = "--", markerfacecolor = white, markeredgecolor = color_palette[1])
+  line_7, = pyplot.plot(min_gamma + numpy.argmax(mafft_plus_petfold_mccs), max(mafft_plus_petfold_mccs), label = "PETfold", marker = "^", linestyle = "-.", markerfacecolor = white, markeredgecolor = color_palette[2])
   pyplot.xlabel("$\log_2 \gamma$")
   pyplot.ylabel("Matthews correlation coefficient")
   pyplot.tight_layout()
@@ -568,6 +603,9 @@ def main():
   line_2, = pyplot.plot(gammas, clustalw_plus_centroidalifold_mccs, label = "CentroidAlifold", marker = "s", linestyle = "--")
   line_3, = pyplot.plot(gammas, clustalw_plus_petfold_mccs, label = "PETfold", marker = "^", linestyle = "-.")
   line_4, = pyplot.plot(-2., clustalw_plus_rnaalifold_mcc, label = "RNAalifold", marker = "v", linestyle = ":")
+  line_5, = pyplot.plot(min_gamma + numpy.argmax(clustalw_plus_consalifold_mccs), max(clustalw_plus_consalifold_mccs), label = "ConsAlifold (ConsProb)", marker = "o", linestyle = "-", markerfacecolor = white, markeredgecolor = color_palette[0])
+  line_6, = pyplot.plot(min_gamma + numpy.argmax(clustalw_plus_centroidalifold_mccs), max(clustalw_plus_centroidalifold_mccs), label = "CentroidAlifold", marker = "s", linestyle = "--", markerfacecolor = white, markeredgecolor = color_palette[1])
+  line_7, = pyplot.plot(min_gamma + numpy.argmax(clustalw_plus_petfold_mccs), max(clustalw_plus_petfold_mccs), label = "PETfold", marker = "^", linestyle = "-.", markerfacecolor = white, markeredgecolor = color_palette[2])
   pyplot.xlabel("$\log_2 \gamma$")
   pyplot.ylabel("Matthews correlation coefficient")
   pyplot.tight_layout()
@@ -579,6 +617,9 @@ def main():
   line_2, = pyplot.plot(gammas, mafft_xinsi_plus_centroidalifold_mccs, label = "CentroidAlifold", marker = "s", linestyle = "--")
   line_3, = pyplot.plot(gammas, mafft_xinsi_plus_petfold_mccs, label = "PETfold", marker = "^", linestyle = "-.")
   line_4, = pyplot.plot(-2., mafft_xinsi_plus_rnaalifold_mcc, label = "RNAalifold", marker = "v", linestyle = ":")
+  line_5, = pyplot.plot(min_gamma + numpy.argmax(mafft_xinsi_plus_consalifold_mccs), max(mafft_xinsi_plus_consalifold_mccs), label = "ConsAlifold (ConsProb)", marker = "o", linestyle = "-", markerfacecolor = white, markeredgecolor = color_palette[0])
+  line_6, = pyplot.plot(min_gamma + numpy.argmax(mafft_xinsi_plus_centroidalifold_mccs), max(mafft_xinsi_plus_centroidalifold_mccs), label = "CentroidAlifold", marker = "s", linestyle = "--", markerfacecolor = white, markeredgecolor = color_palette[1])
+  line_7, = pyplot.plot(min_gamma + numpy.argmax(mafft_xinsi_plus_petfold_mccs), max(mafft_xinsi_plus_petfold_mccs), label = "PETfold", marker = "^", linestyle = "-.", markerfacecolor = white, markeredgecolor = color_palette[2])
   pyplot.xlabel("$\log_2 \gamma$")
   pyplot.ylabel("Matthews correlation coefficient")
   pyplot.tight_layout()
@@ -590,6 +631,9 @@ def main():
   line_2, = pyplot.plot(gammas, ref_sa_plus_centroidalifold_mccs, label = "CentroidAlifold", marker = "s", linestyle = "--")
   line_3, = pyplot.plot(gammas, ref_sa_plus_petfold_mccs, label = "PETfold", marker = "^", linestyle = "-.")
   line_4, = pyplot.plot(-2., ref_sa_plus_rnaalifold_mcc, label = "RNAalifold", marker = "v", linestyle = ":")
+  line_5, = pyplot.plot(min_gamma + numpy.argmax(ref_sa_plus_consalifold_mccs), max(ref_sa_plus_consalifold_mccs), label = "ConsAlifold (ConsProb)", marker = "o", linestyle = "-", markerfacecolor = white, markeredgecolor = color_palette[0])
+  line_6, = pyplot.plot(min_gamma + numpy.argmax(ref_sa_plus_centroidalifold_mccs), max(ref_sa_plus_centroidalifold_mccs), label = "CentroidAlifold", marker = "s", linestyle = "--", markerfacecolor = white, markeredgecolor = color_palette[1])
+  line_7, = pyplot.plot(min_gamma + numpy.argmax(ref_sa_plus_petfold_mccs), max(ref_sa_plus_petfold_mccs), label = "PETfold", marker = "^", linestyle = "-.", markerfacecolor = white, markeredgecolor = color_palette[2])
   pyplot.xlabel("$\log_2 \gamma$")
   pyplot.ylabel("Matthews correlation coefficient")
   pyplot.tight_layout()

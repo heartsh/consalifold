@@ -79,20 +79,6 @@ fn main() {
   } else {
     num_cpus::get() as NumOfThreads
   };
-  /* let fasta_file_reader = Reader::from_file(Path::new(&input_file_path)).unwrap();
-  let mut fasta_records = FastaRecords::new();
-  let mut max_seq_len = 0;
-  for fasta_record in fasta_file_reader.records() {
-    let fasta_record = fasta_record.unwrap();
-    let mut seq = convert(fasta_record.seq());
-    seq.insert(0, PSEUDO_BASE);
-    seq.push(PSEUDO_BASE);
-    let seq_len = seq.len();
-    if seq_len > max_seq_len {
-      max_seq_len = seq_len;
-    }
-    fasta_records.push(FastaRecord::new(String::from(fasta_record.id()), seq));
-  } */
   let (cols, seq_ids) = read_sa_from_clustal_file(input_file_path);
   let sa_len = cols.len();
   let mut thread_pool = Pool::new(num_of_threads);
@@ -132,8 +118,17 @@ where
     fasta_records[i].seq.push(PSEUDO_BASE);
     fasta_records[i].fasta_id = seq_ids[i].clone();
   }
+  let mut rnaalifold_bpp_mat = SparseProbMat::<T>::default();
+  let ref mut ref_2_rnaalifold_bpp_mat = rnaalifold_bpp_mat;
+  let ref ref_2_sa = sa;
+  let ref ref_2_fasta_records = fasta_records;
+  let ref ref_2_feature_score_sets = feature_score_sets;
+  thread_pool.scoped(|scope| {
+    scope.execute(move || {
+      *ref_2_rnaalifold_bpp_mat = rnaalifold_trained(ref_2_sa, ref_2_fasta_records, ref_2_feature_score_sets);
+    });
+  });
   let prob_mat_sets = consprob::<T>(thread_pool, &fasta_records, min_bpp, T::from_usize(offset_4_max_gap_num).unwrap(), produces_access_probs);
-  let rnaalifold_bpp_mat = rnaalifold_trained(&sa, &fasta_records, &feature_score_sets);
   let mix_bpp_mat = get_mix_bpp_mat(&prob_mat_sets, &rnaalifold_bpp_mat, &sa, mix_weight);
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
@@ -249,7 +244,6 @@ where
     let ref seq_id = fasta_records[rna_id].fasta_id;
     buf_4_writer_2_output_file.push_str(seq_id);
     let mut stockholm_row = vec![' ' as Char; max_seq_id_len - seq_id.len() + 2];
-    // let mut sa_row = (0 .. sa_len).map(|x| {sa.cols[x][rna_id]}).collect::<Vec<Char>>();
     let mut sa_row = (0 .. sa_len).map(|x| {revert_char(sa.cols[x][rna_id])}).collect::<Vec<Char>>();
     stockholm_row.append(&mut sa_row);
     let stockholm_row = unsafe {from_utf8_unchecked(&stockholm_row)};

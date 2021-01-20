@@ -10,11 +10,8 @@ license = "MIT"
 
 [dependencies]
 num_cpus = "1.0"
-bio = "0.20"
 # consprob = "0.1"
 consprob = {path = "../consprob"}
-# conshomfold = "0.1"
-conshomfold = {path = "../conshomfold"}
 
 [lib]
 path = "src/lib.rs"

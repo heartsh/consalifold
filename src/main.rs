@@ -1,5 +1,4 @@
 extern crate consalifold;
-extern crate bio;
 extern crate num_cpus;
 
 use consalifold::*;
@@ -7,11 +6,9 @@ use std::env;
 use std::path::Path;
 use std::io::{BufReader, BufWriter};
 use std::fs::File;
-// use bio::io::fasta::Reader;
 use std::fs::create_dir;
 
 type MeaCssStr = MeaSsStr;
-type Strings = Vec<String>;
 
 const DEFAULT_MIX_WEIGHT: Prob = 0.5;
 const DEFAULT_MIN_POW_OF_2: i32 = -4;

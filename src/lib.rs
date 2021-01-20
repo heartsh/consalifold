@@ -1,9 +1,6 @@
 extern crate consprob;
-extern crate conshomfold;
 
 pub use consprob::*;
-// pub use conshomfold::*;
-// pub use conshomfold::{RnaId, RnaIdPair, Prob4dMat, SparseProbMat};
 
 pub type Prob4dMatsWithRnaIdPairs<T> = HashMap<RnaIdPair, Prob4dMat<T>>;
 pub type ProbsWithRnaIds = Vec<Probs>;
@@ -32,13 +29,8 @@ pub struct CssPartFuncMats<T: Hash> {
   pub part_func_mat_4_base_pairings: SparsePartFuncMat<T>,
   pub part_func_mat_4_base_pairings_accessible_on_el: SparsePartFuncMat<T>,
   pub part_func_mat_4_base_pairings_accessible_on_mls: SparsePartFuncMat<T>,
-  pub basepair_align_score_avg_mat: SparsePartFuncMat<T>,
   pub part_func_mat_4_at_least_1_base_pairings_on_mls: PartFuncMat,
-  pub part_func_mat_4_base_unpairings_on_sa: PartFuncMat,
-  pub part_func_mat_4_base_unpairings_on_el: PartFuncMat,
-  pub part_func_mat_4_base_unpairings_on_mls: PartFuncMat,
   pub score_mat_4_ml_closing_basepairings: SparsePartFuncMat<T>,
-  pub score_mat_4_loop_aligns: PartFuncs,
   pub twoloop_score_4d_mat: PartFunc4dMat<T>,
 }
 
@@ -62,7 +54,6 @@ impl<T> MeaCss<T> {
 
 impl<T: Hash + Clone> CssPartFuncMats<T> {
   fn new(sa_len: usize) -> CssPartFuncMats<T> {
-    let zero_mat = vec![vec![0.; sa_len]; sa_len];
     let neg_inf_mat = vec![vec![NEG_INFINITY; sa_len]; sa_len];
     let part_func_mat = SparsePartFuncMat::<T>::default();
     CssPartFuncMats {
@@ -72,19 +63,16 @@ impl<T: Hash + Clone> CssPartFuncMats<T> {
       part_func_mat_4_base_pairings: part_func_mat.clone(),
       part_func_mat_4_base_pairings_accessible_on_el: part_func_mat.clone(),
       part_func_mat_4_base_pairings_accessible_on_mls: part_func_mat.clone(),
-      basepair_align_score_avg_mat: part_func_mat.clone(),
-      part_func_mat_4_at_least_1_base_pairings_on_mls: neg_inf_mat.clone(),
-      part_func_mat_4_base_unpairings_on_sa: zero_mat.clone(),
-      part_func_mat_4_base_unpairings_on_el: zero_mat.clone(),
-      part_func_mat_4_base_unpairings_on_mls: zero_mat,
+      part_func_mat_4_at_least_1_base_pairings_on_mls: neg_inf_mat,
       score_mat_4_ml_closing_basepairings: part_func_mat,
-      score_mat_4_loop_aligns: vec![NEG_INFINITY; sa_len],
       twoloop_score_4d_mat: PartFunc4dMat::<T>::default(),
     }
   }
 }
 
 pub const GAP: Char = '-' as Char;
+pub const CONSPROB_MAX_HAIRPIN_LOOP_LEN_CSS: usize = 2 * CONSPROB_MAX_HAIRPIN_LOOP_LEN;
+pub const CONSPROB_MAX_TWOLOOP_LEN_CSS: usize = 2 * CONSPROB_MAX_TWOLOOP_LEN;
 
 pub fn consalifold<T>(mix_bpp_mat: &ProbMat, gamma: Prob, sa: &SeqAlign<T>) -> MeaCss<T>
 where
@@ -154,7 +142,7 @@ where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Sync + Send,
 {
   let part_func_mats = get_css_part_func_mats(sa, fasta_records, feature_score_sets);
-  get_base_pairing_prob_mat_css(sa, fasta_records, feature_score_sets, &part_func_mats)
+  get_base_pairing_prob_mat_css(sa, feature_score_sets, &part_func_mats)
 }
 
 pub fn get_css_part_func_mats<T>(sa: &SeqAlign<T>, fasta_records: &FastaRecords, feature_score_sets: &FeatureCountSets) -> CssPartFuncMats<T>
@@ -163,9 +151,6 @@ where
 {
   let sa_len = sa.cols.len();
   let mut css_part_func_mats = CssPartFuncMats::<T>::new(sa_len);
-  for i in 0 .. sa_len {
-    css_part_func_mats.score_mat_4_loop_aligns[i] = get_loop_align_score_avg(sa, fasta_records, i, feature_score_sets);
-  }
   let short_sa_len = T::from_usize(sa_len).unwrap();
   for sub_sa_len in range_inclusive(T::one(), short_sa_len) {
     for i in range_inclusive(T::zero(), short_sa_len - sub_sa_len) {
@@ -173,60 +158,54 @@ where
       let (long_i, long_j) = (i.to_usize().unwrap(), j.to_usize().unwrap());
       let pp_closing_loop = (i, j);
       let long_pp_closing_loop = (long_i, long_j);
-      let loop_align_score_avg = css_part_func_mats.score_mat_4_loop_aligns[long_j];
-      css_part_func_mats.part_func_mat_4_base_unpairings_on_sa[long_i][long_j] = if long_j == 0 {0.} else {css_part_func_mats.part_func_mat_4_base_unpairings_on_sa[long_i][long_j - 1]} + loop_align_score_avg;
-      css_part_func_mats.part_func_mat_4_base_unpairings_on_el[long_i][long_j] = if long_j == 0 {0.} else {css_part_func_mats.part_func_mat_4_base_unpairings_on_el[long_i][long_j - 1]} + loop_align_score_avg + feature_score_sets.external_loop_accessible_baseunpairing_count;
-      css_part_func_mats.part_func_mat_4_base_unpairings_on_mls[long_i][long_j] = if long_j == 0 {0.} else {css_part_func_mats.part_func_mat_4_base_unpairings_on_mls[long_i][long_j - 1]} + loop_align_score_avg + feature_score_sets.multi_loop_accessible_baseunpairing_count;
       let mut sum = NEG_INFINITY;
       if long_pp_closing_loop.1 - long_pp_closing_loop.0 + 1 >= CONSPROB_MIN_HAIRPIN_LOOP_SPAN {
-        let hairpin_loop_score_avg = get_hairpin_loop_score_avg(sa, fasta_records, &long_pp_closing_loop, feature_score_sets);
-        logsumexp(&mut sum, hairpin_loop_score_avg);
+        let basepair_align_score_avg = get_basepair_align_score_avg(sa, &long_pp_closing_loop, feature_score_sets);
+        if long_j - long_i - 1 <= CONSPROB_MAX_HAIRPIN_LOOP_LEN_CSS {
+          let hairpin_loop_score_avg = get_hairpin_loop_score_avg(sa, fasta_records, &long_pp_closing_loop, feature_score_sets) + basepair_align_score_avg;
+          logsumexp(&mut sum, hairpin_loop_score_avg);
+        }
         for k in range(i + T::one(), j - T::one()) {
           let long_k = k.to_usize().unwrap();
           for l in range(k + T::one(), j) {
             let long_l = l.to_usize().unwrap();
-            if long_j - long_l - 1 + long_k - long_i - 1 > CONSPROB_MAX_TWOLOOP_LEN {continue;}
+            if long_j - long_l - 1 + long_k - long_i - 1 > CONSPROB_MAX_TWOLOOP_LEN_CSS {continue;}
             let accessible_pp = (k, l);
             let long_accessible_pp = (long_k, long_l);
             match css_part_func_mats.part_func_mat_4_base_pairings.get(&accessible_pp) {
               Some(&part_func) => {
-                let twoloop_score_avg = get_twoloop_score_avg(sa, fasta_records, &long_pp_closing_loop, &long_accessible_pp, feature_score_sets);
+                let twoloop_score_avg = get_twoloop_score_avg(sa, fasta_records, &long_pp_closing_loop, &long_accessible_pp, feature_score_sets) + basepair_align_score_avg;
                 css_part_func_mats.twoloop_score_4d_mat.insert((i, j, k, l), twoloop_score_avg);
-                logsumexp(&mut sum, part_func + twoloop_score_avg + css_part_func_mats.part_func_mat_4_base_unpairings_on_sa[long_i + 1][long_k - 1] + css_part_func_mats.part_func_mat_4_base_unpairings_on_sa[long_l + 1][long_j - 1]);
+                logsumexp(&mut sum, part_func + twoloop_score_avg);
               }, None => {},
             }
           }
         }
-        let ml_closing_basepairing_score_avg = get_ml_closing_basepairing_score_avg(sa, fasta_records, &long_pp_closing_loop, feature_score_sets);
+        let ml_closing_basepairing_score_avg = get_ml_closing_basepairing_score_avg(sa, fasta_records, &long_pp_closing_loop, feature_score_sets) + basepair_align_score_avg;
         css_part_func_mats.score_mat_4_ml_closing_basepairings.insert(pp_closing_loop, ml_closing_basepairing_score_avg);
         for k in long_i + 1 .. long_j {
           logsumexp(&mut sum, css_part_func_mats.part_func_mat_4_at_least_1_base_pairings_on_mls[long_i + 1][k - 1] + css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_mls[k][long_j - 1] + ml_closing_basepairing_score_avg);
         }
-        let basepair_align_score_avg = get_basepair_align_score_avg(sa, fasta_records, &long_pp_closing_loop, feature_score_sets);
-        css_part_func_mats.basepair_align_score_avg_mat.insert(pp_closing_loop, basepair_align_score_avg);
-        sum += basepair_align_score_avg;
         if sum > NEG_INFINITY {
           css_part_func_mats.part_func_mat_4_base_pairings.insert(pp_closing_loop, sum);
           css_part_func_mats.part_func_mat_4_base_pairings_accessible_on_el.insert(pp_closing_loop, sum + get_el_accessible_basepairing_score_avg(sa, fasta_records, &long_pp_closing_loop, feature_score_sets));
           css_part_func_mats.part_func_mat_4_base_pairings_accessible_on_mls.insert(pp_closing_loop, sum + get_ml_accessible_basepairing_score_avg(sa, fasta_records, &long_pp_closing_loop, feature_score_sets));
         }
       }
-      // println!("sum: {}", sum);
       sum = NEG_INFINITY;
       let mut sum_2 = sum;
       for k in range_inclusive(i + T::one(), j) {
         let accessible_pp = (i, k);
         match css_part_func_mats.part_func_mat_4_base_pairings_accessible_on_el.get(&accessible_pp) {
           Some(&part_func) => {
-            let long_k = k.to_usize().unwrap();
-            logsumexp(&mut sum, part_func + if j == k {0.} else {css_part_func_mats.part_func_mat_4_base_unpairings_on_el[long_k + 1][long_j]});
-            logsumexp(&mut sum_2, css_part_func_mats.part_func_mat_4_base_pairings_accessible_on_mls[&accessible_pp] + if j == k {0.} else {css_part_func_mats.part_func_mat_4_base_unpairings_on_mls[long_k + 1][long_j]});
+            logsumexp(&mut sum, part_func + feature_score_sets.external_loop_accessible_baseunpairing_count * (j - k).to_f32().unwrap());
+            logsumexp(&mut sum_2, css_part_func_mats.part_func_mat_4_base_pairings_accessible_on_mls[&accessible_pp] + feature_score_sets.multi_loop_accessible_baseunpairing_count * (j - k).to_f32().unwrap());
           }, None => {},
         }
       }
       css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_el[long_i][long_j] = sum;
       css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_mls[long_i][long_j] = sum_2;
-      sum = css_part_func_mats.part_func_mat_4_base_unpairings_on_el[long_i][long_j];
+      sum = feature_score_sets.external_loop_accessible_baseunpairing_count * CONTRA_EL_UNPAIRED_FE * sub_sa_len.to_f32().unwrap();
       for k in long_i .. long_j {
         let css_part_func_4_rightmost_base_pairings_on_el = css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_el[k][long_j];
         if css_part_func_4_rightmost_base_pairings_on_el == NEG_INFINITY {
@@ -239,7 +218,7 @@ where
       sum = css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_mls[long_i][long_j];
       for k in long_i + 1 .. long_j {
         let css_part_func_4_rightmost_base_pairings_on_mls = css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_mls[k][long_j];
-        logsumexp(&mut sum, css_part_func_4_rightmost_base_pairings_on_mls + css_part_func_mats.part_func_mat_4_base_unpairings_on_mls[long_i][k - 1]);
+        logsumexp(&mut sum, css_part_func_4_rightmost_base_pairings_on_mls + feature_score_sets.multi_loop_accessible_baseunpairing_count * (k - long_i) as FeatureCount);
         logsumexp(&mut sum, css_part_func_mats.part_func_mat_4_at_least_1_base_pairings_on_mls[long_i][k - 1] + css_part_func_4_rightmost_base_pairings_on_mls);
       }
       css_part_func_mats.part_func_mat_4_at_least_1_base_pairings_on_mls[long_i][long_j] = sum;
@@ -248,7 +227,7 @@ where
   css_part_func_mats
 }
 
-fn get_base_pairing_prob_mat_css<T>(sa: &SeqAlign<T>, fasta_records: &FastaRecords, feature_score_sets: &FeatureCountSets, css_part_func_mats: &CssPartFuncMats<T>) -> SparseProbMat<T>
+fn get_base_pairing_prob_mat_css<T>(sa: &SeqAlign<T>, feature_score_sets: &FeatureCountSets, css_part_func_mats: &CssPartFuncMats<T>) -> SparseProbMat<T>
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer,
 {
@@ -267,13 +246,12 @@ where
       for k in range(j + T::one(), short_sa_len) {
         let long_k = k.to_usize().unwrap();
         let pp_closing_loop = (i, k);
-        let long_pp_closing_loop = (i.to_usize().unwrap(), k.to_usize().unwrap());
         match css_part_func_mats.part_func_mat_4_base_pairings.get(&pp_closing_loop) {
           Some(&part_func) => {
             let bpp = bpp_mat[&pp_closing_loop];
             let coefficient = bpp + css_part_func_mats.score_mat_4_ml_closing_basepairings[&pp_closing_loop] - part_func;
             logsumexp(&mut sum_1, coefficient + css_part_func_mats.part_func_mat_4_at_least_1_base_pairings_on_mls[long_j + 1][long_k - 1]);
-            logsumexp(&mut sum_2, coefficient + css_part_func_mats.part_func_mat_4_base_unpairings_on_mls[long_j + 1][long_k - 1]);
+            logsumexp(&mut sum_2, coefficient + feature_score_sets.multi_loop_accessible_baseunpairing_count * (k - j - T::one()).to_f32().unwrap());
           }, None => {},
         }
       }
@@ -292,11 +270,11 @@ where
             let long_k = k.to_usize().unwrap();
             for l in range(j + T::one(), short_sa_len) {
               let long_l = l.to_usize().unwrap();
-              if long_l - long_j - 1 + long_i - long_k - 1 > CONSPROB_MAX_TWOLOOP_LEN {continue;}
+              if long_l - long_j - 1 + long_i - long_k - 1 > CONSPROB_MAX_TWOLOOP_LEN_CSS {continue;}
               let pp_closing_loop = (k, l);
               match css_part_func_mats.part_func_mat_4_base_pairings.get(&pp_closing_loop) {
                 Some(&part_func_2) => {
-                  logsumexp(&mut bpp_4_2l, bpp_mat[&pp_closing_loop] + part_func - part_func_2 + css_part_func_mats.twoloop_score_4d_mat[&(k, l, i, j)] + css_part_func_mats.part_func_mat_4_base_unpairings_on_sa[long_k + 1][long_i - 1] + css_part_func_mats.part_func_mat_4_base_unpairings_on_sa[long_j + 1][long_l - 1]);
+                  logsumexp(&mut bpp_4_2l, bpp_mat[&pp_closing_loop] + part_func - part_func_2 + css_part_func_mats.twoloop_score_4d_mat[&(k, l, i, j)]);
                 }, None => {},
               }
             }
@@ -310,7 +288,7 @@ where
             let css_part_func_4_at_least_1_base_pairings_on_mls = css_part_func_mats.part_func_mat_4_at_least_1_base_pairings_on_mls[k + 1][long_i - 1];
             logsumexp(&mut bpp_4_ml, coefficient + prob_mat_4_mls_2[k][long_j] + css_part_func_4_at_least_1_base_pairings_on_mls);
             let prob_4_mls = prob_mat_4_mls_1[k][long_j];
-            logsumexp(&mut bpp_4_ml, coefficient + prob_4_mls + css_part_func_mats.part_func_mat_4_base_unpairings_on_mls[k + 1][long_i - 1]);
+            logsumexp(&mut bpp_4_ml, coefficient + prob_4_mls + feature_score_sets.multi_loop_accessible_baseunpairing_count * (long_i - k - 1) as FreeEnergy);
             logsumexp(&mut bpp_4_ml, coefficient + prob_4_mls + css_part_func_4_at_least_1_base_pairings_on_mls);
           }
           if bpp_4_ml > NEG_INFINITY {
@@ -337,6 +315,8 @@ pub fn get_hairpin_loop_score_avg<T>(sa: &SeqAlign<T>, fasta_records: &FastaReco
     let pos_pair = (sa.pos_map_sets[pos_pair_closing_loop.0][i].to_usize().unwrap(), sa.pos_map_sets[pos_pair_closing_loop.1][i].to_usize().unwrap());
     let base_pair = (col_pair.0[i], col_pair.1[i]);
     if !is_canonical(&base_pair) {continue;}
+    let hairpin_loop_len = pos_pair.1 - pos_pair.0 - 1;
+    if hairpin_loop_len > CONSPROB_MAX_HAIRPIN_LOOP_LEN || hairpin_loop_len < CONSPROB_MIN_HAIRPIN_LOOP_LEN {continue;}
     let hairpin_loop_score = get_consprob_hairpin_loop_score(feature_score_sets, seq, &pos_pair);
     hairpin_loop_score_avg += hairpin_loop_score;
     count += 1;
@@ -364,13 +344,13 @@ pub fn get_twoloop_score_avg<T>(
   for i in 0 .. sa.cols[0].len() {
     let ref seq = fasta_records[i].seq[..];
     let pos_pair = (sa.pos_map_sets[pos_pair_closing_loop.0][i].to_usize().unwrap(), sa.pos_map_sets[pos_pair_closing_loop.1][i].to_usize().unwrap());
-    // let base_pair = (seq[pos_pair_closing_loop.0], seq[pos_pair_closing_loop.1]);
     let base_pair = (col_pair.0[i], col_pair.1[i]);
     if !is_canonical(&base_pair) {continue;}
     let pos_pair_2 = (sa.pos_map_sets[pos_pair_accessible.0][i].to_usize().unwrap(), sa.pos_map_sets[pos_pair_accessible.1][i].to_usize().unwrap());
-    // let base_pair_2 = (seq[pos_pair_accessible.0], seq[pos_pair_accessible.1]);
     let base_pair_2 = (col_pair_2.0[i], col_pair_2.1[i]);
     if !is_canonical(&base_pair_2) {continue;}
+    let twoloop_len = pos_pair_2.0 - pos_pair.0 - 1 + pos_pair.1 - pos_pair_2.1 - 1;
+    if twoloop_len > CONSPROB_MAX_TWOLOOP_LEN {continue;}
     let twoloop_score = get_consprob_twoloop_score(feature_score_sets, seq, &pos_pair, &pos_pair_2);
     twoloop_score_avg += twoloop_score;
     count += 1;
@@ -391,7 +371,6 @@ pub fn get_ml_closing_basepairing_score_avg<T>(sa: &SeqAlign<T>, fasta_records: 
   for i in 0 .. sa.cols[0].len() {
     let ref seq = fasta_records[i].seq[..];
     let pos_pair = (sa.pos_map_sets[pos_pair_closing_loop.0][i].to_usize().unwrap(), sa.pos_map_sets[pos_pair_closing_loop.1][i].to_usize().unwrap());
-    // let base_pair = (seq[pos_pair_closing_loop.0], seq[pos_pair_closing_loop.1]);
     let base_pair = (col_pair.0[i], col_pair.1[i]);
     if !is_canonical(&base_pair) {continue;}
     let multi_loop_closing_basepairing_score = get_consprob_multi_loop_closing_basepairing_score(feature_score_sets, seq, &pos_pair);
@@ -414,7 +393,6 @@ pub fn get_el_accessible_basepairing_score_avg<T>(sa: &SeqAlign<T>, fasta_record
   for i in 0 .. sa.cols[0].len() {
     let ref seq = fasta_records[i].seq[..];
     let pos_pair = (sa.pos_map_sets[pos_pair_accessible.0][i].to_usize().unwrap(), sa.pos_map_sets[pos_pair_accessible.1][i].to_usize().unwrap());
-    // let base_pair = (seq[pos_pair_accessible.0], seq[pos_pair_accessible.1]);
     let base_pair = (col_pair.0[i], col_pair.1[i]);
     if !is_canonical(&base_pair) {continue;}
     let external_loop_accessible_basepairing_score = get_consprob_external_loop_accessible_basepairing_score(feature_score_sets, seq, &pos_pair);
@@ -437,7 +415,6 @@ pub fn get_ml_accessible_basepairing_score_avg<T>(sa: &SeqAlign<T>, fasta_record
   for i in 0 .. sa.cols[0].len() {
     let ref seq = fasta_records[i].seq[..];
     let pos_pair = (sa.pos_map_sets[pos_pair_accessible.0][i].to_usize().unwrap(), sa.pos_map_sets[pos_pair_accessible.1][i].to_usize().unwrap());
-    // let base_pair = (seq[pos_pair_accessible.0], seq[pos_pair_accessible.1]);
     let base_pair = (col_pair.0[i], col_pair.1[i]);
     if !is_canonical(&base_pair) {continue;}
     let multi_loop_accessible_basepairing_score = get_consprob_multi_loop_accessible_basepairing_score(feature_score_sets, seq, &pos_pair);
@@ -451,36 +428,7 @@ pub fn get_ml_accessible_basepairing_score_avg<T>(sa: &SeqAlign<T>, fasta_record
   }
 }
 
-pub fn get_loop_align_score_avg<T>(sa: &SeqAlign<T>, fasta_records: &FastaRecords, pos: usize, feature_score_sets: &FeatureCountSets) -> FeatureCount where
-  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
-{
-  let mut loop_align_score_avg = 0.;
-  let mut count = 0;
-  let num_of_rnas = sa.cols[0].len();
-  let ref col = sa.cols[pos];
-  for i in 0 .. num_of_rnas {
-    // let ref seq = fasta_records[i].seq[..];
-    for j in i + 1 .. num_of_rnas {
-      // let ref seq_2 = fasta_records[j].seq[..];
-      let base_pair = (col[i], col[j]);
-      if base_pair.0 == PSEUDO_BASE && base_pair.1 == PSEUDO_BASE {continue;}
-      if base_pair.0 != PSEUDO_BASE && base_pair.1 != PSEUDO_BASE {
-        let loop_align_score = feature_score_sets.loop_align_count_mat[base_pair.0][base_pair.1];
-        loop_align_score_avg += loop_align_score;
-      } else {
-        loop_align_score_avg += feature_score_sets.opening_gap_count;
-      }
-      count += 1;
-    }
-  }
-  if count == 0 {
-    NEG_INFINITY
-  } else {
-    loop_align_score_avg / count as FeatureCount
-  }
-}
-
-pub fn get_basepair_align_score_avg<T>(sa: &SeqAlign<T>, fasta_records: &FastaRecords, pos_pair: &(usize, usize), feature_score_sets: &FeatureCountSets) -> FeatureCount where
+pub fn get_basepair_align_score_avg<T>(sa: &SeqAlign<T>, pos_pair: &(usize, usize), feature_score_sets: &FeatureCountSets) -> FeatureCount where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
   let mut basepair_align_score_avg = 0.;
@@ -488,12 +436,12 @@ pub fn get_basepair_align_score_avg<T>(sa: &SeqAlign<T>, fasta_records: &FastaRe
   let num_of_rnas = sa.cols[0].len();
   let col_pair = (&sa.cols[pos_pair.0], &sa.cols[pos_pair.1]);
   for i in 0 .. num_of_rnas {
-    // let ref seq = fasta_records[i].seq[..];
+    let base_pair = (col_pair.0[i], col_pair.1[i]);
+    if base_pair.0 == PSEUDO_BASE || base_pair.1 == PSEUDO_BASE {continue;}
     for j in i + 1 .. num_of_rnas {
-      // let ref seq_2 = fasta_records[j].seq[..];
-      let base_quadruple = (col_pair.0[i], col_pair.1[i], col_pair.0[j], col_pair.1[j]);
-      if base_quadruple.0 == PSEUDO_BASE || base_quadruple.1 == PSEUDO_BASE || base_quadruple.2 == PSEUDO_BASE || base_quadruple.3 == PSEUDO_BASE {continue;}
-      let basepair_align_score = feature_score_sets.basepair_align_count_mat[base_quadruple.0][base_quadruple.1][base_quadruple.2][base_quadruple.3];
+      let base_pair_2 = (col_pair.0[j], col_pair.1[j]);
+      if base_pair_2.0 == PSEUDO_BASE || base_pair_2.1 == PSEUDO_BASE {continue;}
+      let basepair_align_score = feature_score_sets.basepair_align_count_mat[base_pair.0][base_pair.1][base_pair_2.0][base_pair_2.1];
       basepair_align_score_avg += basepair_align_score;
       count += 1;
     }

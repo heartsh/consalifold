@@ -201,7 +201,6 @@ where
       let mut mean_bpp = 0.;
       let mut effective_num_of_rnas = 0;
       for k in 0 .. num_of_rnas {
-        // if sa.cols[i][k] == GAP || sa.cols[j][k] == GAP {continue;}
         if sa.cols[i][k] == PSEUDO_BASE || sa.cols[j][k] == PSEUDO_BASE {continue;}
         let ref bpp_mat = prob_mat_sets[k].bpp_mat;
         let pos_pair = (sa.pos_map_sets[i][k], sa.pos_map_sets[j][k]);
@@ -212,14 +211,11 @@ where
           }, None => {},
         }
       }
+      mix_bpp_mat[i][j] = if effective_num_of_rnas > 0 {mix_weight * mean_bpp / effective_num_of_rnas as Prob} else {0.};
       let pos_pair = (T::from_usize(i).unwrap(), T::from_usize(j).unwrap());
       match rnaalifold_bpp_mat.get(&pos_pair) {
         Some(&rnaalifold_bpp) => {
-          mix_bpp_mat[i][j] = if effective_num_of_rnas > 0 {
-            mix_weight * mean_bpp / effective_num_of_rnas as Prob + (1. - mix_weight) * rnaalifold_bpp
-          } else {
-            rnaalifold_bpp
-          };
+          mix_bpp_mat[i][j] += (1. - mix_weight) * rnaalifold_bpp;
         }, None => {},
       }
     }

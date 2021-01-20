@@ -6,7 +6,6 @@ pub type Prob4dMatsWithRnaIdPairs<T> = HashMap<RnaIdPair, Prob4dMat<T>>;
 pub type ProbsWithRnaIds = Vec<Probs>;
 pub type ProbsWithPosPairs<T> = HashMap<PosPair<T>, Prob>;
 pub type ProbMatsWithRnaIds<T> = Vec<SparseProbMat<T>>;
-// pub type Col = Vec<Char>;
 pub type Col = Vec<Base>;
 pub type Cols = Vec<Col>;
 pub type PosMaps<T> = Vec<T>;
@@ -198,14 +197,14 @@ where
         let accessible_pp = (i, k);
         match css_part_func_mats.part_func_mat_4_base_pairings_accessible_on_el.get(&accessible_pp) {
           Some(&part_func) => {
-            logsumexp(&mut sum, part_func + feature_score_sets.external_loop_accessible_baseunpairing_count * (j - k).to_f32().unwrap());
-            logsumexp(&mut sum_2, css_part_func_mats.part_func_mat_4_base_pairings_accessible_on_mls[&accessible_pp] + feature_score_sets.multi_loop_accessible_baseunpairing_count * (j - k).to_f32().unwrap());
+            logsumexp(&mut sum, part_func + 2. * feature_score_sets.external_loop_accessible_baseunpairing_count * (j - k).to_f32().unwrap());
+            logsumexp(&mut sum_2, css_part_func_mats.part_func_mat_4_base_pairings_accessible_on_mls[&accessible_pp] + 2. * feature_score_sets.multi_loop_accessible_baseunpairing_count * (j - k).to_f32().unwrap());
           }, None => {},
         }
       }
       css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_el[long_i][long_j] = sum;
       css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_mls[long_i][long_j] = sum_2;
-      sum = feature_score_sets.external_loop_accessible_baseunpairing_count * CONTRA_EL_UNPAIRED_FE * sub_sa_len.to_f32().unwrap();
+      sum = 2. * feature_score_sets.external_loop_accessible_baseunpairing_count * sub_sa_len.to_f32().unwrap();
       for k in long_i .. long_j {
         let css_part_func_4_rightmost_base_pairings_on_el = css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_el[k][long_j];
         if css_part_func_4_rightmost_base_pairings_on_el == NEG_INFINITY {
@@ -218,7 +217,7 @@ where
       sum = css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_mls[long_i][long_j];
       for k in long_i + 1 .. long_j {
         let css_part_func_4_rightmost_base_pairings_on_mls = css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_mls[k][long_j];
-        logsumexp(&mut sum, css_part_func_4_rightmost_base_pairings_on_mls + feature_score_sets.multi_loop_accessible_baseunpairing_count * (k - long_i) as FeatureCount);
+        logsumexp(&mut sum, css_part_func_4_rightmost_base_pairings_on_mls + 2. * feature_score_sets.multi_loop_accessible_baseunpairing_count * (k - long_i) as FeatureCount);
         logsumexp(&mut sum, css_part_func_mats.part_func_mat_4_at_least_1_base_pairings_on_mls[long_i][k - 1] + css_part_func_4_rightmost_base_pairings_on_mls);
       }
       css_part_func_mats.part_func_mat_4_at_least_1_base_pairings_on_mls[long_i][long_j] = sum;
@@ -251,7 +250,7 @@ where
             let bpp = bpp_mat[&pp_closing_loop];
             let coefficient = bpp + css_part_func_mats.score_mat_4_ml_closing_basepairings[&pp_closing_loop] - part_func;
             logsumexp(&mut sum_1, coefficient + css_part_func_mats.part_func_mat_4_at_least_1_base_pairings_on_mls[long_j + 1][long_k - 1]);
-            logsumexp(&mut sum_2, coefficient + feature_score_sets.multi_loop_accessible_baseunpairing_count * (k - j - T::one()).to_f32().unwrap());
+            logsumexp(&mut sum_2, coefficient + 2. * feature_score_sets.multi_loop_accessible_baseunpairing_count * (k - j - T::one()).to_f32().unwrap());
           }, None => {},
         }
       }
@@ -288,7 +287,7 @@ where
             let css_part_func_4_at_least_1_base_pairings_on_mls = css_part_func_mats.part_func_mat_4_at_least_1_base_pairings_on_mls[k + 1][long_i - 1];
             logsumexp(&mut bpp_4_ml, coefficient + prob_mat_4_mls_2[k][long_j] + css_part_func_4_at_least_1_base_pairings_on_mls);
             let prob_4_mls = prob_mat_4_mls_1[k][long_j];
-            logsumexp(&mut bpp_4_ml, coefficient + prob_4_mls + feature_score_sets.multi_loop_accessible_baseunpairing_count * (long_i - k - 1) as FreeEnergy);
+            logsumexp(&mut bpp_4_ml, coefficient + prob_4_mls + 2. * feature_score_sets.multi_loop_accessible_baseunpairing_count * (long_i - k - 1) as FreeEnergy);
             logsumexp(&mut bpp_4_ml, coefficient + prob_4_mls + css_part_func_4_at_least_1_base_pairings_on_mls);
           }
           if bpp_4_ml > NEG_INFINITY {
@@ -307,9 +306,8 @@ where
 pub fn get_hairpin_loop_score_avg<T>(sa: &SeqAlign<T>, fasta_records: &FastaRecords, pos_pair_closing_loop: &(usize, usize), feature_score_sets: &FeatureCountSets) -> FeatureCount where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-  let mut hairpin_loop_score_avg = 0.;
-  let mut count = 0;
   let col_pair = (&sa.cols[pos_pair_closing_loop.0], &sa.cols[pos_pair_closing_loop.1]);
+  let mut scores = Vec::new();
   for i in 0 .. sa.cols[0].len() {
     let ref seq = fasta_records[i].seq[..];
     let pos_pair = (sa.pos_map_sets[pos_pair_closing_loop.0][i].to_usize().unwrap(), sa.pos_map_sets[pos_pair_closing_loop.1][i].to_usize().unwrap());
@@ -318,8 +316,15 @@ pub fn get_hairpin_loop_score_avg<T>(sa: &SeqAlign<T>, fasta_records: &FastaReco
     let hairpin_loop_len = pos_pair.1 - pos_pair.0 - 1;
     if hairpin_loop_len > CONSPROB_MAX_HAIRPIN_LOOP_LEN || hairpin_loop_len < CONSPROB_MIN_HAIRPIN_LOOP_LEN {continue;}
     let hairpin_loop_score = get_consprob_hairpin_loop_score(feature_score_sets, seq, &pos_pair);
-    hairpin_loop_score_avg += hairpin_loop_score;
-    count += 1;
+    scores.push(hairpin_loop_score);
+  }
+  let mut hairpin_loop_score_avg = 0.;
+  let mut count = 0;
+  for (i, &score) in scores.iter().enumerate() {
+    for score_2 in scores[i + 1 ..].iter() {
+      hairpin_loop_score_avg += score + score_2;
+      count += 1;
+    }
   }
   if count == 0 {
     NEG_INFINITY
@@ -337,10 +342,9 @@ pub fn get_twoloop_score_avg<T>(
 ) -> FeatureCount where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-  let mut twoloop_score_avg = 0.;
-  let mut count = 0;
   let col_pair = (&sa.cols[pos_pair_closing_loop.0], &sa.cols[pos_pair_closing_loop.1]);
   let col_pair_2 = (&sa.cols[pos_pair_accessible.0], &sa.cols[pos_pair_accessible.1]);
+  let mut scores = Vec::new();
   for i in 0 .. sa.cols[0].len() {
     let ref seq = fasta_records[i].seq[..];
     let pos_pair = (sa.pos_map_sets[pos_pair_closing_loop.0][i].to_usize().unwrap(), sa.pos_map_sets[pos_pair_closing_loop.1][i].to_usize().unwrap());
@@ -352,8 +356,15 @@ pub fn get_twoloop_score_avg<T>(
     let twoloop_len = pos_pair_2.0 - pos_pair.0 - 1 + pos_pair.1 - pos_pair_2.1 - 1;
     if twoloop_len > CONSPROB_MAX_TWOLOOP_LEN {continue;}
     let twoloop_score = get_consprob_twoloop_score(feature_score_sets, seq, &pos_pair, &pos_pair_2);
-    twoloop_score_avg += twoloop_score;
-    count += 1;
+    scores.push(twoloop_score);
+  }
+  let mut twoloop_score_avg = 0.;
+  let mut count = 0;
+  for (i, &score) in scores.iter().enumerate() {
+    for score_2 in scores[i + 1 ..].iter() {
+      twoloop_score_avg += score + score_2;
+      count += 1;
+    }
   }
   if count == 0 {
     NEG_INFINITY
@@ -365,17 +376,23 @@ pub fn get_twoloop_score_avg<T>(
 pub fn get_ml_closing_basepairing_score_avg<T>(sa: &SeqAlign<T>, fasta_records: &FastaRecords, pos_pair_closing_loop: &(usize, usize), feature_score_sets: &FeatureCountSets) -> FeatureCount where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-  let mut ml_closing_basepairing_score_avg = 0.;
-  let mut count = 0;
   let col_pair = (&sa.cols[pos_pair_closing_loop.0], &sa.cols[pos_pair_closing_loop.1]);
+  let mut scores = Vec::new();
   for i in 0 .. sa.cols[0].len() {
     let ref seq = fasta_records[i].seq[..];
     let pos_pair = (sa.pos_map_sets[pos_pair_closing_loop.0][i].to_usize().unwrap(), sa.pos_map_sets[pos_pair_closing_loop.1][i].to_usize().unwrap());
     let base_pair = (col_pair.0[i], col_pair.1[i]);
     if !is_canonical(&base_pair) {continue;}
     let multi_loop_closing_basepairing_score = get_consprob_multi_loop_closing_basepairing_score(feature_score_sets, seq, &pos_pair);
-    ml_closing_basepairing_score_avg += multi_loop_closing_basepairing_score;
-    count += 1;
+    scores.push(multi_loop_closing_basepairing_score);
+  }
+  let mut ml_closing_basepairing_score_avg = 0.;
+  let mut count = 0;
+  for (i, &score) in scores.iter().enumerate() {
+    for score_2 in scores[i + 1 ..].iter() {
+      ml_closing_basepairing_score_avg += score + score_2;
+      count += 1;
+    }
   }
   if count == 0 {
     NEG_INFINITY
@@ -387,17 +404,23 @@ pub fn get_ml_closing_basepairing_score_avg<T>(sa: &SeqAlign<T>, fasta_records: 
 pub fn get_el_accessible_basepairing_score_avg<T>(sa: &SeqAlign<T>, fasta_records: &FastaRecords, pos_pair_accessible: &(usize, usize), feature_score_sets: &FeatureCountSets) -> FeatureCount where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-  let mut el_accessible_basepairing_score_avg = 0.;
-  let mut count = 0;
   let col_pair = (&sa.cols[pos_pair_accessible.0], &sa.cols[pos_pair_accessible.1]);
+  let mut scores = Vec::new();
   for i in 0 .. sa.cols[0].len() {
     let ref seq = fasta_records[i].seq[..];
     let pos_pair = (sa.pos_map_sets[pos_pair_accessible.0][i].to_usize().unwrap(), sa.pos_map_sets[pos_pair_accessible.1][i].to_usize().unwrap());
     let base_pair = (col_pair.0[i], col_pair.1[i]);
     if !is_canonical(&base_pair) {continue;}
     let external_loop_accessible_basepairing_score = get_consprob_external_loop_accessible_basepairing_score(feature_score_sets, seq, &pos_pair);
-    el_accessible_basepairing_score_avg += external_loop_accessible_basepairing_score;
-    count += 1;
+    scores.push(external_loop_accessible_basepairing_score);
+  }
+  let mut el_accessible_basepairing_score_avg = 0.;
+  let mut count = 0;
+  for (i, &score) in scores.iter().enumerate() {
+    for score_2 in scores[i + 1 ..].iter() {
+      el_accessible_basepairing_score_avg += score + score_2;
+      count += 1;
+    }
   }
   if count == 0 {
     NEG_INFINITY
@@ -409,17 +432,23 @@ pub fn get_el_accessible_basepairing_score_avg<T>(sa: &SeqAlign<T>, fasta_record
 pub fn get_ml_accessible_basepairing_score_avg<T>(sa: &SeqAlign<T>, fasta_records: &FastaRecords, pos_pair_accessible: &(usize, usize), feature_score_sets: &FeatureCountSets) -> FeatureCount where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
-  let mut ml_accessible_basepairing_score_avg = 0.;
-  let mut count = 0;
   let col_pair = (&sa.cols[pos_pair_accessible.0], &sa.cols[pos_pair_accessible.1]);
+  let mut scores = Vec::new();
   for i in 0 .. sa.cols[0].len() {
     let ref seq = fasta_records[i].seq[..];
     let pos_pair = (sa.pos_map_sets[pos_pair_accessible.0][i].to_usize().unwrap(), sa.pos_map_sets[pos_pair_accessible.1][i].to_usize().unwrap());
     let base_pair = (col_pair.0[i], col_pair.1[i]);
     if !is_canonical(&base_pair) {continue;}
     let multi_loop_accessible_basepairing_score = get_consprob_multi_loop_accessible_basepairing_score(feature_score_sets, seq, &pos_pair);
-    ml_accessible_basepairing_score_avg += multi_loop_accessible_basepairing_score;
-    count += 1;
+    scores.push(multi_loop_accessible_basepairing_score);
+  }
+  let mut ml_accessible_basepairing_score_avg = 0.;
+  let mut count = 0;
+  for (i, &score) in scores.iter().enumerate() {
+    for score_2 in scores[i + 1 ..].iter() {
+      ml_accessible_basepairing_score_avg += score + score_2;
+      count += 1;
+    }
   }
   if count == 0 {
     NEG_INFINITY

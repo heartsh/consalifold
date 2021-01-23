@@ -171,9 +171,8 @@ where
       let long_pp_closing_loop = (long_i, long_j);
       let loop_align_score_avg = css_part_func_mats.score_mat_4_loop_aligns[long_j];
       css_part_func_mats.part_func_mat_4_base_unpairings_on_sa[long_i][long_j] = if long_j == 0 {0.} else {css_part_func_mats.part_func_mat_4_base_unpairings_on_sa[long_i][long_j - 1]} + loop_align_score_avg;
-      let num_of_nongap_nucs = sa.cols[long_j].iter().map(|&x| x != PSEUDO_BASE).len() as FeatureCount;
-      css_part_func_mats.part_func_mat_4_base_unpairings_on_el[long_i][long_j] = if long_j == 0 {0.} else {css_part_func_mats.part_func_mat_4_base_unpairings_on_el[long_i][long_j - 1]} + loop_align_score_avg + num_of_nongap_nucs * feature_score_sets.external_loop_accessible_baseunpairing_count;
-      css_part_func_mats.part_func_mat_4_base_unpairings_on_mls[long_i][long_j] = if long_j == 0 {0.} else {css_part_func_mats.part_func_mat_4_base_unpairings_on_mls[long_i][long_j - 1]} + loop_align_score_avg + num_of_nongap_nucs * feature_score_sets.multi_loop_accessible_baseunpairing_count;
+      css_part_func_mats.part_func_mat_4_base_unpairings_on_el[long_i][long_j] = if long_j == 0 {0.} else {css_part_func_mats.part_func_mat_4_base_unpairings_on_el[long_i][long_j - 1]} + loop_align_score_avg + 2. * feature_score_sets.external_loop_accessible_baseunpairing_count;
+      css_part_func_mats.part_func_mat_4_base_unpairings_on_mls[long_i][long_j] = if long_j == 0 {0.} else {css_part_func_mats.part_func_mat_4_base_unpairings_on_mls[long_i][long_j - 1]} + loop_align_score_avg + 2. * feature_score_sets.multi_loop_accessible_baseunpairing_count;
       let mut sum = NEG_INFINITY;
       if long_pp_closing_loop.1 - long_pp_closing_loop.0 + 1 >= CONSPROB_MIN_HAIRPIN_LOOP_SPAN {
         let basepair_align_score_avg = get_basepair_align_score_avg(sa, &long_pp_closing_loop, feature_score_sets);
@@ -215,16 +214,13 @@ where
         match css_part_func_mats.part_func_mat_4_base_pairings_accessible_on_el.get(&accessible_pp) {
           Some(&part_func) => {
             let long_k = k.to_usize().unwrap();
-            // logsumexp(&mut sum, part_func + 2. * feature_score_sets.external_loop_accessible_baseunpairing_count * (j - k).to_f32().unwrap());
-            logsumexp(&mut sum, part_func + if long_k == sa_len {0.} else {css_part_func_mats.part_func_mat_4_base_unpairings_on_el[long_k + 1][long_j]});
-            // logsumexp(&mut sum_2, css_part_func_mats.part_func_mat_4_base_pairings_accessible_on_mls[&accessible_pp] + 2. * feature_score_sets.multi_loop_accessible_baseunpairing_count * (j - k).to_f32().unwrap());
-            logsumexp(&mut sum_2, css_part_func_mats.part_func_mat_4_base_pairings_accessible_on_mls[&accessible_pp] + if long_k == sa_len {0.} else {css_part_func_mats.part_func_mat_4_base_unpairings_on_el[long_k + 1][long_j]});
+            logsumexp(&mut sum, part_func + if long_k == sa_len - 1 {0.} else {css_part_func_mats.part_func_mat_4_base_unpairings_on_el[long_k + 1][long_j]});
+            logsumexp(&mut sum_2, css_part_func_mats.part_func_mat_4_base_pairings_accessible_on_mls[&accessible_pp] + if long_k == sa_len - 1 {0.} else {css_part_func_mats.part_func_mat_4_base_unpairings_on_el[long_k + 1][long_j]});
           }, None => {},
         }
       }
       css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_el[long_i][long_j] = sum;
       css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_mls[long_i][long_j] = sum_2;
-      // sum = 2. * feature_score_sets.external_loop_accessible_baseunpairing_count * sub_sa_len.to_f32().unwrap();
       sum = css_part_func_mats.part_func_mat_4_base_unpairings_on_el[long_i][long_j];
       for k in long_i .. long_j {
         let css_part_func_4_rightmost_base_pairings_on_el = css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_el[k][long_j];
@@ -238,7 +234,6 @@ where
       sum = css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_mls[long_i][long_j];
       for k in long_i + 1 .. long_j {
         let css_part_func_4_rightmost_base_pairings_on_mls = css_part_func_mats.part_func_mat_4_rightmost_base_pairings_on_mls[k][long_j];
-        // logsumexp(&mut sum, css_part_func_4_rightmost_base_pairings_on_mls + 2. * feature_score_sets.multi_loop_accessible_baseunpairing_count * (k - long_i) as FeatureCount);
         logsumexp(&mut sum, css_part_func_mats.part_func_mat_4_base_unpairings_on_mls[long_i][k - 1] + css_part_func_4_rightmost_base_pairings_on_mls);
         logsumexp(&mut sum, css_part_func_mats.part_func_mat_4_at_least_1_base_pairings_on_mls[long_i][k - 1] + css_part_func_4_rightmost_base_pairings_on_mls);
       }
@@ -313,7 +308,6 @@ where
             let bpp = bpp_mat[&pp_closing_loop];
             let coefficient = bpp + css_part_func_mats.score_mat_4_ml_closing_basepairings[&pp_closing_loop] - part_func;
             logsumexp(&mut sum_1, coefficient + css_part_func_mats.part_func_mat_4_at_least_1_base_pairings_on_mls[long_j + 1][long_k - 1]);
-            // logsumexp(&mut sum_2, coefficient + 2. * feature_score_sets.multi_loop_accessible_baseunpairing_count * (k - j - T::one()).to_f32().unwrap());
             logsumexp(&mut sum_2, coefficient + css_part_func_mats.part_func_mat_4_base_unpairings_on_mls[long_j + 1][long_k - 1]);
           }, None => {},
         }
@@ -351,7 +345,6 @@ where
             let css_part_func_4_at_least_1_base_pairings_on_mls = css_part_func_mats.part_func_mat_4_at_least_1_base_pairings_on_mls[k + 1][long_i - 1];
             logsumexp(&mut bpp_4_ml, coefficient + prob_mat_4_mls_2[k][long_j] + css_part_func_4_at_least_1_base_pairings_on_mls);
             let prob_4_mls = prob_mat_4_mls_1[k][long_j];
-            // logsumexp(&mut bpp_4_ml, coefficient + prob_4_mls + 2. * feature_score_sets.multi_loop_accessible_baseunpairing_count * (long_i - k - 1) as FreeEnergy);
             logsumexp(&mut bpp_4_ml, coefficient + prob_4_mls + css_part_func_mats.part_func_mat_4_base_unpairings_on_mls[k + 1][long_i - 1]);
             logsumexp(&mut bpp_4_ml, coefficient + prob_4_mls + css_part_func_4_at_least_1_base_pairings_on_mls);
           }

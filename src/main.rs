@@ -1,5 +1,6 @@
 extern crate consalifold;
 extern crate num_cpus;
+extern crate crossbeam;
 
 use consalifold::*;
 use std::env;
@@ -7,6 +8,7 @@ use std::path::Path;
 use std::io::{BufReader, BufWriter};
 use std::fs::File;
 use std::fs::create_dir;
+use crossbeam::scope;
 
 type MeaCssStr = MeaSsStr;
 
@@ -105,9 +107,7 @@ where
         fasta_records[j].seq.push(base);
         seq_lens[j] += 1;
       }
-      if seq_lens[j] > 0 {
-        sa.pos_map_sets[i][j] = T::from_usize(seq_lens[j]).unwrap();
-      }
+      sa.pos_map_sets[i][j] = T::from_usize(seq_lens[j]).unwrap();
     }
   }
   for i in 0 .. num_of_rnas {
@@ -120,16 +120,22 @@ where
   let ref ref_2_sa = sa;
   let ref ref_2_fasta_records = fasta_records;
   let ref ref_2_feature_score_sets = feature_score_sets;
-  thread_pool.scoped(|scope| {
-    scope.execute(move || {
-      *ref_2_rnaalifold_bpp_mat = rnaalifold_trained(ref_2_sa, ref_2_fasta_records, ref_2_feature_score_sets);
-    });
-  });
-  let prob_mat_sets = consprob::<T>(thread_pool, &fasta_records, min_bpp, T::from_usize(offset_4_max_gap_num).unwrap(), produces_access_probs);
-  let mix_bpp_mat = get_mix_bpp_mat(&prob_mat_sets, &rnaalifold_bpp_mat, &sa, mix_weight);
+  let mut mix_bpp_mat = ProbMat::new();
+  let ref mut ref_2_mix_bpp_mat = mix_bpp_mat;
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }
+  scope(|scope| {
+    let handler = scope.spawn(|_| {
+      rnaalifold_trained(ref_2_sa, ref_2_fasta_records, ref_2_feature_score_sets)
+    });
+    let prob_mat_sets = consprob::<T>(thread_pool, ref_2_fasta_records, min_bpp, T::from_usize(offset_4_max_gap_num).unwrap(), produces_access_probs);
+    if outputs_probs {
+      write_prob_mat_sets::<T>(output_dir_path, &prob_mat_sets, produces_access_probs);
+    }
+    *ref_2_rnaalifold_bpp_mat = handler.join().unwrap();
+    *ref_2_mix_bpp_mat = get_mix_bpp_mat(&prob_mat_sets, ref_2_rnaalifold_bpp_mat, ref_2_sa, mix_weight);
+  }).unwrap();
   if takes_bench {
     let output_file_path = output_dir_path.join(&format!("gamma={}.sth", GAMMA_4_BENCH));
     compute_and_write_mea_css(&mix_bpp_mat, &sa, GAMMA_4_BENCH, &output_file_path, &fasta_records);
@@ -146,9 +152,6 @@ where
         });
       }
     });
-  }
-  if outputs_probs {
-    write_prob_mat_sets::<T>(&output_dir_path, &prob_mat_sets, produces_access_probs);
   }
 }
 

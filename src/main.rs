@@ -5,10 +5,11 @@ extern crate crossbeam;
 use consalifold::*;
 use std::env;
 use std::path::Path;
-use std::io::{BufReader, BufWriter};
+use std::io::BufWriter;
 use std::fs::File;
 use std::fs::create_dir;
 use crossbeam::scope;
+use std::process::{Command, Output};
 
 type MeaCssStr = MeaSsStr;
 
@@ -82,17 +83,16 @@ fn main() {
   let sa_len = cols.len();
   let mut thread_pool = Pool::new(num_of_threads);
   if sa_len <= u8::MAX as usize {
-    multi_threaded_consalifold::<u8>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_access_probs, output_dir_path, min_pow_of_2, max_pow_of_2, takes_bench, outputs_probs, mix_weight);
+    multi_threaded_consalifold::<u8>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_access_probs, output_dir_path, min_pow_of_2, max_pow_of_2, takes_bench, outputs_probs, mix_weight, input_file_path);
   } else {
-    multi_threaded_consalifold::<u16>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_access_probs, output_dir_path, min_pow_of_2, max_pow_of_2, takes_bench, outputs_probs, mix_weight);
+    multi_threaded_consalifold::<u16>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_access_probs, output_dir_path, min_pow_of_2, max_pow_of_2, takes_bench, outputs_probs, mix_weight, input_file_path);
   }
 }
 
-fn multi_threaded_consalifold<T>(thread_pool: &mut Pool, cols: &Cols, seq_ids: &SeqIds, offset_4_max_gap_num: usize, min_bpp: Prob, produces_access_probs: bool, output_dir_path: &Path, min_pow_of_2: i32, max_pow_of_2: i32, takes_bench: bool, outputs_probs: bool, mix_weight: Prob)
+fn multi_threaded_consalifold<T>(thread_pool: &mut Pool, cols: &Cols, seq_ids: &SeqIds, offset_4_max_gap_num: usize, min_bpp: Prob, produces_access_probs: bool, output_dir_path: &Path, min_pow_of_2: i32, max_pow_of_2: i32, takes_bench: bool, outputs_probs: bool, mix_weight: Prob, input_file_path: &Path)
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
 {
-  let feature_score_sets = FeatureCountSets::load_trained_score_params();
   let mut sa = SeqAlign::<T>::new();
   sa.cols = cols.clone();
   let num_of_rnas = sa.cols[0].len();
@@ -106,8 +106,8 @@ where
       if base != PSEUDO_BASE {
         fasta_records[j].seq.push(base);
         seq_lens[j] += 1;
+        sa.pos_map_sets[i][j] = T::from_usize(seq_lens[j]).unwrap();
       }
-      sa.pos_map_sets[i][j] = T::from_usize(seq_lens[j]).unwrap();
     }
   }
   for i in 0 .. num_of_rnas {
@@ -115,11 +115,8 @@ where
     fasta_records[i].seq.push(PSEUDO_BASE);
     fasta_records[i].fasta_id = seq_ids[i].clone();
   }
-  let mut rnaalifold_bpp_mat = SparseProbMat::<T>::default();
-  let ref mut ref_2_rnaalifold_bpp_mat = rnaalifold_bpp_mat;
   let ref ref_2_sa = sa;
   let ref ref_2_fasta_records = fasta_records;
-  let ref ref_2_feature_score_sets = feature_score_sets;
   let mut mix_bpp_mat = ProbMat::new();
   let ref mut ref_2_mix_bpp_mat = mix_bpp_mat;
   if !output_dir_path.exists() {
@@ -127,14 +124,27 @@ where
   }
   scope(|scope| {
     let handler = scope.spawn(|_| {
-      rnaalifold_trained(ref_2_sa, ref_2_fasta_records, ref_2_feature_score_sets)
+      let args = vec![input_file_path.to_str().unwrap()];
+      let output = run_command("get_rnaalifold_bpp_mat.py", &args, "Failed to run RNAalifold");
+      let output = std::str::from_utf8(&output.stdout).unwrap();
+      let mut rnaalifold_bpp_mat = SparseProbMat::<T>::default();
+      for substring in output.trim().split_whitespace() {
+        let subsubstrings: Vec<&str> = substring.split(',').collect();
+        let (i, j, bpp) = (
+          T::from_usize(subsubstrings[0].parse().unwrap()).unwrap(),
+          T::from_usize(subsubstrings[1].parse().unwrap()).unwrap(),
+          subsubstrings[2].parse().unwrap(),
+        );
+        rnaalifold_bpp_mat.insert((i, j), bpp);
+      }
+      rnaalifold_bpp_mat
     });
     let prob_mat_sets = consprob::<T>(thread_pool, ref_2_fasta_records, min_bpp, T::from_usize(offset_4_max_gap_num).unwrap(), produces_access_probs);
     if outputs_probs {
       write_prob_mat_sets::<T>(output_dir_path, &prob_mat_sets, produces_access_probs);
     }
-    *ref_2_rnaalifold_bpp_mat = handler.join().unwrap();
-    *ref_2_mix_bpp_mat = get_mix_bpp_mat(&prob_mat_sets, ref_2_rnaalifold_bpp_mat, ref_2_sa, mix_weight);
+    let rnaalifold_bpp_mat = handler.join().unwrap();
+    *ref_2_mix_bpp_mat = get_mix_bpp_mat(&prob_mat_sets, &rnaalifold_bpp_mat, ref_2_sa, mix_weight);
   }).unwrap();
   if takes_bench {
     let output_file_path = output_dir_path.join(&format!("gamma={}.sth", GAMMA_4_BENCH));
@@ -153,43 +163,6 @@ where
       }
     });
   }
-}
-
-fn read_sa_from_clustal_file(clustal_file_path: &Path) -> (Cols, SeqIds) {
-  let mut cols = Cols::new();
-  let mut seq_ids = SeqIds::new();
-  let reader_2_clustal_file = BufReader::new(File::open(clustal_file_path).unwrap());
-  let mut seq_pointer = 0;
-  let mut pos_pointer = 0;
-  let mut are_seq_ids_read = false;
-  for (i, string) in reader_2_clustal_file.lines().enumerate() {
-    let string = string.unwrap();
-    if i == 0 || string.len() == 0 || string.starts_with(" ") {
-      if cols.len() > 0 {
-        seq_pointer = 0;
-        pos_pointer = cols.len();
-        are_seq_ids_read = true;
-      }
-      continue;
-    }
-    let mut substrings = string.split_whitespace();
-    let substring = substrings.next().unwrap();
-    if !are_seq_ids_read {
-      seq_ids.push(String::from(substring));
-    }
-    let substring = substrings.next().unwrap();
-    if seq_pointer == 0 {
-      for sa_char in substring.chars() {
-        cols.push(vec![convert_char(sa_char as u8)]);
-      }
-      seq_pointer += 1;
-    } else {
-      for (j, sa_char) in substring.chars().enumerate() {
-        cols[pos_pointer + j].push(convert_char(sa_char as u8));
-      }
-    }
-  }
-  (cols, seq_ids)
 }
 
 fn get_mix_bpp_mat<T>(prob_mat_sets: &ProbMatSets<T>, rnaalifold_bpp_mat: &SparseProbMat<T>, sa: &SeqAlign<T>, mix_weight: Prob) -> ProbMat
@@ -268,4 +241,8 @@ where
     mea_css_str[j.to_usize().unwrap()] = BASE_PAIRING_RIGHT_BASE;
   }
   mea_css_str
+}
+
+fn run_command(command: &str, args: &[&str], expect: &str) -> Output {
+  Command::new(command).args(args).output().expect(expect)
 }

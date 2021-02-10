@@ -2,7 +2,7 @@
 name = "consalifold"
 version = "0.1.1"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "ConsAlifold, which Predicts Global Consensus RNA Secondary Structures to Consider Sparse Global Pairwise RNA Structural Alignments"
+description = "Prediction Tool for RNA Consensus Secondary Structures to Consider RNA Pairwise Structural Alignments"
 repository = "https://github.com/heartsh/consalifold"
 readme = "README.md"
 keywords = ["bioinformatics", "rna", "secondary-structure"]
@@ -11,8 +11,7 @@ license = "MIT"
 [dependencies]
 num_cpus = "1.0"
 crossbeam = "0.8"
-# consprob = "0.1"
-consprob = {path = "../consprob"}
+consprob = "0.1"
 
 [lib]
 path = "src/lib.rs"

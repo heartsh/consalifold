@@ -21,11 +21,6 @@ def main():
   probcons_params = []
   clustalw_params = []
   mafft_xinsi_params = []
-  mafft_plus_centroidalifold_params_4_bpp_mat = []
-  probcons_plus_centroidalifold_params_4_bpp_mat = []
-  clustalw_plus_centroidalifold_params_4_bpp_mat = []
-  mafft_xinsi_plus_centroidalifold_params_4_bpp_mat = []
-  ref_sa_plus_centroidalifold_params_4_bpp_mat = []
   mafft_plus_consalifold_params = []
   probcons_plus_consalifold_params = []
   posterior_probcons_plus_consalifold_params = []
@@ -51,24 +46,14 @@ def main():
   mafft_xinsi_plus_petfold_params = []
   ref_sa_plus_petfold_params = []
   petfold_params_4_elapsed_time = []
-  consalifold_elapsed_time = 0.
-  begin = time.time()
-  run_locarnap.main()
-  posterior_consalifold_elapsed_time = time.time() - begin
   rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
   # rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
   mafft_dir_path = asset_dir_path + "/mafft"
   probcons_dir_path = asset_dir_path + "/probcons"
   clustalw_dir_path = asset_dir_path + "/clustalw"
   mafft_xinsi_dir_path = asset_dir_path + "/mafft_xinsi"
-  locarnap_dir_path = asset_dir_path + "/locarnap"
   ref_sa_dir_path = asset_dir_path + "/ref_sas"
   # ref_sa_dir_path = asset_dir_path + "/ref_sas_4_micro_bench"
-  mafft_plus_centroidalifold_bpp_mat_dir_path = asset_dir_path + "/mafft_plus_centroidalifold_bpp_mats"
-  probcons_plus_centroidalifold_bpp_mat_dir_path = asset_dir_path + "/probcons_plus_centroidalifold_bpp_mats"
-  clustalw_plus_centroidalifold_bpp_mat_dir_path = asset_dir_path + "/clustalw_plus_centroidalifold_bpp_mats"
-  mafft_xinsi_plus_centroidalifold_bpp_mat_dir_path = asset_dir_path + "/mafft_xinsi_plus_centroidalifold_bpp_mats"
-  ref_sa_plus_centroidalifold_bpp_mat_dir_path = asset_dir_path + "/ref_sa_plus_centroidalifold_bpp_mats"
   mafft_plus_consalifold_dir_path = asset_dir_path + "/mafft_plus_consalifold"
   probcons_plus_consalifold_dir_path = asset_dir_path + "/probcons_plus_consalifold"
   posterior_probcons_plus_consalifold_dir_path = asset_dir_path + "/posterior_probcons_plus_consalifold"
@@ -98,18 +83,6 @@ def main():
     os.mkdir(clustalw_dir_path)
   if not os.path.isdir(mafft_xinsi_dir_path):
     os.mkdir(mafft_xinsi_dir_path)
-  if not os.path.isdir(mafft_plus_centroidalifold_bpp_mat_dir_path):
-    os.mkdir(mafft_plus_centroidalifold_bpp_mat_dir_path)
-  if not os.path.isdir(probcons_plus_centroidalifold_bpp_mat_dir_path):
-    os.mkdir(probcons_plus_centroidalifold_bpp_mat_dir_path)
-  if not os.path.isdir(clustalw_plus_centroidalifold_bpp_mat_dir_path):
-    os.mkdir(clustalw_plus_centroidalifold_bpp_mat_dir_path)
-  if not os.path.isdir(mafft_xinsi_plus_centroidalifold_bpp_mat_dir_path):
-    os.mkdir(mafft_xinsi_plus_centroidalifold_bpp_mat_dir_path)
-  if not os.path.isdir(ref_sa_plus_centroidalifold_bpp_mat_dir_path):
-    os.mkdir(ref_sa_plus_centroidalifold_bpp_mat_dir_path)
-  if not os.path.isdir(mafft_plus_consalifold_dir_path):
-    os.mkdir(mafft_plus_consalifold_dir_path)
   if not os.path.isdir(probcons_plus_consalifold_dir_path):
     os.mkdir(probcons_plus_consalifold_dir_path)
   if not os.path.isdir(posterior_probcons_plus_consalifold_dir_path):
@@ -155,11 +128,6 @@ def main():
       continue
     rna_seq_file_path = os.path.join(rna_seq_dir_path, rna_seq_file)
     (rna_family_name, extension) = os.path.splitext(rna_seq_file)
-    mafft_plus_centroidalifold_bpp_mat_file_path = os.path.join(mafft_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
-    probcons_plus_centroidalifold_bpp_mat_file_path = os.path.join(probcons_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
-    clustalw_plus_centroidalifold_bpp_mat_file_path = os.path.join(clustalw_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
-    mafft_xinsi_plus_centroidalifold_bpp_mat_file_path = os.path.join(mafft_xinsi_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
-    ref_sa_plus_centroidalifold_bpp_mat_file_path = os.path.join(ref_sa_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
     mafft_output_file_path = os.path.join(mafft_dir_path, rna_family_name + ".aln")
     probcons_output_file_path = os.path.join(probcons_dir_path, rna_family_name + ".aln")
     clustalw_output_file_path = os.path.join(clustalw_dir_path, rna_family_name + ".aln")
@@ -169,30 +137,11 @@ def main():
     probcons_params.insert(0, (rna_seq_file_path, probcons_output_file_path))
     clustalw_params.insert(0, (rna_seq_file_path, clustalw_output_file_path))
     mafft_xinsi_params.insert(0, (rna_seq_file_path, mafft_xinsi_output_file_path))
-    mafft_plus_centroidalifold_command = "centroid_alifold -e McCaskill -w 0 -e Alifold -w 1 --posteriors 0 --posteriors-output " + mafft_plus_centroidalifold_bpp_mat_file_path + " " + mafft_output_file_path
-    probcons_plus_centroidalifold_command = "centroid_alifold -e McCaskill -w 0 -e Alifold -w 1 --posteriors 0 --posteriors-output " + probcons_plus_centroidalifold_bpp_mat_file_path + " " + probcons_output_file_path
-    clustalw_plus_centroidalifold_command = "centroid_alifold -e McCaskill -w 0 -e Alifold -w 1 --posteriors 0 --posteriors-output " + clustalw_plus_centroidalifold_bpp_mat_file_path + " " + clustalw_output_file_path
-    mafft_xinsi_plus_centroidalifold_command = "centroid_alifold -e McCaskill -w 0 -e Alifold -w 1 --posteriors 0 --posteriors-output " + mafft_xinsi_plus_centroidalifold_bpp_mat_file_path + " " + mafft_xinsi_output_file_path
-    ref_sa_plus_centroidalifold_command = "centroid_alifold -e McCaskill -w 0 -e Alifold -w 1 --posteriors 0 --posteriors-output " + ref_sa_plus_centroidalifold_bpp_mat_file_path + " " + ref_sa_file_path
-    mafft_plus_centroidalifold_params_4_bpp_mat.insert(0, mafft_plus_centroidalifold_command)
-    probcons_plus_centroidalifold_params_4_bpp_mat.insert(0, probcons_plus_centroidalifold_command)
-    clustalw_plus_centroidalifold_params_4_bpp_mat.insert(0, clustalw_plus_centroidalifold_command)
-    mafft_xinsi_plus_centroidalifold_params_4_bpp_mat.insert(0, mafft_xinsi_plus_centroidalifold_command)
-    ref_sa_plus_centroidalifold_params_4_bpp_mat.insert(0, ref_sa_plus_centroidalifold_command)
   pool = multiprocessing.Pool(num_of_threads)
   pool.map(run_mafft, mafft_params)
   pool.map(run_probcons, probcons_params)
   pool.map(run_clustalw, clustalw_params)
   pool.map(run_mafft_xinsi, mafft_xinsi_params)
-  pool.map(utils.run_command, mafft_plus_centroidalifold_params_4_bpp_mat)
-  begin = time.time()
-  pool.map(utils.run_command, probcons_plus_centroidalifold_params_4_bpp_mat)
-  elapsed_time = time.time() - begin
-  consalifold_elapsed_time += elapsed_time
-  posterior_consalifold_elapsed_time += elapsed_time
-  pool.map(utils.run_command, clustalw_plus_centroidalifold_params_4_bpp_mat)
-  pool.map(utils.run_command, mafft_xinsi_plus_centroidalifold_params_4_bpp_mat)
-  pool.map(utils.run_command, ref_sa_plus_centroidalifold_params_4_bpp_mat)
   sub_thread_num = 4
   rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
   # rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
@@ -201,17 +150,11 @@ def main():
       continue
     rna_seq_file_path = os.path.join(rna_seq_dir_path, rna_seq_file)
     (rna_family_name, extension) = os.path.splitext(rna_seq_file)
-    mafft_plus_centroidalifold_bpp_mat_file_path = os.path.join(mafft_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
-    probcons_plus_centroidalifold_bpp_mat_file_path = os.path.join(probcons_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
-    clustalw_plus_centroidalifold_bpp_mat_file_path = os.path.join(clustalw_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
-    mafft_xinsi_plus_centroidalifold_bpp_mat_file_path = os.path.join(mafft_xinsi_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
-    ref_sa_plus_centroidalifold_bpp_mat_file_path = os.path.join(ref_sa_plus_centroidalifold_bpp_mat_dir_path, rna_family_name + ".dat")
     mafft_output_file_path = os.path.join(mafft_dir_path, rna_family_name + ".aln")
     probcons_output_file_path = os.path.join(probcons_dir_path, rna_family_name + ".aln")
     clustalw_output_file_path = os.path.join(clustalw_dir_path, rna_family_name + ".aln")
     mafft_xinsi_output_file_path = os.path.join(mafft_xinsi_dir_path, rna_family_name + ".aln")
     ref_sa_file_path = os.path.join(ref_sa_dir_path, rna_family_name + ".aln")
-    locarnap_pair_prob_matrix_file_path = os.path.join(locarnap_dir_path, rna_family_name + "_bpp_mats.dat")
     mafft_plus_consalifold_output_dir_path = os.path.join(mafft_plus_consalifold_dir_path, rna_family_name)
     probcons_plus_consalifold_output_dir_path = os.path.join(probcons_plus_consalifold_dir_path, rna_family_name)
     posterior_probcons_plus_consalifold_output_dir_path = os.path.join(posterior_probcons_plus_consalifold_dir_path, rna_family_name)
@@ -260,21 +203,21 @@ def main():
       os.mkdir(mafft_xinsi_plus_petfold_output_dir_path)
     if not os.path.isdir(ref_sa_plus_petfold_output_dir_path):
       os.mkdir(ref_sa_plus_petfold_output_dir_path)
-    mafft_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + mafft_output_file_path + " -c " + mafft_plus_centroidalifold_bpp_mat_file_path + " -o " + mafft_plus_consalifold_output_dir_path
-    probcons_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + probcons_output_file_path + " -c " + probcons_plus_centroidalifold_bpp_mat_file_path + " -o " + probcons_plus_consalifold_output_dir_path
-    clustalw_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + clustalw_output_file_path + " -c " + clustalw_plus_centroidalifold_bpp_mat_file_path + " -o " + clustalw_plus_consalifold_output_dir_path
-    mafft_xinsi_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + mafft_xinsi_output_file_path + " -c " + mafft_xinsi_plus_centroidalifold_bpp_mat_file_path + " -o " + mafft_xinsi_plus_consalifold_output_dir_path
-    ref_sa_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + ref_sa_file_path + " -c " + ref_sa_plus_centroidalifold_bpp_mat_file_path + " -o " + ref_sa_plus_consalifold_output_dir_path
+    mafft_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + mafft_output_file_path + " -o " + mafft_plus_consalifold_output_dir_path
+    probcons_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + probcons_output_file_path + " -o " + probcons_plus_consalifold_output_dir_path
+    clustalw_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + clustalw_output_file_path + " -o " + clustalw_plus_consalifold_output_dir_path
+    mafft_xinsi_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + mafft_xinsi_output_file_path + " -o " + mafft_xinsi_plus_consalifold_output_dir_path
+    ref_sa_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + ref_sa_file_path + " -o " + ref_sa_plus_consalifold_output_dir_path
     mafft_plus_consalifold_params.insert(0, mafft_plus_consalifold_command)
     probcons_plus_consalifold_params.insert(0, probcons_plus_consalifold_command)
     clustalw_plus_consalifold_params.insert(0, clustalw_plus_consalifold_command)
     mafft_xinsi_plus_consalifold_params.insert(0, mafft_xinsi_plus_consalifold_command)
     ref_sa_plus_consalifold_params.insert(0, ref_sa_plus_consalifold_command)
-    probcons_plus_consalifold_command = "consalifold -b -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + probcons_output_file_path + " -c " + probcons_plus_centroidalifold_bpp_mat_file_path + " -o " + probcons_plus_consalifold_output_dir_path
+    probcons_plus_consalifold_command = "consalifold -b -t " + str(sub_thread_num) + " -i " + probcons_output_file_path + " -o " + probcons_plus_consalifold_output_dir_path
     consalifold_params_4_elapsed_time.insert(0, probcons_plus_consalifold_command)
-    posterior_probcons_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + probcons_output_file_path + " -c " + probcons_plus_centroidalifold_bpp_mat_file_path + " -o " + posterior_probcons_plus_consalifold_output_dir_path + " -u --input_locarnap_pair_prob_matrix_file_path " + locarnap_pair_prob_matrix_file_path
+    posterior_probcons_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + probcons_output_file_path + " -o " + posterior_probcons_plus_consalifold_output_dir_path
     posterior_probcons_plus_consalifold_params.insert(0, posterior_probcons_plus_consalifold_command)
-    posterior_probcons_plus_consalifold_command = "consalifold -b -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + probcons_output_file_path + " -c " + probcons_plus_centroidalifold_bpp_mat_file_path + " -o " + posterior_probcons_plus_consalifold_output_dir_path + " -u --input_locarnap_pair_prob_matrix_file_path " + locarnap_pair_prob_matrix_file_path
+    posterior_probcons_plus_consalifold_command = "consalifold -b -t " + str(sub_thread_num) + " -i " + probcons_output_file_path + " -o " + posterior_probcons_plus_consalifold_output_dir_path
     posterior_consalifold_params_4_elapsed_time.insert(0, posterior_probcons_plus_consalifold_command)
     output_file = rna_family_name + ".sth"
     mafft_plus_rnaalifold_output_file_path = os.path.join(mafft_plus_rnaalifold_dir_path, output_file)
@@ -330,10 +273,10 @@ def main():
   pool.map(utils.run_command, ref_sa_plus_consalifold_params)
   begin = time.time()
   pool.map(utils.run_command, consalifold_params_4_elapsed_time)
-  consalifold_elapsed_time += time.time() - begin
+  consalifold_elapsed_time = time.time() - begin
   begin = time.time()
   pool.map(utils.run_command, posterior_consalifold_params_4_elapsed_time)
-  posterior_consalifold_elapsed_time += time.time() - begin
+  posterior_consalifold_elapsed_time = time.time() - begin
   # CentroidAlifold's execution.
   pool = multiprocessing.Pool(num_of_threads)
   pool.map(run_centroidalifold, mafft_plus_centroidalifold_params)

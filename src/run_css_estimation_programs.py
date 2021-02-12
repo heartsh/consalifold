@@ -83,6 +83,8 @@ def main():
     os.mkdir(clustalw_dir_path)
   if not os.path.isdir(mafft_xinsi_dir_path):
     os.mkdir(mafft_xinsi_dir_path)
+  if not os.path.isdir(mafft_plus_consalifold_dir_path):
+    os.mkdir(mafft_plus_consalifold_dir_path)
   if not os.path.isdir(probcons_plus_consalifold_dir_path):
     os.mkdir(probcons_plus_consalifold_dir_path)
   if not os.path.isdir(posterior_probcons_plus_consalifold_dir_path):
@@ -203,7 +205,7 @@ def main():
       os.mkdir(mafft_xinsi_plus_petfold_output_dir_path)
     if not os.path.isdir(ref_sa_plus_petfold_output_dir_path):
       os.mkdir(ref_sa_plus_petfold_output_dir_path)
-    mafft_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + rna_seq_file_path + " -a " + mafft_output_file_path + " -o " + mafft_plus_consalifold_output_dir_path
+    mafft_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + mafft_output_file_path + " -o " + mafft_plus_consalifold_output_dir_path
     probcons_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + probcons_output_file_path + " -o " + probcons_plus_consalifold_output_dir_path
     clustalw_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + clustalw_output_file_path + " -o " + clustalw_plus_consalifold_output_dir_path
     mafft_xinsi_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + mafft_xinsi_output_file_path + " -o " + mafft_xinsi_plus_consalifold_output_dir_path

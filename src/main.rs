@@ -85,7 +85,7 @@ fn main() {
   let (cols, seq_ids) = read_sa_from_clustal_file(input_file_path);
   let sa_len = cols.len();
   let mut thread_pool = Pool::new(num_of_threads);
-  if sa_len <= u8::MAX as usize {
+  if sa_len + 2 <= u8::MAX as usize {
     multi_threaded_consalifold::<u8>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_access_probs, output_dir_path, min_pow_of_2, max_pow_of_2, takes_bench, outputs_probs, mix_weight, input_file_path, is_posterior_model);
   } else {
     multi_threaded_consalifold::<u16>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_access_probs, output_dir_path, min_pow_of_2, max_pow_of_2, takes_bench, outputs_probs, mix_weight, input_file_path, is_posterior_model);

@@ -11,33 +11,8 @@ license = "MIT"
 [dependencies]
 num_cpus = "1.0"
 crossbeam = "0.8"
-# consprob = "0.1"
-consprob = {path = "../consprob_old"}
+consprob = "0.1"
 
 [lib]
 path = "src/lib.rs"
 name = "consalifold"
-
-[tasks.clean]
-command = "cargo"
-args = ["clean"]
-
-[tasks.install_bin]
-command = "cargo"
-args = ["install", "-f", "--path", "."]
-dependencies = ["clean"]
-
-[tasks.install_script]
-command = "cp"
-args = ["./src/get_rnaalifold_bpp_mat.py", "/usr/local/bin/get_rnaalifold_bpp_mat.py"]
-dependencies = ["install_python_mods"]
-
-[tasks.install_python_mods]
-command = "conda"
-args = ["install", "biopython"]
-
-[tasks.install]
-dependencies = [
-  "install_script",
-  "install_bin",
-]

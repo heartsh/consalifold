@@ -217,9 +217,9 @@ def main():
     ref_sa_plus_consalifold_params.insert(0, ref_sa_plus_consalifold_command)
     probcons_plus_consalifold_command = "consalifold -b -t " + str(sub_thread_num) + " -i " + probcons_output_file_path + " -o " + probcons_plus_consalifold_output_dir_path
     consalifold_params_4_elapsed_time.insert(0, probcons_plus_consalifold_command)
-    posterior_probcons_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + probcons_output_file_path + " -o " + posterior_probcons_plus_consalifold_output_dir_path
+    posterior_probcons_plus_consalifold_command = "consalifold -u -t " + str(sub_thread_num) + " -i " + probcons_output_file_path + " -o " + posterior_probcons_plus_consalifold_output_dir_path
     posterior_probcons_plus_consalifold_params.insert(0, posterior_probcons_plus_consalifold_command)
-    posterior_probcons_plus_consalifold_command = "consalifold -b -t " + str(sub_thread_num) + " -i " + probcons_output_file_path + " -o " + posterior_probcons_plus_consalifold_output_dir_path
+    posterior_probcons_plus_consalifold_command = "consalifold -u -b -t " + str(sub_thread_num) + " -i " + probcons_output_file_path + " -o " + posterior_probcons_plus_consalifold_output_dir_path
     posterior_consalifold_params_4_elapsed_time.insert(0, posterior_probcons_plus_consalifold_command)
     output_file = rna_family_name + ".sth"
     mafft_plus_rnaalifold_output_file_path = os.path.join(mafft_plus_rnaalifold_dir_path, output_file)

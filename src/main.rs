@@ -18,6 +18,7 @@ const DEFAULT_MIX_WEIGHT: Prob = 0.5;
 const DEFAULT_MIN_POW_OF_2: i32 = -4;
 const DEFAULT_MAX_POW_OF_2: i32 = 10;
 const GAMMA_4_BENCH: Prob = 1.;
+const DIGITS: [char; 9] = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
 fn main() {
   let args = env::args().collect::<Vec<Arg>>();
@@ -127,18 +128,23 @@ where
   }
   scope(|scope| {
     let handler = scope.spawn(|_| {
-      let args = vec![input_file_path.to_str().unwrap()];
-      let output = run_command("get_rnaalifold_bpp_mat.py", &args, "Failed to run RNAalifold");
+      let args = vec!["-e", "Alifold", "--posteriors", "0", input_file_path.to_str().unwrap()];
+      let output = run_command("centroid_alifold", &args, "Failed to run RNAalifold");
       let output = std::str::from_utf8(&output.stdout).unwrap();
       let mut rnaalifold_bpp_mat = SparseProbMat::<T>::default();
-      for substring in output.trim().split_whitespace() {
-        let subsubstrings: Vec<&str> = substring.split(',').collect();
-        let (i, j, bpp) = (
-          T::from_usize(subsubstrings[0].parse().unwrap()).unwrap(),
-          T::from_usize(subsubstrings[1].parse().unwrap()).unwrap(),
-          subsubstrings[2].parse().unwrap(),
-        );
-        rnaalifold_bpp_mat.insert((i, j), bpp);
+      for substring in output.trim().split('\n') {
+        if !substring.starts_with(&DIGITS[..]) {continue;}
+        let subsubstrings: Vec<&str> = substring.split_whitespace().collect();
+        if subsubstrings.len() < 3 {continue;}
+        let i = T::from_usize(subsubstrings[0].parse().unwrap()).unwrap() - T::one();
+        for partner in &subsubstrings[2 ..] {
+          let j_and_bpp: Vec<&str> = partner.split(':').collect();
+          let (j, bpp) = (
+            T::from_usize(j_and_bpp[0].parse().unwrap()).unwrap() - T::one(),
+            j_and_bpp[1].parse().unwrap(),
+          );
+          rnaalifold_bpp_mat.insert((i, j), bpp);
+        }
       }
       rnaalifold_bpp_mat
     });
@@ -326,7 +332,7 @@ where
       let pos_pair = (T::from_usize(i).unwrap(), T::from_usize(j).unwrap());
       match rnaalifold_bpp_mat.get(&pos_pair) {
         Some(&rnaalifold_bpp) => {
-          mix_bpp_mat[i][j] += (1. - mix_weight) * rnaalifold_bpp;
+          mix_bpp_mat[i][j] += if effective_num_of_rnas > 0 {1. - mix_weight} else {1.} * rnaalifold_bpp;
         }, None => {},
       }
     }

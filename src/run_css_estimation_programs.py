@@ -11,7 +11,6 @@ import time
 import datetime
 import shutil
 from Bio import AlignIO
-import run_locarnap
 
 def main():
   (current_work_dir_path, asset_dir_path, program_dir_path, conda_program_dir_path) = utils.get_dir_paths()

@@ -8,7 +8,7 @@ You can install Rust components with the following one line:
 $ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 The above installation is done by [Rustup](https://github.com/rust-lang-nursery/rustup.rs), and Rustup enable to easily switch a compiler in use. 
-Also you need to install the [Centroid RNA package](https://github.com/satoken/centroid-rna-package) to predict posterior pairing probabilities on global consensus RNA secondary structure.
+As ConsAlifold's dependencies, you need to install the [Centroid RNA package](https://github.com/satoken/centroid-rna-package) and [LocARNA-P (if you wish to use instead of ConsProb)](https://github.com/s-will/LocARNA).
 You can install ConsAlifold as follows: 
 ```bash
 $ cargo install consalifold

@@ -11,7 +11,7 @@ The above installation is done by [Rustup](https://github.com/rust-lang-nursery/
 As ConsAlifold's dependencies, you need to install the [Centroid RNA package](https://github.com/satoken/centroid-rna-package) and [LocARNA-P (if you wish to use instead of ConsProb)](https://github.com/s-will/LocARNA).
 You can install ConsAlifold as follows: 
 ```bash
-$ RUSTFLAGS='--emit asm -C target-feature=+avx -C target-feature=+sse -C target-feature=+mmx' cargo install consalifold # AVX, SSE, and MMX enabled for rustc
+$ RUSTFLAGS='--emit asm -C target-feature=+avx -C target-feature=+sse -C target-feature=+mmx' cargo install consalifold # AVX, SSE, and MMX enabled for rustc (another example: RUSTFLAGS='--emit asm -C target-feature=+avx2 -C target-feature=+ssse3 -C target-feature=+mmx -C target-feature=+fma')
 ```
 Check if you have installed Rust properly as follows:
 ```bash

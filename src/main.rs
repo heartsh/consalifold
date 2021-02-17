@@ -261,7 +261,6 @@ where
   bpp_mat_pair
 }
 
-
 pub fn revert<'a>(seq: &'a [usize]) -> String {
   let mut new_seq = Vec::<u8>::new();
   for &c in seq {

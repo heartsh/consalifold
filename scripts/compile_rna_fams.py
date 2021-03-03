@@ -31,7 +31,7 @@ def main():
   max_sa_len = 500
   max_seq_num = 20
   stas = [sta for sta in AlignIO.parse(rfam_seed_sta_file_path, "stockholm") if len(sta[0]) <= max_sa_len and len(sta) <= max_seq_num and is_valid(sta)]
-  stas = [sta for sta in stas if any(c in str(sta.column_annotations["secondary_structure"]) for c in ["(", "<", "[", "{"])]
+  # stas = [sta for sta in stas if any(c in str(sta.column_annotations["secondary_structure"]) for c in ["(", "<", "[", "{"])]
   num_of_stas = len(stas)
   print("# RNA families: %d" % num_of_stas)
   sample_rate = 0.02

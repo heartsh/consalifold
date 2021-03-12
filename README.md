@@ -19,7 +19,7 @@ $ consalifold # Its available command options will be displayed.
 ```
 By the following Python script, you can reproduce the figures shown in the paper describing ConsAlifold's principle:
 ```bash
-$ cd src
+$ cd scripts
 $ ./run_all.py # Please install python packages required to this reproduction. Saved figures will appear at the "../assets/images" directory.
 ```
 

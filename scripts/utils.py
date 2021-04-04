@@ -5,6 +5,8 @@ from Bio import AlignIO
 from statistics import mode
 import numpy
 
+bracket_pairs = [("(", ")"), ("<", ">"), ("{", "}"), ("[", "]"), ("A", "a"), ("B", "b"), ("C", "c"), ("D", "d"), ("E", "e"), ]
+
 def get_dir_paths():
   current_work_dir_path = os.getcwd()
   (head, tail) = os.path.split(current_work_dir_path)
@@ -13,16 +15,11 @@ def get_dir_paths():
   conda_program_dir_path = "/usr/local/ancnd/envs/rsrch" if current_work_dir_path.find("/home/masaki") == -1 else "/home/masaki/prgrms/ancnd/envs/rsrch"
   return (current_work_dir_path, asset_dir_path, program_dir_path, conda_program_dir_path)
 
-def get_css_and_flat_css(css_file_path):
+def get_css(css_file_path):
   sta = AlignIO.read(css_file_path, "stockholm")
   css_string = sta.column_annotations["secondary_structure"]
   sta_len = len(sta[0])
   num_of_rnas = len(sta)
-  motifs = {}
-  for i in range(sta_len):
-    col = sta[:, i]
-    motif = max(set(col), key = col.count)
-    motifs[i] = motif.upper()
   pos_map_sets = []
   for i in range(num_of_rnas):
     pos_map_sets.append([])
@@ -33,30 +30,22 @@ def get_css_and_flat_css(css_file_path):
         pos += 1
       pos_map_sets[i].append(pos)
   css = []
-  flat_css = []
-  col_css = {}
-  flat_col_css = {}
   for i in range(num_of_rnas):
-    flat_css.append({})
     css.append({})
   stack = []
-  for i, char in enumerate(css_string):
-    if char == "(" or char == "<" or char == "[" or char == "{":
-      stack.append(i)
-    elif char == ")" or char == ">" or char == "]" or char == "}":
-      col_pos = stack.pop()
-      flat_col_css[col_pos] = True
-      flat_col_css[i] = True
-      col_css[(col_pos, i)] = True
-      for j in range(num_of_rnas):
-        base_pair_1 = (sta[j][col_pos], sta[j][i])
-        if base_pair_1[0] == "-" or base_pair_1[1] == "-":
-          continue
-        pos_pair_1 = (pos_map_sets[j][col_pos], pos_map_sets[j][i])
-        flat_css[j][pos_pair_1[0]] = True
-        flat_css[j][pos_pair_1[1]] = True
-        css[j][pos_pair_1] = True
-  return css, flat_css, col_css, flat_col_css, pos_map_sets, motifs, sta
+  for (left, right) in bracket_pairs:
+    for i, char in enumerate(css_string):
+      if char == left:
+        stack.append(i)
+      elif char == right:
+        col_pos = stack.pop()
+        for j in range(num_of_rnas):
+          base_pair_1 = (sta[j][col_pos], sta[j][i])
+          if base_pair_1[0] == "-" or base_pair_1[1] == "-":
+            continue
+          pos_pair_1 = (pos_map_sets[j][col_pos], pos_map_sets[j][i])
+          css[j][pos_pair_1] = True
+  return css
 
 def run_command(command):
   subproc = subprocess.Popen(

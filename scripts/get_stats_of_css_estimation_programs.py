@@ -130,10 +130,8 @@ def main():
   ref_sa_plus_rnaalifold_ppv = ref_sa_plus_rnaalifold_sens = ref_sa_plus_rnaalifold_fpr = ref_sa_plus_rnaalifold_f1_score = ref_sa_plus_rnaalifold_mcc = 0.
   locarna_ppv = locarna_sens = locarna_fpr = locarna_f1_score = locarna_mcc = 0.
   gammas = [2. ** i for i in range(min_gamma, max_gamma + 1)]
-  rna_fam_dir_path = asset_dir_path + "/compiled_rna_fams"
-  # rna_fam_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
-  ref_sa_dir_path = asset_dir_path + "/ref_sas"
-  # ref_sa_dir_path = asset_dir_path + "/ref_sas_4_micro_bench"
+  rna_fam_dir_path = asset_dir_path + "/compiled_rna_fams_test"
+  ref_sa_dir_path = asset_dir_path + "/ref_sas_test"
   mafft_plus_consalifold_css_dir_path = asset_dir_path + "/mafft_plus_consalifold"
   probcons_plus_consalifold_css_dir_path = asset_dir_path + "/probcons_plus_consalifold"
   clustalw_plus_consalifold_css_dir_path = asset_dir_path + "/clustalw_plus_consalifold"

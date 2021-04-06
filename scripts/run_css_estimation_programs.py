@@ -51,14 +51,12 @@ def main():
   ref_sa_plus_petfold_params = []
   petfold_params_4_elapsed_time = []
   locarna_params = []
-  rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams"
-  # rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_4_micro_bench"
+  rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_test"
   mafft_dir_path = asset_dir_path + "/mafft"
   probcons_dir_path = asset_dir_path + "/probcons"
   clustalw_dir_path = asset_dir_path + "/clustalw"
   mafft_xinsi_dir_path = asset_dir_path + "/mafft_xinsi"
-  ref_sa_dir_path = asset_dir_path + "/ref_sas"
-  # ref_sa_dir_path = asset_dir_path + "/ref_sas_4_micro_bench"
+  ref_sa_dir_path = asset_dir_path + "/ref_sas_test"
   mafft_plus_consalifold_dir_path = asset_dir_path + "/mafft_plus_consalifold"
   probcons_plus_consalifold_dir_path = asset_dir_path + "/probcons_plus_consalifold"
   clustalw_plus_consalifold_dir_path = asset_dir_path + "/clustalw_plus_consalifold"

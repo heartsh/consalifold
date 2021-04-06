@@ -26,7 +26,7 @@ def main():
     os.mkdir(consalifold_dir_path)
   sub_thread_num = 4
   for tau in taus:
-    tau_str = str(tau)
+    tau_str = "%.1f" % tau
     consalifold_sub_dir_path = os.path.join(consalifold_dir_path, tau_str)
     if not os.path.isdir(consalifold_sub_dir_path):
       os.mkdir(consalifold_sub_dir_path)

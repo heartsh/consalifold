@@ -84,7 +84,7 @@ def main():
   line_2, = pyplot.plot(best_tau, max(max_consalifold_mccs), label = "Best probability mixing coefficient", marker = "o", linestyle = "-", markerfacecolor = white, markeredgecolor = color_palette[0])
   pyplot.legend(handles = [line_2], loc = "lower left")
   pyplot.xlabel("Posterior probability mixing coefficient")
-  pyplot.ylabel("Matthews correlation coefficient")
+  pyplot.ylabel("Maximum Matthews correlation coefficient")
   image_dir_path = asset_dir_path + "/images"
   if not os.path.exists(image_dir_path):
     os.mkdir(image_dir_path)

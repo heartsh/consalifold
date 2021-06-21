@@ -153,10 +153,10 @@ def main():
     clustalw_params.insert(0, (rna_seq_file_path, clustalw_output_file_path))
     mafft_xinsi_params.insert(0, (rna_seq_file_path, mafft_xinsi_output_file_path))
   pool = multiprocessing.Pool(num_of_threads)
-  # pool.map(run_mafft, mafft_params)
-  # pool.map(run_probcons, probcons_params)
-  # pool.map(run_clustalw, clustalw_params)
-  # pool.map(run_mafft_xinsi, mafft_xinsi_params)
+  pool.map(run_mafft, mafft_params)
+  pool.map(run_probcons, probcons_params)
+  pool.map(run_clustalw, clustalw_params)
+  pool.map(run_mafft_xinsi, mafft_xinsi_params)
   sub_thread_num = 4
   for rna_seq_file in os.listdir(rna_seq_dir_path):
     if not rna_seq_file.endswith(".fa"):
@@ -238,7 +238,7 @@ def main():
     clustalw_plus_consalifold_params.insert(0, clustalw_plus_consalifold_command)
     mafft_xinsi_plus_consalifold_params.insert(0, mafft_xinsi_plus_consalifold_command)
     ref_sa_plus_consalifold_params.insert(0, ref_sa_plus_consalifold_command)
-    mafft_xinsi_plus_consalifold_command = "consalifold -b -t " + str(sub_thread_num) + " -i " + mafft_xinsi_output_file_path + " -o " + probcons_plus_consalifold_output_dir_path
+    mafft_xinsi_plus_consalifold_command = "consalifold -b -t " + str(sub_thread_num) + " -i " + mafft_xinsi_output_file_path + " -o " + mafft_xinsi_plus_consalifold_output_dir_path
     consalifold_params_4_elapsed_time.insert(0, mafft_xinsi_plus_consalifold_command)
     posterior_probcons_plus_consalifold_command = "consalifold -u -t " + str(sub_thread_num) + " -i " + probcons_output_file_path + " -o " + posterior_probcons_plus_consalifold_output_dir_path
     posterior_probcons_plus_consalifold_params.insert(0, posterior_probcons_plus_consalifold_command)
@@ -283,7 +283,7 @@ def main():
       mafft_xinsi_plus_centroidalifold_params.insert(0, (mafft_xinsi_output_file_path, mafft_xinsi_plus_centroidalifold_output_file_path, gamma_str))
       ref_sa_plus_centroidalifold_params.insert(0, (ref_sa_file_path, ref_sa_plus_centroidalifold_output_file_path, gamma_str))
       if gamma == 1:
-        centroidalifold_params_4_elapsed_time.insert(0, (probcons_output_file_path, probcons_plus_centroidalifold_output_file_path, gamma_str))
+        centroidalifold_params_4_elapsed_time.insert(0, (mafft_xinsi_output_file_path, mafft_xinsi_plus_centroidalifold_output_file_path, gamma_str))
       mafft_plus_petfold_output_file_path = os.path.join(mafft_plus_petfold_output_dir_path, output_file)
       probcons_plus_petfold_output_file_path = os.path.join(probcons_plus_petfold_output_dir_path, output_file)
       clustalw_plus_petfold_output_file_path = os.path.join(clustalw_plus_petfold_output_dir_path, output_file)
@@ -295,7 +295,7 @@ def main():
       mafft_xinsi_plus_petfold_params.insert(0, (mafft_xinsi_output_file_path_2, mafft_xinsi_plus_petfold_output_file_path, petfold_gamma_str))
       ref_sa_plus_petfold_params.insert(0, (ref_sa_file_path_2, ref_sa_plus_petfold_output_file_path, petfold_gamma_str))
       if gamma == 1:
-        petfold_params_4_elapsed_time.insert(0, (probcons_output_file_path_2, probcons_plus_petfold_output_file_path, petfold_gamma_str))
+        petfold_params_4_elapsed_time.insert(0, (mafft_xinsi_output_file_path_2, mafft_xinsi_plus_petfold_output_file_path, petfold_gamma_str))
   # ConsAliFold's execution.
   pool = multiprocessing.Pool(int(num_of_threads / sub_thread_num))
   pool.map(utils.run_command, mafft_plus_consalifold_params)
@@ -335,11 +335,11 @@ def main():
   petfold_elapsed_time = time.time() - begin
   # RNAalifold's execution.
   pool.map(run_rnaalifold, mafft_plus_rnaalifold_params)
-  begin = time.time()
   pool.map(run_rnaalifold, probcons_plus_rnaalifold_params)
-  rnaalifold_elapsed_time = time.time() - begin
   pool.map(run_rnaalifold, clustalw_plus_rnaalifold_params)
+  begin = time.time()
   pool.map(run_rnaalifold, mafft_xinsi_plus_rnaalifold_params)
+  rnaalifold_elapsed_time = time.time() - begin
   pool.map(run_rnaalifold, ref_sa_plus_rnaalifold_params)
   print("The elapsed time of ConsAlifold = %f [s]." % consalifold_elapsed_time)
   print("The elapsed time of CentroidAlifold = %f [s]." % centroidalifold_elapsed_time)

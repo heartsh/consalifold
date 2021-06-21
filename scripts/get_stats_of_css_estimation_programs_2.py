@@ -13,10 +13,6 @@ import pandas
 from scipy import stats
 
 seaborn.set()
-# pyplot.rcParams['legend.handlelength'] = 0
-# pyplot.rcParams['legend.fontsize'] = "x-large"
-# pyplot.rcParams['legend.fontsize'] = "large"
-# color_palette = seaborn.color_palette()
 min_gamma = -4
 max_gamma = 10
 white = "#F2F2F2"
@@ -231,7 +227,6 @@ def main():
   data = {"Average Matthews correlation coefficient": avg_mccs, "Alignment probability inference method": ["ConsProb"] * 5 + ["LocARNA-P + our PCT"] * 5, "Sequence alignment source": ["ClustalW", "MAFFT", "ProbCons-RNA ", "MAFFT X-INS-i", "Reference"] * 2}
   data_frame = pandas.DataFrame(data = data)
   ax = seaborn.barplot(x = "Sequence alignment source", y = "Average Matthews correlation coefficient", hue = "Alignment probability inference method", data = data_frame)
-  # pyplot.ylim(0, 0.8)
   ax.legend_.remove()
   fig = ax.get_figure()
   fig.tight_layout()

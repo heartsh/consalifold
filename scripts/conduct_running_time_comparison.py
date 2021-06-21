@@ -95,11 +95,18 @@ def write_consalifold_results(consalifold_results, consalifold_output_file_path)
 def bench_consalifold(consalifold_params):
   (sub_thread_num, input_sa_file_path, consalifold_output_dir_path, is_posterior_model) = consalifold_params
   consalifold_command = "consalifold %s-b -t " % ("-u " if is_posterior_model else "") + str(sub_thread_num) + " -i " + input_sa_file_path + " -o " + consalifold_output_dir_path
-  # print(consalifold_command)
   begin = time.time()
   utils.run_command(consalifold_command)
   consalifold_elapsed_time = time.time() - begin
   return consalifold_elapsed_time
+
+def run_mafft_xinsi(mafft_xinsi_params):
+  (rna_seq_file_path, mafft_xinsi_output_file_path) = mafft_xinsi_params
+  mafft_xinsi_command = "mafft-xinsi --thread 1 --quiet " + "--clustalout " + rna_seq_file_path + " > " + mafft_xinsi_output_file_path
+  utils.run_command(mafft_xinsi_command)
+  sa = AlignIO.read(mafft_xinsi_output_file_path, "clustal")
+  mafft_xinsi_output_file_path = os.path.splitext(mafft_xinsi_output_file_path)[0] + ".fa"
+  AlignIO.write(sa, mafft_xinsi_output_file_path, "fasta")
 
 if __name__ == "__main__":
   main()

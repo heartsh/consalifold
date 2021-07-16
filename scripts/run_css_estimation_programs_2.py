@@ -18,30 +18,34 @@ def main():
   temp_dir_path = "/tmp/run_css_estimation_programs_2_%s" % datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H:%M:%S')
   if not os.path.isdir(temp_dir_path):
     os.mkdir(temp_dir_path)
-  gammas = [2. ** i for i in range(-7, 11)]
+  gammas = [2. ** i for i in range(-4, 11)]
   centroidhomfold_params = []
-  rnaspa_params = []
   locarna_params = []
   raf_params = []
   turbofold_params = []
   centroidhomfold_params_4_running_time = []
   turbofold_params_4_running_time = []
+  locarna_plus_consalifold_params = []
+  raf_plus_consalifold_params = []
   rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_test"
   centroidhomfold_dir_path = asset_dir_path + "/centroidhomfold"
-  rnaspa_dir_path = asset_dir_path + "/rnaspa"
   locarna_dir_path = asset_dir_path + "/locarna"
   raf_dir_path = asset_dir_path + "/raf"
   turbofold_dir_path = asset_dir_path + "/turbofold"
+  locarna_plus_consalifold_dir_path = asset_dir_path + "/locarna_plus_consalifold"
+  raf_plus_consalifold_dir_path = asset_dir_path + "/raf_plus_consalifold"
   if not os.path.isdir(centroidhomfold_dir_path):
     os.mkdir(centroidhomfold_dir_path)
-  if not os.path.isdir(rnaspa_dir_path):
-    os.mkdir(rnaspa_dir_path)
   if not os.path.isdir(locarna_dir_path):
     os.mkdir(locarna_dir_path)
   if not os.path.isdir(raf_dir_path):
     os.mkdir(raf_dir_path)
   if not os.path.isdir(turbofold_dir_path):
     os.mkdir(turbofold_dir_path)
+  if not os.path.isdir(locarna_plus_consalifold_dir_path):
+    os.mkdir(locarna_plus_consalifold_dir_path)
+  if not os.path.isdir(raf_plus_consalifold_dir_path):
+    os.mkdir(raf_plus_consalifold_dir_path)
   sub_thread_num = 4
   for rna_seq_file in os.listdir(rna_seq_dir_path):
     if not rna_seq_file.endswith(".fa"):
@@ -49,19 +53,28 @@ def main():
     rna_seq_file_path = os.path.join(rna_seq_dir_path, rna_seq_file)
     (rna_family_name, extension) = os.path.splitext(rna_seq_file)
     centroidhomfold_output_dir_path = os.path.join(centroidhomfold_dir_path, rna_family_name)
-    rnaspa_output_file_path = os.path.join(rnaspa_dir_path, rna_family_name + ".fa")
     locarna_output_dir_path = os.path.join(locarna_dir_path, rna_family_name)
     raf_output_file_path = os.path.join(raf_dir_path, rna_family_name + ".sth")
+    raf_output_file_path_2 = os.path.join(raf_dir_path, rna_family_name + ".aln")
     turbofold_output_dir_path = os.path.join(turbofold_dir_path, rna_family_name)
+    locarna_plus_consalifold_output_dir_path = os.path.join(locarna_plus_consalifold_dir_path, rna_family_name)
+    raf_plus_consalifold_output_dir_path = os.path.join(raf_plus_consalifold_dir_path, rna_family_name)
     if not os.path.isdir(centroidhomfold_output_dir_path):
       os.mkdir(centroidhomfold_output_dir_path)
     if not os.path.isdir(locarna_output_dir_path):
       os.mkdir(locarna_output_dir_path)
     if not os.path.isdir(turbofold_output_dir_path):
       os.mkdir(turbofold_output_dir_path)
-    rnaspa_params.insert(0, (rna_seq_file_path, rnaspa_output_file_path))
+    if not os.path.isdir(locarna_plus_consalifold_output_dir_path):
+      os.mkdir(locarna_plus_consalifold_output_dir_path)
+    if not os.path.isdir(raf_plus_consalifold_output_dir_path):
+      os.mkdir(raf_plus_consalifold_output_dir_path)
     locarna_params.insert(0, (rna_seq_file_path, locarna_output_dir_path))
-    raf_params.insert(0, (rna_seq_file_path, raf_output_file_path))
+    raf_params.insert(0, (rna_seq_file_path, raf_output_file_path, raf_output_file_path_2))
+    locarna_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + locarna_output_dir_path + "/results/result.aln" + " -o " + locarna_plus_consalifold_output_dir_path
+    locarna_plus_consalifold_params.insert(0, locarna_plus_consalifold_command)
+    raf_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + raf_output_file_path_2 + " -o " + raf_plus_consalifold_output_dir_path
+    raf_plus_consalifold_params.insert(0, raf_plus_consalifold_command)
     for gamma in gammas:
       gamma_str = str(gamma) if gamma < 1 else str(int(gamma))
       output_file = "gamma=" + gamma_str + ".sth"
@@ -77,9 +90,6 @@ def main():
   pool = multiprocessing.Pool(num_of_threads)
   pool.map(run_centroidhomfold, centroidhomfold_params)
   begin = time.time()
-  pool.map(run_rnaspa, rnaspa_params)
-  rnaspa_elapsed_time = time.time() - begin
-  begin = time.time()
   pool.map(run_locarna, locarna_params)
   locarna_elapsed_time = time.time() - begin
   begin = time.time()
@@ -93,10 +103,12 @@ def main():
   pool.map(run_turbofold, turbofold_params_4_running_time)
   turbofold_elapsed_time = time.time() - begin
   print("The elapsed time of CentroidHomfold = %f [s]." % centroidhomfold_elapsed_time)
-  print("The elapsed time of RNAspa = %f [s]." % rnaspa_elapsed_time)
   print("The elapsed time of LocARNA = %f [s]." % locarna_elapsed_time)
   print("The elapsed time of RAF = %f [s]." % raf_elapsed_time)
   print("The elapsed time of TurboFold = %f [s]." % turbofold_elapsed_time)
+  pool = multiprocessing.Pool(int(num_of_threads / sub_thread_num))
+  pool.map(utils.run_command, locarna_plus_consalifold_params)
+  pool.map(utils.run_command, raf_plus_consalifold_params)
 
 def run_locarna(locarna_params):
   (rna_file_path, locarna_output_dir_path) = locarna_params
@@ -204,20 +216,8 @@ def run_centroidhomfold(centroidhomfold_params):
   centroidhomfold_output_file.write(centroidhomfold_output_buf)
   centroidhomfold_output_file.close()
 
-def run_rnaspa(rnaspa_params):
-  (rna_file_path, rnaspa_output_file_path) = rnaspa_params
-  rnaspa_command = "RNAspa %s" % rna_file_path
-  (output, _, _) = utils.run_command(rnaspa_command)
-  sss = [line.strip() for line in str(output).split("\\n") if line.startswith(".") or line.startswith("(")]
-  rnaspa_output_file = open(rnaspa_output_file_path, "w+")
-  rnaspa_output_buf = ""
-  for (i, ss) in enumerate(sss):
-    rnaspa_output_buf += ">%d\n%s\n\n" % (i, ss)
-  rnaspa_output_file.write(rnaspa_output_buf)
-  rnaspa_output_file.close()
-
 def run_raf(raf_params):
-  (rna_file_path, raf_output_file_path) = raf_params
+  (rna_file_path, raf_output_file_path, raf_output_file_path_2) = raf_params
   raf_command = "raf predict " + rna_file_path
   (output, _, _) = utils.run_command(raf_command)
   raf_output_file = open(raf_output_file_path, "w+")
@@ -228,6 +228,7 @@ def run_raf(raf_params):
   new_sta = AlignIO.MultipleSeqAlignment(recs)
   new_sta.column_annotations["secondary_structure"] = str(sta[-1].seq)
   AlignIO.write(new_sta, raf_output_file_path, "stockholm")
+  AlignIO.write(new_sta, raf_output_file_path_2, "clustal")
 
 if __name__ == "__main__":
   main()

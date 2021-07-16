@@ -664,7 +664,6 @@ def main():
   pyplot.tight_layout()
   pyplot.savefig(image_dir_path + "/gammas_vs_mccs_on_css_estimation_ref_sa.eps", bbox_inches = "tight")
   pyplot.clf()
-  # Figure for LocARNA.
   line_1, = pyplot.plot(mafft_xinsi_plus_consalifold_ppvs, mafft_xinsi_plus_consalifold_senss, label = "MAFFT X-INS-i + ConsAlifold", marker = "o", linestyle = "-")
   line_2, = pyplot.plot(ref_sa_plus_consalifold_ppvs, ref_sa_plus_consalifold_senss, label = "Reference + ConsAlifold", marker = "s", linestyle = "-")
   line_3, = pyplot.plot(centroidhomfold_ppvs, centroidhomfold_senss, label = "CentroidHomfold", marker = "^", linestyle = "--")

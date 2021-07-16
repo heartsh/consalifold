@@ -15,7 +15,7 @@ from Bio import AlignIO
 def main():
   (current_work_dir_path, asset_dir_path, program_dir_path, conda_program_dir_path) = utils.get_dir_paths()
   num_of_threads = multiprocessing.cpu_count()
-  gammas = [2. ** i for i in range(-7, 11)]
+  gammas = [2. ** i for i in range(-4, 11)]
   mafft_params = []
   probcons_params = []
   clustalw_params = []

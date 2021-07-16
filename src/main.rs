@@ -18,7 +18,6 @@ const DEFAULT_MIX_WEIGHT: Prob = 0.5;
 const DEFAULT_MIN_POW_OF_2: i32 = -4;
 const DEFAULT_MAX_POW_OF_2: i32 = 10;
 const GAMMA_4_BENCH: Prob = 1.;
-const DIGITS: [char; 9] = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
 fn main() {
   let args = env::args().collect::<Vec<Arg>>();
@@ -128,24 +127,28 @@ where
   }
   scope(|scope| {
     let handler = scope.spawn(|_| {
-      let args = vec!["-e", "Alifold", "--posteriors", "0", input_file_path.to_str().unwrap()];
-      let output = run_command("centroid_alifold", &args, "Failed to run RNAalifold");
-      let output = std::str::from_utf8(&output.stdout).unwrap();
+      let output_file_prefix = input_file_path.file_stem().unwrap().to_str().unwrap();
+      let arg = format!("--id-prefix={}", output_file_prefix);
+      let args = vec!["-p", input_file_path.to_str().unwrap(), &arg, "--noPS", "--noDP"];
+      let _ = run_command("RNAalifold", &args, "Failed to run RNAalifold");
       let mut rnaalifold_bpp_mat = SparseProbMat::<T>::default();
-      for substring in output.trim().split('\n') {
-        if !substring.starts_with(&DIGITS[..]) {continue;}
-        let subsubstrings: Vec<&str> = substring.split_whitespace().collect();
-        if subsubstrings.len() < 3 {continue;}
-        let i = T::from_usize(subsubstrings[0].parse().unwrap()).unwrap() - T::one();
-        for partner in &subsubstrings[2 ..] {
-          let j_and_bpp: Vec<&str> = partner.split(':').collect();
-          let (j, bpp) = (
-            T::from_usize(j_and_bpp[0].parse().unwrap()).unwrap() - T::one(),
-            j_and_bpp[1].parse().unwrap(),
-          );
-          rnaalifold_bpp_mat.insert((i, j), bpp);
-        }
+      let cwd = env::current_dir().unwrap();
+      let output_file_path = cwd.join(String::from(output_file_prefix) + "_0001_ali.out");
+      let output_file = BufReader::new(File::open(output_file_path.clone()).unwrap());
+      for (k, line) in output_file.lines().enumerate() {
+        if k == 0 {continue;}
+        let line = line.unwrap();
+        if !line.starts_with(" ") {continue;}
+        let substrings: Vec<&str> = line.split_whitespace().collect();
+        let i = T::from_usize(substrings[0].parse().unwrap()).unwrap() - T::one();
+        let j = T::from_usize(substrings[1].parse().unwrap()).unwrap() - T::one();
+        let mut bpp = String::from(substrings[3]);
+        bpp.pop();
+        let bpp = 0.01 * bpp.parse::<Prob>().unwrap();
+        if bpp == 0. {continue;}
+        rnaalifold_bpp_mat.insert((i, j), bpp);
       }
+      let _ = remove_file(output_file_path);
       rnaalifold_bpp_mat
     });
     let prob_mat_sets = if !is_posterior_model {consprob::<T>(thread_pool, ref_2_fasta_records, min_bpp, T::from_usize(offset_4_max_gap_num).unwrap(), produces_access_probs)} else {locarnap_plus_pct(thread_pool, ref_2_fasta_records, output_dir_path)};
@@ -305,6 +308,7 @@ where
   }
   pct_prob_mats
 }
+
 fn get_mix_bpp_mat<T>(prob_mat_sets: &ProbMatSets<T>, rnaalifold_bpp_mat: &SparseProbMat<T>, sa: &SeqAlign<T>, mix_weight: Prob) -> ProbMat
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
@@ -331,7 +335,8 @@ where
       let pos_pair = (T::from_usize(i).unwrap(), T::from_usize(j).unwrap());
       match rnaalifold_bpp_mat.get(&pos_pair) {
         Some(&rnaalifold_bpp) => {
-          mix_bpp_mat[i][j] += if effective_num_of_rnas > 0 {1. - mix_weight} else {1.} * rnaalifold_bpp;
+          // mix_bpp_mat[i][j] += if effective_num_of_rnas > 0 {1. - mix_weight} else {1.} * rnaalifold_bpp;
+          mix_bpp_mat[i][j] += (1. - mix_weight) * rnaalifold_bpp;
         }, None => {},
       }
     }

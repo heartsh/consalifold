@@ -27,21 +27,10 @@ def main():
   mafft_xinsi_dir_path = asset_dir_path + "/mafft_xinsi"
   mafft_xinsi_plus_consalifold_dir_path = asset_dir_path + "/mafft_xinsi_plus_consalifold"
   posterior_mafft_xinsi_plus_consalifold_dir_path = asset_dir_path + "/posterior_mafft_xinsi_plus_consalifold"
-  if not os.path.isdir(mafft_xinsi_dir_path):
-    os.mkdir(mafft_xinsi_dir_path)
   if not os.path.isdir(mafft_xinsi_plus_consalifold_dir_path):
     os.mkdir(mafft_xinsi_plus_consalifold_dir_path)
   if not os.path.isdir(posterior_mafft_xinsi_plus_consalifold_dir_path):
     os.mkdir(posterior_mafft_xinsi_plus_consalifold_dir_path)
-  for rna_seq_file in os.listdir(rna_seq_dir_path):
-    if not rna_seq_file.endswith(".fa"):
-      continue
-    rna_seq_file_path = os.path.join(rna_seq_dir_path, rna_seq_file)
-    (rna_family_name, extension) = os.path.splitext(rna_seq_file)
-    mafft_xinsi_output_file_path = os.path.join(mafft_xinsi_dir_path, rna_family_name + ".aln")
-    mafft_xinsi_params.insert(0, (rna_seq_file_path, mafft_xinsi_output_file_path))
-  pool = multiprocessing.Pool(num_of_threads)
-  pool.map(run_mafft_xinsi, mafft_xinsi_params)
   sub_thread_num = 4
   for rna_seq_file in os.listdir(rna_seq_dir_path):
     if not rna_seq_file.endswith(".fa"):
@@ -67,9 +56,9 @@ def main():
   posterior_consalifold_output_file_path = asset_dir_path + "/consalifold_running_times_posterior.dat"
   write_consalifold_results(posterior_consalifold_results, posterior_consalifold_output_file_path)
   data_posterior = read_consalifold_results(posterior_consalifold_output_file_path)
-  data = {"Running time": data_turner + data_posterior, "Alignment probability inference method": ["ConsProb"] * len(data_turner) + ["LocARNA-P + our PCT"] * len(data_posterior)}
+  data = {"Running time": data_turner + data_posterior, "Pair-matching probability inference method": ["ConsProb"] * len(data_turner) + ["LocARNA-P + our PCT"] * len(data_posterior)}
   data_frame = pandas.DataFrame(data = data)
-  ax = seaborn.boxplot(x = "Alignment probability inference method", y = "Running time", data = data_frame, sym = "")
+  ax = seaborn.boxplot(x = "Pair-matching probability inference method", y = "Running time", data = data_frame, sym = "")
   fig = ax.get_figure()
   fig.tight_layout()
   image_dir_path = asset_dir_path + "/images"

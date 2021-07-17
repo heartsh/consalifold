@@ -26,18 +26,19 @@ white = "#F2F2F2"
 def main():
   (current_work_dir_path, asset_dir_path, program_dir_path, conda_program_dir_path) = utils.get_dir_paths()
   num_of_threads = multiprocessing.cpu_count()
-  consalifold_params = []
   rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_valid"
   ref_sa_dir_path = asset_dir_path + "/ref_sas_valid"
   consalifold_dir_path = asset_dir_path + "/grid_search"
   if not os.path.isdir(consalifold_dir_path):
     os.mkdir(consalifold_dir_path)
   sub_thread_num = 4
+  pool = multiprocessing.Pool(int(num_of_threads / sub_thread_num))
   for tau in taus:
     tau_str = "%.1f" % tau
     consalifold_sub_dir_path = os.path.join(consalifold_dir_path, tau_str)
     if not os.path.isdir(consalifold_sub_dir_path):
       os.mkdir(consalifold_sub_dir_path)
+    consalifold_params = []
     for rna_seq_file in os.listdir(rna_seq_dir_path):
       if not rna_seq_file.endswith(".fa"):
         continue
@@ -49,9 +50,7 @@ def main():
         os.mkdir(consalifold_output_dir_path)
       consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + ref_sa_file_path + " -o " + consalifold_output_dir_path + " --mix_weight " + str(tau)
       consalifold_params.insert(0, consalifold_command)
-  # ConsAliFold's execution.
-  pool = multiprocessing.Pool(int(num_of_threads / sub_thread_num))
-  pool.map(utils.run_command, consalifold_params)
+    pool.map(utils.run_command, consalifold_params)
   max_consalifold_mccs = [0] * len(taus)
   gammas = [2. ** i for i in range(min_gamma, max_gamma + 1)]
   for i in range(len(taus)):

@@ -335,7 +335,6 @@ where
       let pos_pair = (T::from_usize(i).unwrap(), T::from_usize(j).unwrap());
       match rnaalifold_bpp_mat.get(&pos_pair) {
         Some(&rnaalifold_bpp) => {
-          // mix_bpp_mat[i][j] += if effective_num_of_rnas > 0 {1. - mix_weight} else {1.} * rnaalifold_bpp;
           mix_bpp_mat[i][j] += (1. - mix_weight) * rnaalifold_bpp;
         }, None => {},
       }

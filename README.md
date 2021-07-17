@@ -8,7 +8,7 @@ You can install Rust components with the following one line:
 $ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 The above installation is done by [Rustup](https://github.com/rust-lang-nursery/rustup.rs), and Rustup enables to easily switch a compiler in use.
-As ConsAlifold's dependencies, you need to install the [ViennaRNA](https://www.tbi.univie.ac.at/RNA/) and [LocARNA-P (if you wish to use instead of ConsProb)](https://github.com/s-will/LocARNA).
+As ConsAlifold's dependencies, you need to install [ViennaRNA](https://www.tbi.univie.ac.at/RNA/) and [LocARNA-P (if you wish to use instead of ConsProb)](https://github.com/s-will/LocARNA).
 You can install ConsAlifold as follows: 
 ```bash
 $ RUSTFLAGS='--emit asm -C target-feature=+avx -C target-feature=+ssse3 -C target-feature=+mmx' cargo install consalifold # AVX, SSE, and MMX enabled for rustc (another example: RUSTFLAGS='--emit asm -C target-feature=+avx2 -C target-feature=+ssse3 -C target-feature=+mmx -C target-feature=+fma')

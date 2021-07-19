@@ -246,8 +246,8 @@ def main():
   posterior_consalifold_mccs = posterior_clustalw_plus_consalifold_mccs + posterior_mafft_plus_consalifold_mccs + posterior_probcons_plus_consalifold_mccs + posterior_mafft_xinsi_plus_consalifold_mccs + posterior_ref_sa_plus_consalifold_mccs
   consalifold_f1_scores = clustalw_plus_consalifold_f1_scores + mafft_plus_consalifold_f1_scores + probcons_plus_consalifold_f1_scores + mafft_xinsi_plus_consalifold_f1_scores + ref_sa_plus_consalifold_f1_scores
   posterior_consalifold_f1_scores = posterior_clustalw_plus_consalifold_f1_scores + posterior_mafft_plus_consalifold_f1_scores + posterior_probcons_plus_consalifold_f1_scores + posterior_mafft_xinsi_plus_consalifold_f1_scores + posterior_ref_sa_plus_consalifold_f1_scores
-  print("MCCs-based paired t-test:", stats.ttest_rel(consalifold_mccs, posterior_consalifold_mccs))
-  print("F1 scores-based paired t-test:", stats.ttest_rel(consalifold_f1_scores, posterior_consalifold_f1_scores))
+  print("MCC-based paired t-test:", stats.ttest_rel(consalifold_mccs, posterior_consalifold_mccs))
+  print("F1 score-based paired t-test:", stats.ttest_rel(consalifold_f1_scores, posterior_consalifold_f1_scores))
 
 def get_metrics(bin_counts):
   (tp, tn, fp, fn) = bin_counts

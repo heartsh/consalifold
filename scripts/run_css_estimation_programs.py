@@ -31,7 +31,6 @@ def main():
   posterior_mafft_xinsi_plus_consalifold_params = []
   posterior_ref_sa_plus_consalifold_params = []
   consalifold_params_4_elapsed_time = []
-  posterior_consalifold_params_4_elapsed_time = []
   mafft_plus_centroidalifold_params = []
   probcons_plus_centroidalifold_params = []
   clustalw_plus_centroidalifold_params = []
@@ -250,8 +249,6 @@ def main():
     posterior_mafft_xinsi_plus_consalifold_params.insert(0, posterior_mafft_xinsi_plus_consalifold_command)
     posterior_ref_sa_plus_consalifold_command = "consalifold -u -t " + str(sub_thread_num) + " -i " + ref_sa_file_path + " -o " + posterior_ref_sa_plus_consalifold_output_dir_path
     posterior_ref_sa_plus_consalifold_params.insert(0, posterior_ref_sa_plus_consalifold_command)
-    posterior_mafft_xinsi_plus_consalifold_command = "consalifold -u -b -t " + str(sub_thread_num) + " -i " + mafft_xinsi_output_file_path + " -o " + posterior_mafft_xinsi_plus_consalifold_output_dir_path
-    posterior_consalifold_params_4_elapsed_time.insert(0, posterior_mafft_xinsi_plus_consalifold_command)
     output_file = rna_family_name + ".sth"
     mafft_plus_rnaalifold_output_file_path = os.path.join(mafft_plus_rnaalifold_dir_path, output_file)
     probcons_plus_rnaalifold_output_file_path = os.path.join(probcons_plus_rnaalifold_dir_path, output_file)
@@ -311,9 +308,6 @@ def main():
   begin = time.time()
   pool.map(utils.run_command, consalifold_params_4_elapsed_time)
   consalifold_elapsed_time = time.time() - begin
-  begin = time.time()
-  pool.map(utils.run_command, posterior_consalifold_params_4_elapsed_time)
-  posterior_consalifold_elapsed_time = time.time() - begin
   # CentroidAlifold's execution.
   pool = multiprocessing.Pool(num_of_threads)
   pool.map(run_centroidalifold, mafft_plus_centroidalifold_params)
@@ -345,7 +339,6 @@ def main():
   print("The elapsed time of CentroidAlifold = %f [s]." % centroidalifold_elapsed_time)
   print("The elapsed time of RNAalifold = %f [s]." % rnaalifold_elapsed_time)
   print("The elapsed time of PETfold = %f [s]." % petfold_elapsed_time)
-  print("The elapsed time of ConsAlifold (LocARNA-P) = %f [s]." % posterior_consalifold_elapsed_time)
 
 def run_mafft(mafft_params):
   (rna_seq_file_path, mafft_output_file_path) = mafft_params

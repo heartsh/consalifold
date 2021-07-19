@@ -71,7 +71,7 @@ def main():
       os.mkdir(raf_plus_consalifold_output_dir_path)
     locarna_params.insert(0, (rna_seq_file_path, locarna_output_dir_path))
     raf_params.insert(0, (rna_seq_file_path, raf_output_file_path, raf_output_file_path_2))
-    locarna_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + locarna_output_dir_path + "/results/result.aln" + " -o " + locarna_plus_consalifold_output_dir_path
+    locarna_plus_consalifold_command = "consalifold -i " + locarna_output_dir_path + "/results/result.aln" + " -o " + locarna_plus_consalifold_output_dir_path
     locarna_plus_consalifold_params.insert(0, locarna_plus_consalifold_command)
     raf_plus_consalifold_command = "consalifold -t " + str(sub_thread_num) + " -i " + raf_output_file_path_2 + " -o " + raf_plus_consalifold_output_dir_path
     raf_plus_consalifold_params.insert(0, raf_plus_consalifold_command)
@@ -107,7 +107,8 @@ def main():
   print("The elapsed time of RAF = %f [s]." % raf_elapsed_time)
   print("The elapsed time of TurboFold = %f [s]." % turbofold_elapsed_time)
   pool = multiprocessing.Pool(int(num_of_threads / sub_thread_num))
-  pool.map(utils.run_command, locarna_plus_consalifold_params)
+  for locarna_plus_consalifold_param in locarna_plus_consalifold_params:
+    utils.run_command(locarna_plus_consalifold_param)
   pool.map(utils.run_command, raf_plus_consalifold_params)
 
 def run_locarna(locarna_params):

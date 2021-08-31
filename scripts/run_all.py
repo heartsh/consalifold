@@ -15,7 +15,10 @@ def main():
   run_css_estimation_programs_2.main()
   get_stats_of_css_estimation_programs.main()
   get_stats_of_css_estimation_programs_2.main()
+  get_stats_of_css_estimation_programs_3.main()
+  get_stats_of_css_estimation_programs_4.main()
   conduct_running_time_comparison.main()
+  conduct_running_time_comparison_2.main()
 
 if __name__ == "__main__":
   main()

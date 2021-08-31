@@ -15,9 +15,15 @@ use std::fs::remove_file;
 type MeaCssStr = MeaSsStr;
 
 const DEFAULT_MIX_WEIGHT: Prob = 0.5;
-const DEFAULT_MIN_POW_OF_2: i32 = -4;
-const DEFAULT_MAX_POW_OF_2: i32 = 10;
-const GAMMA_4_BENCH: Prob = 1.;
+const MIN_POW_OF_2: i32 = -4;
+const MAX_POW_OF_2: i32 = 10;
+const DEFAULT_GAMMA: Prob = NEG_INFINITY;
+enum ScoringModel {
+  Turner,
+  Contra,
+  Posterior,
+}
+const DEFAULT_SCORING_MODEL: &str = "turner";
 
 fn main() {
   let args = env::args().collect::<Vec<Arg>>();
@@ -25,14 +31,12 @@ fn main() {
   let mut opts = Options::new();
   opts.reqopt("i", "input_file_path", "A path to an input CLUSTAL file containing the sequence alignment of RNA sequences", "STR");
   opts.reqopt("o", "output_dir_path", "The path to an output directory", "STR");
-  opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
+  opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} (Turner)/{}(CONTRAfold) by default)", DEFAULT_MIN_BPP, DEFAULT_MIN_BPP_CONTRA), "FLOAT");
   opts.optopt("", "offset_4_max_gap_num", &format!("An offset for maximum numbers of gaps (Uses {} by default)", DEFAULT_OFFSET_4_MAX_GAP_NUM), "UINT");
-  opts.optopt("", "min_pow_of_2", &format!("A minimum power of 2 to calculate a gamma parameter (Uses {} by default)", DEFAULT_MIN_POW_OF_2), "FLOAT");
-  opts.optopt("", "max_pow_of_2", &format!("A maximum power of 2 to calculate a gamma parameter (Uses {} by default)", DEFAULT_MAX_POW_OF_2), "FLOAT");
+  opts.optopt("g", "gamma", "A specific gamma parameter rather than a range of gamma parameters", "FLOAT");
   opts.optopt("", "mix_weight", &format!("A mixture weight (Uses {} by default)", DEFAULT_MIX_WEIGHT), "FLOAT");
-  opts.optflag("u", "is_posterior_model", "Uses the posterior probability model to score secondary structures in structural alignment (Please install LocARNA-P)");
+  opts.optopt("m", "scoring_model", &format!("Choose a structural alignment scoring model from turner, contra, posterior (Uses {} by default)", DEFAULT_SCORING_MODEL), "STR");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of all the threads of this computer by default)", "UINT");
-  opts.optflag("b", "takes_bench", &format!("Compute for only gamma = {} to measure running time", GAMMA_4_BENCH));
   opts.optflag("q", "produces_access_probs", &format!("Also compute accessible probabilities"));
   opts.optflag("p", "outputs_probs", &format!("Output probabilities"));
   opts.optflag("h", "help", "Print a help menu");
@@ -48,33 +52,42 @@ fn main() {
   let input_file_path = Path::new(&input_file_path);
   let output_dir_path = matches.opt_str("o").unwrap();
   let output_dir_path = Path::new(&output_dir_path);
+  let scoring_model = if matches.opt_present("m") {
+    let scoring_model_str = matches.opt_str("m").unwrap();
+    if scoring_model_str == "turner" {
+      ScoringModel::Turner
+    } else if scoring_model_str == "contra" {
+      ScoringModel::Contra
+    } else if scoring_model_str == "posterior" {
+      ScoringModel::Posterior
+    } else {
+      assert!(false);
+      ScoringModel::Turner
+    }
+  } else {
+    ScoringModel::Turner
+  };
+  let uses_contra_model = matches!(scoring_model, ScoringModel::Contra);
   let min_bpp = if matches.opt_present("min_base_pair_prob") {
     matches.opt_str("min_base_pair_prob").unwrap().parse().unwrap()
   } else {
-    DEFAULT_MIN_BPP
+    if uses_contra_model {DEFAULT_MIN_BPP_CONTRA} else {DEFAULT_MIN_BPP}
   };
   let offset_4_max_gap_num = if matches.opt_present("offset_4_max_gap_num") {
     matches.opt_str("offset_4_max_gap_num").unwrap().parse().unwrap()
   } else {
     DEFAULT_OFFSET_4_MAX_GAP_NUM
   };
-  let min_pow_of_2 = if matches.opt_present("min_pow_of_2") {
-    matches.opt_str("min_pow_of_2").unwrap().parse().unwrap()
+  let gamma = if matches.opt_present("gamma") {
+    matches.opt_str("gamma").unwrap().parse().unwrap()
   } else {
-    DEFAULT_MIN_POW_OF_2
-  };
-  let max_pow_of_2 = if matches.opt_present("max_pow_of_2") {
-    matches.opt_str("max_pow_of_2").unwrap().parse().unwrap()
-  } else {
-    DEFAULT_MAX_POW_OF_2
+    DEFAULT_GAMMA
   };
   let mix_weight = if matches.opt_present("mix_weight") {
     matches.opt_str("mix_weight").unwrap().parse().unwrap()
   } else {
     DEFAULT_MIX_WEIGHT
   };
-  let is_posterior_model = matches.opt_present("u");
-  let takes_bench = matches.opt_present("b");
   let produces_access_probs = matches.opt_present("q");
   let outputs_probs = matches.opt_present("p");
   let num_of_threads = if matches.opt_present("t") {
@@ -86,16 +99,18 @@ fn main() {
   let sa_len = cols.len();
   let mut thread_pool = Pool::new(num_of_threads);
   if sa_len + 2 <= u8::MAX as usize {
-    multi_threaded_consalifold::<u8>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_access_probs, output_dir_path, min_pow_of_2, max_pow_of_2, takes_bench, outputs_probs, mix_weight, input_file_path, is_posterior_model);
+    multi_threaded_consalifold::<u8>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_access_probs, output_dir_path, gamma, outputs_probs, mix_weight, input_file_path, scoring_model);
   } else {
-    multi_threaded_consalifold::<u16>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_access_probs, output_dir_path, min_pow_of_2, max_pow_of_2, takes_bench, outputs_probs, mix_weight, input_file_path, is_posterior_model);
+    multi_threaded_consalifold::<u16>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_access_probs, output_dir_path, gamma, outputs_probs, mix_weight, input_file_path, scoring_model);
   }
 }
 
-fn multi_threaded_consalifold<T>(thread_pool: &mut Pool, cols: &Cols, seq_ids: &SeqIds, offset_4_max_gap_num: usize, min_bpp: Prob, produces_access_probs: bool, output_dir_path: &Path, min_pow_of_2: i32, max_pow_of_2: i32, takes_bench: bool, outputs_probs: bool, mix_weight: Prob, input_file_path: &Path, is_posterior_model: bool)
+fn multi_threaded_consalifold<T>(thread_pool: &mut Pool, cols: &Cols, seq_ids: &SeqIds, offset_4_max_gap_num: usize, min_bpp: Prob, produces_access_probs: bool, output_dir_path: &Path, gamma: Prob, outputs_probs: bool, mix_weight: Prob, input_file_path: &Path, scoring_model: ScoringModel)
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
 {
+  let uses_contra_model = matches!(scoring_model, ScoringModel::Contra);
+  let is_posterior_model = matches!(scoring_model, ScoringModel::Posterior);
   let mut sa = SeqAlign::<T>::new();
   sa.cols = cols.clone();
   let num_of_rnas = sa.cols[0].len();
@@ -151,19 +166,19 @@ where
       let _ = remove_file(output_file_path);
       rnaalifold_bpp_mat
     });
-    let prob_mat_sets = if !is_posterior_model {consprob::<T>(thread_pool, ref_2_fasta_records, min_bpp, T::from_usize(offset_4_max_gap_num).unwrap(), produces_access_probs)} else {locarnap_plus_pct(thread_pool, ref_2_fasta_records, output_dir_path)};
+    let prob_mat_sets = if !is_posterior_model {consprob::<T>(thread_pool, ref_2_fasta_records, min_bpp, T::from_usize(offset_4_max_gap_num).unwrap(), produces_access_probs, uses_contra_model)} else {locarnap_plus_pct(thread_pool, ref_2_fasta_records, output_dir_path)};
     if outputs_probs {
       write_prob_mat_sets::<T>(output_dir_path, &prob_mat_sets, produces_access_probs);
     }
     let rnaalifold_bpp_mat = handler.join().unwrap();
     *ref_2_mix_bpp_mat = get_mix_bpp_mat(&prob_mat_sets, &rnaalifold_bpp_mat, ref_2_sa, mix_weight);
   }).unwrap();
-  if takes_bench {
-    let output_file_path = output_dir_path.join(&format!("gamma={}.sth", GAMMA_4_BENCH));
-    compute_and_write_mea_css(&mix_bpp_mat, &sa, GAMMA_4_BENCH, &output_file_path, &fasta_records);
+  if gamma != NEG_INFINITY {
+    let output_file_path = output_dir_path.join(&format!("gamma={}.sth", gamma));
+    compute_and_write_mea_css(&mix_bpp_mat, &sa, gamma, &output_file_path, &fasta_records);
   } else {
     thread_pool.scoped(|scope| {
-      for pow_of_2 in min_pow_of_2 .. max_pow_of_2 + 1 {
+      for pow_of_2 in MIN_POW_OF_2 .. MAX_POW_OF_2 + 1 {
         let gamma = (2. as Prob).powi(pow_of_2);
         let ref ref_2_mix_bpp_mat = mix_bpp_mat;
         let ref ref_2_sa = sa;

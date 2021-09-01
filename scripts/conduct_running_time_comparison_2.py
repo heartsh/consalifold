@@ -64,7 +64,7 @@ def main():
   image_dir_path = asset_dir_path + "/images"
   if not os.path.exists(image_dir_path):
     os.mkdir(image_dir_path)
-  fig.savefig(image_dir_path + "/consalifold_model_comparison_running_time.eps", bbox_inches = "tight")
+  fig.savefig(image_dir_path + "/consalifold_model_comparison_running_time_2.eps", bbox_inches = "tight")
   fig.clf()
   print("Running time significance test: ", stats.ttest_rel(data_turner, data_contra))
 

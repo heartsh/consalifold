@@ -2,7 +2,7 @@
 name = "consalifold"
 version = "0.1.4"
 authors = ["heartsh <heartsh@heartsh.io>"]
-description = "Prediction Tool for RNA Consensus Secondary Structures to Consider RNA Pairwise Structural Alignments"
+description = "Consensus Secondary Structure Predictor Engaging Structural Alignment-based Error Correction"
 repository = "https://github.com/heartsh/consalifold"
 readme = "README.md"
 keywords = ["bioinformatics", "rna", "secondary-structure"]

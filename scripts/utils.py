@@ -129,3 +129,18 @@ def get_upp_mats(upp_mat_file_path, seq_lens):
       upp_mat[j] = upp
     upp_mats[rna_id] = upp_mat
   return upp_mats
+
+def get_capr_prof_seqs(capr_output_file_path):
+  capr_prof_seqs = {}
+  capr_output_file = open(capr_output_file_path)
+  lines = capr_output_file.readlines()
+  lines = [line for line in lines]
+  num_of_lines = len(lines)
+  for line in lines[1:]:
+    strings = line.split()
+    prof_type = strings[0]
+    profs = []
+    for string in strings[1:]:
+      profs.append(float(string))
+    capr_prof_seqs[prof_type] = profs
+  return capr_prof_seqs

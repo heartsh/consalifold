@@ -108,7 +108,7 @@ def get_bpp_mats(bpp_mat_file_path, seq_lens):
     bpp_mat = numpy.zeros((seq_len, seq_len))
     for string in lines[i + 1].strip().split(" "):
       substrings = string.split(",")
-      (j, k, bpp) = (int(substrings[0]), int(substrings[1]), min(1, float(substrings[2])))
+      (j, k, bpp) = (int(substrings[0]), int(substrings[1]), max(0, min(1, float(substrings[2]))))
       bpp_mat[j, k] = bpp
     bpp_mats[rna_id] = bpp_mat
   return bpp_mats
@@ -125,7 +125,7 @@ def get_upp_mats(upp_mat_file_path, seq_lens):
     upp_mat = numpy.zeros(seq_len)
     for string in lines[i + 1].strip().split(" "):
       substrings = string.split(",")
-      (j, upp) = (int(substrings[0]), min(1, float(substrings[1])))
+      (j, upp) = (int(substrings[0]), max(0, min(1, float(substrings[1]))))
       upp_mat[j] = upp
     upp_mats[rna_id] = upp_mat
   return upp_mats

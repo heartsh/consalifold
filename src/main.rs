@@ -37,7 +37,7 @@ fn main() {
   opts.optopt("", "mix_weight", &format!("A mixture weight (Uses {} by default)", DEFAULT_MIX_WEIGHT), "FLOAT");
   opts.optopt("m", "scoring_model", &format!("Choose a structural alignment scoring model from turner, contra, posterior (Uses {} by default)", DEFAULT_SCORING_MODEL), "STR");
   opts.optopt("t", "num_of_threads", "The number of threads in multithreading (Uses the number of all the threads of this computer by default)", "UINT");
-  opts.optflag("q", "produces_access_probs", &format!("Also compute accessible probabilities"));
+  opts.optflag("s", "produces_struct_profs", &format!("Also compute RNA structural context profiles"));
   opts.optflag("p", "outputs_probs", &format!("Output probabilities"));
   opts.optflag("h", "help", "Print a help menu");
   let matches = match opts.parse(&args[1 ..]) {
@@ -88,7 +88,7 @@ fn main() {
   } else {
     DEFAULT_MIX_WEIGHT
   };
-  let produces_access_probs = matches.opt_present("q");
+  let produces_struct_profs = matches.opt_present("s");
   let outputs_probs = matches.opt_present("p");
   let num_of_threads = if matches.opt_present("t") {
     matches.opt_str("t").unwrap().parse().unwrap()
@@ -99,13 +99,13 @@ fn main() {
   let sa_len = cols.len();
   let mut thread_pool = Pool::new(num_of_threads);
   if sa_len + 2 <= u8::MAX as usize {
-    multi_threaded_consalifold::<u8>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_access_probs, output_dir_path, gamma, outputs_probs, mix_weight, input_file_path, scoring_model);
+    multi_threaded_consalifold::<u8>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_struct_profs, output_dir_path, gamma, outputs_probs, mix_weight, input_file_path, scoring_model);
   } else {
-    multi_threaded_consalifold::<u16>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_access_probs, output_dir_path, gamma, outputs_probs, mix_weight, input_file_path, scoring_model);
+    multi_threaded_consalifold::<u16>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_struct_profs, output_dir_path, gamma, outputs_probs, mix_weight, input_file_path, scoring_model);
   }
 }
 
-fn multi_threaded_consalifold<T>(thread_pool: &mut Pool, cols: &Cols, seq_ids: &SeqIds, offset_4_max_gap_num: usize, min_bpp: Prob, produces_access_probs: bool, output_dir_path: &Path, gamma: Prob, outputs_probs: bool, mix_weight: Prob, input_file_path: &Path, scoring_model: ScoringModel)
+fn multi_threaded_consalifold<T>(thread_pool: &mut Pool, cols: &Cols, seq_ids: &SeqIds, offset_4_max_gap_num: usize, min_bpp: Prob, produces_struct_profs: bool, output_dir_path: &Path, gamma: Prob, outputs_probs: bool, mix_weight: Prob, input_file_path: &Path, scoring_model: ScoringModel)
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
 {
@@ -166,9 +166,9 @@ where
       let _ = remove_file(output_file_path);
       rnaalifold_bpp_mat
     });
-    let prob_mat_sets = if !is_posterior_model {consprob::<T>(thread_pool, ref_2_fasta_records, min_bpp, T::from_usize(offset_4_max_gap_num).unwrap(), produces_access_probs, uses_contra_model)} else {locarnap_plus_pct(thread_pool, ref_2_fasta_records, output_dir_path)};
+    let prob_mat_sets = if !is_posterior_model {consprob::<T>(thread_pool, ref_2_fasta_records, min_bpp, T::from_usize(offset_4_max_gap_num).unwrap(), produces_struct_profs, uses_contra_model)} else {locarnap_plus_pct(thread_pool, ref_2_fasta_records, output_dir_path)};
     if outputs_probs {
-      write_prob_mat_sets::<T>(output_dir_path, &prob_mat_sets, produces_access_probs);
+      write_prob_mat_sets::<T>(output_dir_path, &prob_mat_sets, produces_struct_profs);
     }
     let rnaalifold_bpp_mat = handler.join().unwrap();
     *ref_2_mix_bpp_mat = get_mix_bpp_mat(&prob_mat_sets, &rnaalifold_bpp_mat, ref_2_sa, mix_weight);

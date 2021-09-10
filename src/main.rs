@@ -24,6 +24,7 @@ enum ScoringModel {
   Posterior,
 }
 const DEFAULT_SCORING_MODEL: &str = "turner";
+const README_CONTENTS_2: &str = "# gamma=x.sth\nThis file type contains a predicted consensus secondary structure in Stockholm format, and this predicted consensus structure is under the prediction accuracy control parameter \"x.\"\n\n";
 
 fn main() {
   let args = env::args().collect::<Vec<Arg>>();
@@ -89,7 +90,7 @@ fn main() {
     DEFAULT_MIX_WEIGHT
   };
   let produces_struct_profs = matches.opt_present("s");
-  let outputs_probs = matches.opt_present("p");
+  let outputs_probs = matches.opt_present("p") || produces_struct_profs;
   let num_of_threads = if matches.opt_present("t") {
     matches.opt_str("t").unwrap().parse().unwrap()
   } else {
@@ -190,6 +191,9 @@ where
       }
     });
   }
+  let mut readme_contents = String::from(README_CONTENTS_2);
+  readme_contents.push_str(README_CONTENTS);
+  write_readme(output_dir_path, &readme_contents);
 }
 
 fn locarnap_plus_pct<T>(thread_pool: &mut Pool, fasta_records: &FastaRecords, output_dir_path: &Path) -> ProbMatSets<T>

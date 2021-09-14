@@ -11,8 +11,6 @@ import multiprocessing
 import time
 import datetime
 import shutil
-import community
-import networkx
 
 node_size = 150
 edge_width = 2

@@ -30,7 +30,7 @@ fn main() {
   let args = env::args().collect::<Vec<Arg>>();
   let program_name = args[0].clone();
   let mut opts = Options::new();
-  opts.reqopt("i", "input_file_path", "A path to an input CLUSTAL file containing the sequence alignment of RNA sequences", "STR");
+  opts.reqopt("i", "input_file_path", "A path to an input CLUSTAL/FASTA/STOCKHOLM file containing the sequence alignment of RNA sequences", "STR");
   opts.reqopt("o", "output_dir_path", "The path to an output directory", "STR");
   opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} (Turner)/{}(CONTRAfold) by default)", DEFAULT_MIN_BPP, DEFAULT_MIN_BPP_CONTRA), "FLOAT");
   opts.optopt("", "offset_4_max_gap_num", &format!("An offset for maximum numbers of gaps (Uses {} by default)", DEFAULT_OFFSET_4_MAX_GAP_NUM), "UINT");
@@ -96,7 +96,22 @@ fn main() {
   } else {
     num_cpus::get() as NumOfThreads
   };
-  let (cols, seq_ids) = read_sa_from_clustal_file(input_file_path);
+  let extension = input_file_path.extension().unwrap().to_str().unwrap();
+  let is_stockholm = match extension {
+    "sto" | "stk" | "sth" => true,
+    _ => false,
+  };
+  let is_fasta = match extension {
+    "fasta" | "fna" | "ffn" | "faa" | "frn" | "fa" => true,
+    _ => false,
+  };
+  let (cols, seq_ids) = if is_stockholm {
+    read_sa_from_stockholm_file(input_file_path)
+  } else if is_fasta {
+    read_sa_from_fasta_file(input_file_path)
+  } else {
+    read_sa_from_clustal_file(input_file_path)
+  };
   let sa_len = cols.len();
   let mut thread_pool = Pool::new(num_of_threads);
   if sa_len + 2 <= u8::MAX as usize {

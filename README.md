@@ -1,4 +1,4 @@
-# Prediction Tool for RNA Consensus Secondary Structures to Consider RNA Pairwise Structural Alignments
+# Consensus Secondary Structure Predictor Engaging Structural Alignment-based Error Correction
 # Installation
 This project is written mainly in Rust, a systems programming language.
 You need to install Rust components, i.e., rustc (the Rust compiler), cargo (the Rust package manager), and the Rust standard library.

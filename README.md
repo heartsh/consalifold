@@ -8,10 +8,11 @@ You can install Rust components with the following one line:
 $ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 The above installation is done by [Rustup](https://github.com/rust-lang-nursery/rustup.rs), and Rustup enables to easily switch a compiler in use.
-As ConsAlifold's dependencies, you need to install [ViennaRNA](https://www.tbi.univie.ac.at/RNA/) and [LocARNA-P (if you wish to use instead of ConsProb)](https://github.com/s-will/LocARNA).
+As ConsAlifold's dependencies, you need to install [ViennaRNA](https://www.tbi.univie.ac.at/RNA/) and [LocARNA-P](https://github.com/s-will/LocARNA) (if you wish to use instead of [ConsProb](https://github.com/heartsh/consprob)).
 You can install ConsAlifold as follows: 
 ```bash
-$ RUSTFLAGS='--emit asm -C target-feature=+avx -C target-feature=+ssse3 -C target-feature=+mmx' cargo install consalifold # AVX, SSE, and MMX enabled for rustc (another example: RUSTFLAGS='--emit asm -C target-feature=+avx2 -C target-feature=+ssse3 -C target-feature=+mmx -C target-feature=+fma')
+$ # AVX, SSE, and MMX enabled for rustc (another example: RUSTFLAGS='--emit asm -C target-feature=+avx2 -C target-feature=+ssse3 -C target-feature=+mmx -C target-feature=+fma')
+$ RUSTFLAGS='--emit asm -C target-feature=+avx -C target-feature=+ssse3 -C target-feature=+mmx' cargo install consalifold
 ```
 Check if you have installed ConsAlifold properly as follows:
 ```bash
@@ -20,12 +21,14 @@ $ consalifold # Its available command options will be displayed.
 By the following Python script, you can reproduce the figures shown in the paper describing ConsAlifold's principle:
 ```bash
 $ cd scripts
-$ ./run_all.py # Please install python packages required to this reproduction. Saved figures will appear at the "../assets/images" directory.
+$ # Please install python packages required to this reproduction.
+$ # Saved figures will appear at the "../assets/images" directory.
+$ ./run_all.py
 ```
 
 # Docker Playground <img src="https://www.docker.com/sites/default/files/d8/styles/role_icon/public/2019-07/Moby-logo.png?itok=sYH_JEaJ" width="40">
 Replaying computational experiments in academic papers is the first but troublesome step to understand developed computational methods.
-I provide a Ubuntu-based computational environment implemented on [Docker](https://www.docker.com/) as a playground to try out ConsProb:
+I provide an Ubuntu-based computational environment implemented on [Docker](https://www.docker.com/) as a playground to try out ConsAlifold:
 ```bash
 $ git clone https://github.com/heartsh/consprob && cd consprob
 $ docker build -t heartsh/consprob .

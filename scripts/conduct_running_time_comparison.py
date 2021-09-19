@@ -56,9 +56,9 @@ def main():
   posterior_consalifold_output_file_path = asset_dir_path + "/consalifold_running_times_posterior.dat"
   write_consalifold_results(posterior_consalifold_results, posterior_consalifold_output_file_path)
   data_posterior = read_consalifold_results(posterior_consalifold_output_file_path)
-  data = {"Running time": data_turner + data_posterior, "Pair-matching probability inference method": ["ConsProb"] * len(data_turner) + ["LocARNA-P + our PCT"] * len(data_posterior)}
+  data = {"Running time (s)": data_turner + data_posterior, "Pair-matching probability inference method": ["ConsProb"] * len(data_turner) + ["LocARNA-P + our PCT"] * len(data_posterior)}
   data_frame = pandas.DataFrame(data = data)
-  ax = seaborn.boxplot(x = "Pair-matching probability inference method", y = "Running time", data = data_frame, sym = "")
+  ax = seaborn.boxplot(x = "Pair-matching probability inference method", y = "Running time (s)", data = data_frame, sym = "")
   fig = ax.get_figure()
   fig.tight_layout()
   image_dir_path = asset_dir_path + "/images"

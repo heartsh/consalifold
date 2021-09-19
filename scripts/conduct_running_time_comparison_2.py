@@ -49,16 +49,16 @@ def main():
   # ConsAliFold's execution.
   pool = multiprocessing.Pool(int(num_of_threads / sub_thread_num))
   consalifold_results = pool.map(bench_consalifold, consalifold_params)
-  consalifold_output_file_path = asset_dir_path + "/consalifold_running_times_turner.dat"
+  consalifold_output_file_path = asset_dir_path + "/consalifold_running_times_turner_2.dat"
   write_consalifold_results(consalifold_results, consalifold_output_file_path)
   data_turner = read_consalifold_results(consalifold_output_file_path)
   contra_consalifold_results = pool.map(bench_consalifold, contra_consalifold_params)
   contra_consalifold_output_file_path = asset_dir_path + "/consalifold_running_times_contra.dat"
   write_consalifold_results(contra_consalifold_results, contra_consalifold_output_file_path)
   data_contra = read_consalifold_results(contra_consalifold_output_file_path)
-  data = {"Running time": data_turner + data_contra, "Structural alignment scoring model": ["Turner"] * len(data_turner) + ["CONTRAfold"] * len(data_contra)}
+  data = {"Running time (s)": data_turner + data_contra, "Structural alignment scoring model": ["Turner"] * len(data_turner) + ["CONTRAfold"] * len(data_contra)}
   data_frame = pandas.DataFrame(data = data)
-  ax = seaborn.boxplot(x = "Structural alignment scoring model", y = "Running time", data = data_frame, sym = "")
+  ax = seaborn.boxplot(x = "Structural alignment scoring model", y = "Running time (s)", data = data_frame, sym = "")
   fig = ax.get_figure()
   fig.tight_layout()
   image_dir_path = asset_dir_path + "/images"

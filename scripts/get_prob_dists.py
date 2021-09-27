@@ -40,7 +40,7 @@ def main():
   pyplot.stackplot(range(seq_len), upp_mat_4_hl_turner, bpp_mat_2_turner, upp_mat_4_2l_turner, upp_mat_4_ml_turner, upp_mat_4_el_turner)
   legends = ["Unpairing in 1-loop", "Base-pairing", "Unpairing in 2-loop", "Unpairing in multi-loop", "Unpairing in external loop"]
   pyplot.legend(legends, loc = "upper right", bbox_to_anchor=(1.0, 1.19))
-  pyplot.savefig(image_dir_path + "/consprob_struct_context_profs.eps", bbox_inches = "tight")
+  pyplot.savefig(image_dir_path + "/consprob_struct_context_profs_turner.eps", bbox_inches = "tight")
   pyplot.clf()
   upp_mat_4_hl_contra = utils.get_upp_mats(asset_dir_path + "/sampled_trnas_contra/upp_mats_on_hl.dat", seq_lens)[0]
   bpp_mat_2_contra = utils.get_upp_mats(asset_dir_path + "/sampled_trnas_contra/bpp_mats_2.dat", seq_lens)[0]
@@ -51,7 +51,7 @@ def main():
   pyplot.stackplot(range(seq_len), upp_mat_4_hl_contra, bpp_mat_2_contra, upp_mat_4_2l_contra, upp_mat_4_ml_contra, upp_mat_4_el_contra)
   legends = ["Unpairing in 1-loop", "Base-pairing", "Unpairing in 2-loop", "Unpairing in multi-loop", "Unpairing in external loop"]
   pyplot.legend(legends, loc = "upper right", bbox_to_anchor=(1.0, 1.19))
-  pyplot.savefig(image_dir_path + "/consprob_struct_context_profs.eps", bbox_inches = "tight")
+  pyplot.savefig(image_dir_path + "/consprob_struct_context_profs_contra.eps", bbox_inches = "tight")
   pyplot.clf()
   capr_prof_seqs = utils.get_capr_prof_seqs(asset_dir_path + "/capr_sampled_trnas.dat")
   pyplot.figure(figsize=(11.5, 11.5))

@@ -18,7 +18,7 @@ Check if you have installed ConsAlifold properly as follows:
 ```bash
 $ consalifold # Its available command options will be displayed.
 ```
-By the following Python script, you can reproduce the figures shown in the paper describing ConsAlifold's principle:
+By the following Python script, you can reproduce the figures shown in [the paper describing ConsAlifold's principle](https://doi.org/10.1093/bioinformatics/btab738):
 ```bash
 $ cd scripts
 $ # Please install python packages required to this reproduction.

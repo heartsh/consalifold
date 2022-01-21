@@ -20,25 +20,22 @@ def main():
   (current_work_dir_path, asset_dir_path, program_dir_path, conda_program_dir_path) = utils.get_dir_paths()
   num_of_threads = multiprocessing.cpu_count()
   gammas = [2. ** i for i in range(-7, 11)]
-  mafft_xinsi_params = []
   consalifold_params = []
   contra_consalifold_params = []
-  rna_seq_dir_path = asset_dir_path + "/compiled_rna_fams_test"
-  mafft_xinsi_dir_path = asset_dir_path + "/mafft_xinsi"
-  mafft_xinsi_plus_consalifold_dir_path = asset_dir_path + "/mafft_xinsi_plus_consalifold"
-  if not os.path.isdir(mafft_xinsi_plus_consalifold_dir_path):
-    os.mkdir(mafft_xinsi_plus_consalifold_dir_path)
+  ref_sa_dir_path = asset_dir_path + "/ref_sas_all"
+  ref_sa_plus_consalifold_dir_path = asset_dir_path + "/ref_sa_plus_consalifold_all"
+  if not os.path.isdir(ref_sa_plus_consalifold_dir_path):
+    os.mkdir(ref_sa_plus_consalifold_dir_path)
   sub_thread_num = 4
-  for rna_seq_file in os.listdir(rna_seq_dir_path):
-    if not rna_seq_file.endswith(".fa"):
+  for ref_sa_file in os.listdir(ref_sa_plus_consalifold_dir_path):
+    if not ref_sa_file.endswith(".aln"):
       continue
-    rna_seq_file_path = os.path.join(rna_seq_dir_path, rna_seq_file)
-    (rna_family_name, extension) = os.path.splitext(rna_seq_file)
-    mafft_xinsi_output_file_path = os.path.join(mafft_xinsi_dir_path, rna_family_name + ".aln")
-    mafft_xinsi_plus_consalifold_output_dir_path = os.path.join(mafft_xinsi_plus_consalifold_dir_path, rna_family_name)
-    if not os.path.isdir(mafft_xinsi_plus_consalifold_output_dir_path):
-      os.mkdir(mafft_xinsi_plus_consalifold_output_dir_path)
-    consalifold_params.insert(0, (sub_thread_num, mafft_xinsi_output_file_path, mafft_xinsi_plus_consalifold_output_dir_path, False))
+    ref_sa_file_path = os.path.join(ref_sa_plus_consalifold_dir_path, ref_sa_file)
+    (rna_family_name, extension) = os.path.splitext(ref_sa_file)
+    ref_sa_plus_consalifold_output_dir_path = os.path.join(ref_sa_plus_consalifold_dir_path, rna_family_name)
+    if not os.path.isdir(ref_sa_plus_consalifold_output_dir_path):
+      os.mkdir(ref_sa_plus_consalifold_output_dir_path)
+    consalifold_params.insert(0, (sub_thread_num, ref_sa_file_path, ref_sa_plus_consalifold_output_dir_path, False))
   # ConsAliFold's execution.
   pool = multiprocessing.Pool(int(num_of_threads / sub_thread_num))
   consalifold_results = pool.map(bench_consalifold, consalifold_params)
@@ -99,14 +96,6 @@ def bench_consalifold(consalifold_params):
       max_seq_len = rec_len
   num_rna_seqs = len(sa)
   return (consalifold_elapsed_time, max_seq_len, num_rna_seqs)
-
-def run_mafft_xinsi(mafft_xinsi_params):
-  (rna_seq_file_path, mafft_xinsi_output_file_path) = mafft_xinsi_params
-  mafft_xinsi_command = "mafft-xinsi --thread 1 --quiet " + "--clustalout " + rna_seq_file_path + " > " + mafft_xinsi_output_file_path
-  utils.run_command(mafft_xinsi_command)
-  sa = AlignIO.read(mafft_xinsi_output_file_path, "clustal")
-  mafft_xinsi_output_file_path = os.path.splitext(mafft_xinsi_output_file_path)[0] + ".fa"
-  AlignIO.write(sa, mafft_xinsi_output_file_path, "fasta")
 
 if __name__ == "__main__":
   main()

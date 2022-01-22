@@ -27,10 +27,10 @@ def main():
   if not os.path.isdir(ref_sa_plus_consalifold_dir_path):
     os.mkdir(ref_sa_plus_consalifold_dir_path)
   sub_thread_num = 4
-  for ref_sa_file in os.listdir(ref_sa_plus_consalifold_dir_path):
+  for ref_sa_file in os.listdir(ref_sa_dir_path):
     if not ref_sa_file.endswith(".aln"):
       continue
-    ref_sa_file_path = os.path.join(ref_sa_plus_consalifold_dir_path, ref_sa_file)
+    ref_sa_file_path = os.path.join(ref_sa_dir_path, ref_sa_file)
     (rna_family_name, extension) = os.path.splitext(ref_sa_file)
     ref_sa_plus_consalifold_output_dir_path = os.path.join(ref_sa_plus_consalifold_dir_path, rna_family_name)
     if not os.path.isdir(ref_sa_plus_consalifold_output_dir_path):
@@ -91,9 +91,10 @@ def bench_consalifold(consalifold_params):
   max_seq_len = 0
   sa = AlignIO.read(input_sa_file_path, "clustal")
   for rec in sa:
-    rec_len = len(str(rec).replace("-", ""))
-    if rec_len > max_seq_len:
-      max_seq_len = rec_len
+    seq = str(rec.seq)
+    seq_len = len(seq.replace("-", ""))
+    if seq_len > max_seq_len:
+      max_seq_len = seq_len
   num_rna_seqs = len(sa)
   return (consalifold_elapsed_time, max_seq_len, num_rna_seqs)
 

@@ -19,32 +19,19 @@ def main():
   rfam_seed_sta_file_path = asset_dir_path + "/rfam_seed_stas_v14.3.sth"
   rna_seq_dir_path_valid = asset_dir_path + "/compiled_rna_fams_valid"
   rna_seq_dir_path_test = asset_dir_path + "/compiled_rna_fams_test"
-  ref_sa_dir_path_all = asset_dir_path + "/ref_sas_all"
   ref_sa_dir_path_valid = asset_dir_path + "/ref_sas_valid"
   ref_sa_dir_path_test = asset_dir_path + "/ref_sas_test"
   if not os.path.isdir(rna_seq_dir_path_valid):
     os.mkdir(rna_seq_dir_path_valid)
   if not os.path.isdir(rna_seq_dir_path_test):
     os.mkdir(rna_seq_dir_path_test)
-  if not os.path.isdir(ref_sa_dir_path_all):
-    os.mkdir(ref_sa_dir_path_all)
   if not os.path.isdir(ref_sa_dir_path_valid):
     os.mkdir(ref_sa_dir_path_valid)
   if not os.path.isdir(ref_sa_dir_path_test):
     os.mkdir(ref_sa_dir_path_test)
-  stas = [sta for sta in AlignIO.parse(rfam_seed_sta_file_path, "stockholm") if is_valid(sta)]
-  num_of_stas = len(stas)
-  print("# all RNA families: %d" % num_of_stas)
-  for i, sta in enumerate(stas):
-    sa_file_path = os.path.join(ref_sa_dir_path_all, "rna_fam_%d.sth" % i)
-    AlignIO.write(sta, sa_file_path, "stockholm")
-    sa_file_path = os.path.join(ref_sa_dir_path_all, "rna_fam_%d.fa" % i)
-    AlignIO.write(sta, sa_file_path, "fasta")
-    sa_file_path = os.path.join(ref_sa_dir_path_all, "rna_fam_%d.aln" % i)
-    AlignIO.write(sta, sa_file_path, "clustal")
   max_sa_len = 500
   max_seq_num = 20
-  stas = [sta for sta in stas if len(sta[0]) <= max_sa_len and len(sta) <= max_seq_num]
+  stas = [sta for sta in AlignIO.parse(rfam_seed_sta_file_path, "stockholm") if len(sta[0]) <= max_sa_len and len(sta) <= max_seq_num and is_valid(sta)]
   num_of_stas = len(stas)
   print("# RNA families: %d" % num_of_stas)
   valid_data, test_data = train_test_split(stas, test_size = 0.5)

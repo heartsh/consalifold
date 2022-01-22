@@ -22,8 +22,8 @@ def main():
   gammas = [2. ** i for i in range(-7, 11)]
   consalifold_params = []
   contra_consalifold_params = []
-  ref_sa_dir_path = asset_dir_path + "/ref_sas_all"
-  ref_sa_plus_consalifold_dir_path = asset_dir_path + "/ref_sa_plus_consalifold_all"
+  ref_sa_dir_path = asset_dir_path + "/ref_sas_test"
+  ref_sa_plus_consalifold_dir_path = asset_dir_path + "/ref_sa_plus_consalifold"
   if not os.path.isdir(ref_sa_plus_consalifold_dir_path):
     os.mkdir(ref_sa_plus_consalifold_dir_path)
   sub_thread_num = 4
@@ -42,9 +42,8 @@ def main():
   consalifold_output_file_path = asset_dir_path + "/consalifold_running_times_turner_3.dat"
   write_consalifold_results(consalifold_results, consalifold_output_file_path)
   data = read_consalifold_results(consalifold_output_file_path)
-  data = {"Running time (s)": data[0], "Maximum sequence length": data[1], "Number of RNA sequences": data[2]}
-  data_frame = pandas.DataFrame(data = data)
-  ax = seaborn.scatterplot(data = data_frame, x = "Maximum sequence length", y = "Running time (s)", markers = True)
+  data_frame = pandas.DataFrame(data = list(data[0].items()), columns = ["Maximum sequence length", "Running time (s)"])
+  ax = seaborn.regplot(data = data_frame, x = "Maximum sequence length", y = "Running time (s)", order = 2)
   fig = ax.get_figure()
   fig.tight_layout()
   image_dir_path = asset_dir_path + "/images"
@@ -52,7 +51,8 @@ def main():
     os.mkdir(image_dir_path)
   fig.savefig(image_dir_path + "/consalifold_running_time_max_seq_length.eps", bbox_inches = "tight")
   fig.clf()
-  ax = seaborn.scatterplot(data = data_frame, x = "Number of RNA sequences", y = "Running time (s)", markers = True)
+  data_frame = pandas.DataFrame(data = list(data[1].items()), columns = ["Number of RNA sequences", "Running time (s)"])
+  ax = seaborn.regplot(data = data_frame, x = "Number of RNA sequences", y = "Running time (s)", order = 2)
   fig = ax.get_figure()
   fig.tight_layout()
   image_dir_path = asset_dir_path + "/images"
@@ -63,17 +63,26 @@ def read_consalifold_results(consalifold_output_file_path):
   with open(consalifold_output_file_path) as f:
     lines = f.readlines()
     times = []
-    max_seq_lens = []
-    nums_rna_seqs = []
+    times_vs_max_seq_lens = {}
+    times_vs_nums_rna_seqs = {}
     for line in lines:
       split = line.split()
       time = float(split[0])
       max_seq_len = int(split[1])
       num_rna_seqs = int(split[2])
-      times.append(time)
-      max_seq_lens.append(max_seq_len)
-      nums_rna_seqs.append(num_rna_seqs)
-    return (times, max_seq_lens, nums_rna_seqs)
+      if times_vs_max_seq_lens.get(max_seq_len):
+        old_time = times_vs_max_seq_lens[max_seq_len]
+        if time < old_time:
+          times_vs_max_seq_lens[max_seq_len] = time
+      else:
+        times_vs_max_seq_lens[max_seq_len] = time
+      if times_vs_nums_rna_seqs.get(num_rna_seqs):
+        old_time = times_vs_nums_rna_seqs[num_rna_seqs]
+        if time < old_time:
+          times_vs_nums_rna_seqs[num_rna_seqs] = time
+      else:
+        times_vs_nums_rna_seqs[num_rna_seqs] = time
+    return (times_vs_max_seq_lens, times_vs_nums_rna_seqs)
 
 def write_consalifold_results(consalifold_results, consalifold_output_file_path):
   with open(consalifold_output_file_path, "w") as f:

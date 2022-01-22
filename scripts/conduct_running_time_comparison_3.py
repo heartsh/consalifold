@@ -49,14 +49,14 @@ def main():
   image_dir_path = asset_dir_path + "/images"
   if not os.path.exists(image_dir_path):
     os.mkdir(image_dir_path)
-  fig.savefig(image_dir_path + "/consalifold_running_time_max_seq_length.eps", bbox_inches = "tight")
+  fig.savefig(image_dir_path + "/consalifold_running_time_max_seq_length.pdf", bbox_inches = "tight")
   fig.clf()
   data_frame = pandas.DataFrame(data = list(data[1].items()), columns = ["Number of RNA sequences", "Running time (s)"])
   ax = seaborn.regplot(data = data_frame, x = "Number of RNA sequences", y = "Running time (s)", order = 2)
   fig = ax.get_figure()
   fig.tight_layout()
   image_dir_path = asset_dir_path + "/images"
-  fig.savefig(image_dir_path + "/consalifold_running_time_num_rna_seqs.eps", bbox_inches = "tight")
+  fig.savefig(image_dir_path + "/consalifold_running_time_num_rna_seqs.pdf", bbox_inches = "tight")
   fig.clf()
 
 def read_consalifold_results(consalifold_output_file_path):

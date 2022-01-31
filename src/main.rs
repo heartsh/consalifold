@@ -386,6 +386,9 @@ where
   let mut buf_4_writer_2_output_file = format!("# STOCKHOLM 1.0\n");
   let sa_len = sa.cols.len();
   let max_seq_id_len = fasta_records.iter().map(|fasta_record| {fasta_record.fasta_id.len()}).max().unwrap();
+  let descriptor = "#=GC SS_cons";
+  let descriptor_len = descriptor.len();
+  let max_seq_id_len = max_seq_id_len.max(descriptor_len);
   let num_of_rnas = sa.cols[0].len();
   for rna_id in 0 .. num_of_rnas {
     let ref seq_id = fasta_records[rna_id].fasta_id;
@@ -397,8 +400,6 @@ where
     buf_4_writer_2_output_file.push_str(&stockholm_row);
     buf_4_writer_2_output_file.push_str("\n");
   }
-  let descriptor = "#=GC SS_cons";
-  let descriptor_len = descriptor.len();
   buf_4_writer_2_output_file.push_str(descriptor);
   let mut stockholm_row = vec![' ' as Char; max_seq_id_len - descriptor_len + 2];
   let mut mea_css_str = get_mea_css_str(&mea_css, sa_len);

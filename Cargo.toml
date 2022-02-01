@@ -1,6 +1,6 @@
 [package]
 name = "consalifold"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["heartsh <heartsh@heartsh.io>"]
 description = "Consensus Secondary Structure Predictor Engaging Structural Alignment-based Error Correction"
 repository = "https://github.com/heartsh/consalifold"

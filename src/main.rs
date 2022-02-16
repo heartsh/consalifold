@@ -313,7 +313,7 @@ pub fn revert<'a>(seq: &'a [usize]) -> String {
   String::from_utf8(new_seq).unwrap()
 }
 
-fn pct_of_bpp_mats_locarnap<T>(prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs<T>, rna_id: RnaId, upp_mat_len: usize, num_of_rnas: usize, ) -> PctStaProbMats<T>
+fn pct_of_bpp_mats_locarnap<T>(prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs<T>, rna_id: RnaId, upp_mat_len: usize, num_of_rnas: usize) -> PctStaProbMats<T>
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
 {
@@ -353,7 +353,6 @@ where
   for i in 0 .. sa_len {
     for j in i + 1 .. sa_len {
       let mut mean_bpp = 0.;
-      let mut effective_num_of_rnas = 0;
       for k in 0 .. num_of_rnas {
         if sa.cols[i][k] == PSEUDO_BASE || sa.cols[j][k] == PSEUDO_BASE {continue;}
         let ref bpp_mat = prob_mat_sets[k].bpp_mat;
@@ -361,11 +360,10 @@ where
         match bpp_mat.get(&pos_pair) {
           Some(&bpp) => {
             mean_bpp += bpp;
-            effective_num_of_rnas += 1;
           }, None => {},
         }
       }
-      mix_bpp_mat[i][j] = if effective_num_of_rnas > 0 {mix_weight * mean_bpp / effective_num_of_rnas as Prob} else {0.};
+      mix_bpp_mat[i][j] = mix_weight * mean_bpp / num_of_rnas as Prob;
       let pos_pair = (T::from_usize(i).unwrap(), T::from_usize(j).unwrap());
       match rnaalifold_bpp_mat.get(&pos_pair) {
         Some(&rnaalifold_bpp) => {

@@ -90,7 +90,8 @@ fn main() {
     DEFAULT_MIX_WEIGHT
   };
   let produces_struct_profs = matches.opt_present("s");
-  let outputs_probs = matches.opt_present("p") || produces_struct_profs;
+  let is_posterior_model = matches!(scoring_model, ScoringModel::Posterior);
+  let outputs_probs = (matches.opt_present("p") || produces_struct_profs) && !is_posterior_model;
   let num_of_threads = if matches.opt_present("t") {
     matches.opt_str("t").unwrap().parse().unwrap()
   } else {
@@ -151,46 +152,26 @@ where
   }
   let ref ref_2_sa = sa;
   let ref ref_2_fasta_records = fasta_records;
-  let mut mix_bpp_mat = ProbMat::new();
+  let mut mix_bpp_mat = SparseProbMat::default();
   let ref mut ref_2_mix_bpp_mat = mix_bpp_mat;
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }
   scope(|scope| {
     let handler = scope.spawn(|_| {
-      let output_file_prefix = input_file_path.file_stem().unwrap().to_str().unwrap();
-      let arg = format!("--id-prefix={}", output_file_prefix);
-      let args = vec!["-p", input_file_path.to_str().unwrap(), &arg, "--noPS", "--noDP"];
-      let _ = run_command("RNAalifold", &args, "Failed to run RNAalifold");
-      let mut rnaalifold_bpp_mat = SparseProbMat::<T>::default();
-      let cwd = env::current_dir().unwrap();
-      let output_file_path = cwd.join(String::from(output_file_prefix) + "_0001_ali.out");
-      let output_file = BufReader::new(File::open(output_file_path.clone()).unwrap());
-      for (k, line) in output_file.lines().enumerate() {
-        if k == 0 {continue;}
-        let line = line.unwrap();
-        if !line.starts_with(" ") {continue;}
-        let substrings: Vec<&str> = line.split_whitespace().collect();
-        let i = T::from_usize(substrings[0].parse().unwrap()).unwrap() - T::one();
-        let j = T::from_usize(substrings[1].parse().unwrap()).unwrap() - T::one();
-        let mut bpp = String::from(substrings[3]);
-        bpp.pop();
-        let bpp = 0.01 * bpp.parse::<Prob>().unwrap();
-        if bpp == 0. {continue;}
-        rnaalifold_bpp_mat.insert((i, j), bpp);
-      }
-      let _ = remove_file(output_file_path);
-      rnaalifold_bpp_mat
+      get_bpp_mat_alifold(input_file_path)
     });
     let prob_mat_sets = if !is_posterior_model {consprob::<T>(thread_pool, ref_2_fasta_records, min_bpp, T::from_usize(offset_4_max_gap_num).unwrap(), produces_struct_profs, uses_contra_model)} else {locarnap_plus_pct(thread_pool, ref_2_fasta_records, output_dir_path)};
     if outputs_probs {
       write_prob_mat_sets::<T>(output_dir_path, &prob_mat_sets, produces_struct_profs);
     }
+    let bpp_mats = prob_mat_sets.iter().map(|x| x.bpp_mat.clone()).collect();
     let rnaalifold_bpp_mat = handler.join().unwrap();
-    *ref_2_mix_bpp_mat = get_mix_bpp_mat(&prob_mat_sets, &rnaalifold_bpp_mat, ref_2_sa, mix_weight);
+    *ref_2_mix_bpp_mat = get_mix_bpp_mat(ref_2_sa, &bpp_mats, &rnaalifold_bpp_mat, mix_weight);
   }).unwrap();
   if gamma != NEG_INFINITY {
     let output_file_path = output_dir_path.join(&format!("gamma={}.sth", gamma));
+    let gamma = gamma + 1.;
     compute_and_write_mea_css(&mix_bpp_mat, &sa, gamma, &output_file_path, &fasta_records);
   } else {
     thread_pool.scoped(|scope| {
@@ -200,6 +181,7 @@ where
         let ref ref_2_sa = sa;
         let ref ref_2_fasta_records = fasta_records;
         let output_file_path = output_dir_path.join(&format!("gamma={}.sth", gamma));
+        let gamma = gamma + 1.;
         scope.execute(move || {
           compute_and_write_mea_css::<T>(ref_2_mix_bpp_mat, ref_2_sa, gamma, &output_file_path, ref_2_fasta_records);
         });
@@ -343,43 +325,11 @@ where
   pct_prob_mats
 }
 
-fn get_mix_bpp_mat<T>(prob_mat_sets: &ProbMatSets<T>, rnaalifold_bpp_mat: &SparseProbMat<T>, sa: &SeqAlign<T>, mix_weight: Prob) -> ProbMat
+fn compute_and_write_mea_css<T>(mix_bpp_mat: &SparseProbMat<T>, sa: &SeqAlign<T>, gamma: Prob, output_file_path: &Path, fasta_records: &FastaRecords)
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
 {
-  let sa_len = sa.cols.len();
-  let num_of_rnas = sa.cols[0].len();
-  let mut mix_bpp_mat = vec![vec![0.; sa_len]; sa_len];
-  for i in 0 .. sa_len {
-    for j in i + 1 .. sa_len {
-      let mut mean_bpp = 0.;
-      for k in 0 .. num_of_rnas {
-        if sa.cols[i][k] == PSEUDO_BASE || sa.cols[j][k] == PSEUDO_BASE {continue;}
-        let ref bpp_mat = prob_mat_sets[k].bpp_mat;
-        let pos_pair = (sa.pos_map_sets[i][k], sa.pos_map_sets[j][k]);
-        match bpp_mat.get(&pos_pair) {
-          Some(&bpp) => {
-            mean_bpp += bpp;
-          }, None => {},
-        }
-      }
-      mix_bpp_mat[i][j] = mix_weight * mean_bpp / num_of_rnas as Prob;
-      let pos_pair = (T::from_usize(i).unwrap(), T::from_usize(j).unwrap());
-      match rnaalifold_bpp_mat.get(&pos_pair) {
-        Some(&rnaalifold_bpp) => {
-          mix_bpp_mat[i][j] += (1. - mix_weight) * rnaalifold_bpp;
-        }, None => {},
-      }
-    }
-  }
-  mix_bpp_mat
-}
-
-fn compute_and_write_mea_css<T>(mix_bpp_mat: &ProbMat, sa: &SeqAlign<T>, gamma: Prob, output_file_path: &Path, fasta_records: &FastaRecords)
-where
-  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
-{
-  let mea_css = consalifold::<T>(mix_bpp_mat, gamma, sa);
+  let mea_css = consalifold::<T>(mix_bpp_mat, sa, gamma);
   let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).unwrap());
   let mut buf_4_writer_2_output_file = format!("# STOCKHOLM 1.0\n");
   let sa_len = sa.cols.len();
@@ -408,12 +358,12 @@ where
   let _ = writer_2_output_file.write_all(buf_4_writer_2_output_file.as_bytes());
 }
 
-fn get_mea_css_str<T>(mea_css: &MeaCss<T>, sa_len: usize) -> MeaCssStr
+fn get_mea_css_str<T>(mea_css: &SparsePosMat<T>, sa_len: usize) -> MeaCssStr
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
 {
   let mut mea_css_str = vec![UNPAIRING_BASE; sa_len];
-  for &(i, j) in &mea_css.bpa_pos_pairs {
+  for &(i, j) in mea_css {
     mea_css_str[i.to_usize().unwrap()] = BASE_PAIRING_LEFT_BASE;
     mea_css_str[j.to_usize().unwrap()] = BASE_PAIRING_RIGHT_BASE;
   }

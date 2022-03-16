@@ -32,8 +32,8 @@ fn main() {
   let mut opts = Options::new();
   opts.reqopt("i", "input_file_path", "A path to an input CLUSTAL/FASTA/STOCKHOLM file containing the sequence alignment of RNA sequences", "STR");
   opts.reqopt("o", "output_dir_path", "A path to an output directory", "STR");
-  opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing-probability (Uses {} (Turner)/{}(CONTRAfold) by default)", DEFAULT_MIN_BPP, DEFAULT_MIN_BPP_CONTRA), "FLOAT");
-  opts.optopt("", "offset_4_max_gap_num", &format!("An offset for maximum numbers of gaps (Uses {} by default)", DEFAULT_OFFSET_4_MAX_GAP_NUM), "UINT");
+  opts.optopt("", "min_base_pair_prob", &format!("A minimum base-pairing probability (Uses {} by default)", DEFAULT_MIN_BPP), "FLOAT");
+  opts.optopt("", "min_align_prob", &format!("A minimum aligning probability (Uses {} by default)", DEFAULT_MIN_ALIGN_PROB), "FLOAT");
   opts.optopt("g", "gamma", "A specific gamma parameter rather than a range of gamma parameters", "FLOAT");
   opts.optopt("", "mix_weight", &format!("A mixture weight (Uses {} by default)", DEFAULT_MIX_WEIGHT), "FLOAT");
   opts.optopt("m", "scoring_model", &format!("Choose a structural alignment scoring model from turner, contra, posterior (Uses {} by default)", DEFAULT_SCORING_MODEL), "STR");
@@ -68,16 +68,15 @@ fn main() {
   } else {
     ScoringModel::Turner
   };
-  let uses_contra_model = matches!(scoring_model, ScoringModel::Contra);
   let min_bpp = if matches.opt_present("min_base_pair_prob") {
     matches.opt_str("min_base_pair_prob").unwrap().parse().unwrap()
   } else {
-    if uses_contra_model {DEFAULT_MIN_BPP_CONTRA} else {DEFAULT_MIN_BPP}
+    DEFAULT_MIN_BPP
   };
-  let offset_4_max_gap_num = if matches.opt_present("offset_4_max_gap_num") {
-    matches.opt_str("offset_4_max_gap_num").unwrap().parse().unwrap()
+  let min_align_prob = if matches.opt_present("min_align_prob") {
+    matches.opt_str("min_align_prob").unwrap().parse().unwrap()
   } else {
-    DEFAULT_OFFSET_4_MAX_GAP_NUM
+    DEFAULT_MIN_ALIGN_PROB
   };
   let gamma = if matches.opt_present("gamma") {
     matches.opt_str("gamma").unwrap().parse().unwrap()
@@ -116,13 +115,13 @@ fn main() {
   let sa_len = cols.len();
   let mut thread_pool = Pool::new(num_of_threads);
   if sa_len + 2 <= u8::MAX as usize {
-    multi_threaded_consalifold::<u8>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_struct_profs, output_dir_path, gamma, outputs_probs, mix_weight, input_file_path, scoring_model);
+    multi_threaded_consalifold::<u8>(&mut thread_pool, &cols, &seq_ids, min_bpp, min_align_prob, produces_struct_profs, output_dir_path, gamma, outputs_probs, mix_weight, input_file_path, scoring_model);
   } else {
-    multi_threaded_consalifold::<u16>(&mut thread_pool, &cols, &seq_ids, offset_4_max_gap_num, min_bpp, produces_struct_profs, output_dir_path, gamma, outputs_probs, mix_weight, input_file_path, scoring_model);
+    multi_threaded_consalifold::<u16>(&mut thread_pool, &cols, &seq_ids, min_bpp, min_align_prob, produces_struct_profs, output_dir_path, gamma, outputs_probs, mix_weight, input_file_path, scoring_model);
   }
 }
 
-fn multi_threaded_consalifold<T>(thread_pool: &mut Pool, cols: &Cols, seq_ids: &SeqIds, offset_4_max_gap_num: usize, min_bpp: Prob, produces_struct_profs: bool, output_dir_path: &Path, gamma: Prob, outputs_probs: bool, mix_weight: Prob, input_file_path: &Path, scoring_model: ScoringModel)
+fn multi_threaded_consalifold<T>(thread_pool: &mut Pool, cols: &Cols, seq_ids: &SeqIds, min_bpp: Prob, min_align_prob: Prob, produces_struct_profs: bool, output_dir_path: &Path, gamma: Prob, outputs_probs: bool, mix_weight: Prob, input_file_path: &Path, scoring_model: ScoringModel)
 where
   T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
 {
@@ -161,7 +160,7 @@ where
     let handler = scope.spawn(|_| {
       get_bpp_mat_alifold(input_file_path)
     });
-    let prob_mat_sets = if !is_posterior_model {consprob::<T>(thread_pool, ref_2_fasta_records, min_bpp, T::from_usize(offset_4_max_gap_num).unwrap(), produces_struct_profs, uses_contra_model)} else {locarnap_plus_pct(thread_pool, ref_2_fasta_records, output_dir_path)};
+    let prob_mat_sets = if !is_posterior_model {consprob::<T>(thread_pool, ref_2_fasta_records, min_bpp, min_align_prob, produces_struct_profs, uses_contra_model)} else {locarnap_plus_pct(thread_pool, ref_2_fasta_records, output_dir_path)};
     if outputs_probs {
       write_prob_mat_sets::<T>(output_dir_path, &prob_mat_sets, produces_struct_profs);
     }

@@ -26,7 +26,7 @@ $ # Saved figures will appear at the "../assets/images" directory.
 $ ./run_all.py
 ```
 
-# Docker Playground <img src="https://www.docker.com/sites/default/files/d8/styles/role_icon/public/2019-07/Moby-logo.png?itok=sYH_JEaJ" width="40">
+# Docker Playground <img src="https://github.com/heartsh/consprob/blob/master/assets/images_fixed/docker_logo.png" width="40">
 Replaying computational experiments in academic papers is the first but troublesome step to understand developed computational methods.
 I provide an Ubuntu-based computational environment implemented on [Docker](https://www.docker.com/) as a playground to try out ConsAlifold:
 ```bash

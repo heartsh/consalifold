@@ -151,11 +151,13 @@ where
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }
+  let mut align_feature_score_sets = AlignFeatureCountSets::new(0.);
+  align_feature_score_sets.transfer();
   scope(|scope| {
     let handler = scope.spawn(|_| {
       get_bpp_mat_alifold(input_file_path)
     });
-    let prob_mat_sets = if !is_posterior_model {consprob::<T>(thread_pool, ref_2_fasta_records, min_bpp, min_align_prob, false, uses_contra_model, false).0} else {locarnap_plus_pct(thread_pool, ref_2_fasta_records, output_dir_path)};
+    let prob_mat_sets = if !is_posterior_model {consprob::<T>(thread_pool, ref_2_fasta_records, min_bpp, min_align_prob, false, uses_contra_model, false, &align_feature_score_sets).0} else {locarnap_plus_pct(thread_pool, ref_2_fasta_records, output_dir_path)};
     write_prob_mat_sets::<T>(output_dir_path, &prob_mat_sets, false, &AlignProbMatSetsWithRnaIdPairs::<T>::default(), false);
     let bpp_mats = prob_mat_sets.iter().map(|x| x.bpp_mat.clone()).collect();
     let rnaalifold_bpp_mat = handler.join().unwrap();

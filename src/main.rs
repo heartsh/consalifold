@@ -79,7 +79,7 @@ fn main() {
     Ok(opt) => opt,
     Err(failure) => {
       print_program_usage(&program_name, &opts);
-      panic!(failure.to_string())
+      panic!("{}", failure.to_string())
     }
   };
   if matches.opt_present("h") {

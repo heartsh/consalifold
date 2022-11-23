@@ -20,7 +20,6 @@ const MAX_POW_OF_2: i32 = 10;
 const DEFAULT_GAMMA: Prob = NEG_INFINITY;
 enum ScoringModel {
   Turner,
-  Contra,
   Posterior,
 }
 const DEFAULT_SCORING_MODEL: &str = "turner";
@@ -67,7 +66,7 @@ fn main() {
     &format!("A mixture weight (Use {} by default)", DEFAULT_MIX_WEIGHT),
     "FLOAT",
   );
-  opts.optopt("m", "scoring_model", &format!("Choose a structural alignment scoring model from turner, contra, posterior (Use {} by default)", DEFAULT_SCORING_MODEL), "STR");
+  opts.optopt("m", "scoring_model", &format!("Choose a structural alignment scoring model from turner, posterior (Use {} by default)", DEFAULT_SCORING_MODEL), "STR");
   opts.optopt(
     "t",
     "num_of_threads",
@@ -94,8 +93,6 @@ fn main() {
     let scoring_model_str = matches.opt_str("m").unwrap();
     if scoring_model_str == "turner" {
       ScoringModel::Turner
-    } else if scoring_model_str == "contra" {
-      ScoringModel::Contra
     } else if scoring_model_str == "posterior" {
       ScoringModel::Posterior
     } else {
@@ -193,9 +190,8 @@ fn multi_threaded_consalifold<T>(
   input_file_path: &Path,
   scoring_model: ScoringModel,
 ) where
-  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
+  T: HashIndex,
 {
-  let use_contra_model = matches!(scoring_model, ScoringModel::Contra);
   let is_posterior_model = matches!(scoring_model, ScoringModel::Posterior);
   let mut sa = SeqAlign::<T>::new();
   sa.cols = cols.clone();
@@ -237,7 +233,6 @@ fn multi_threaded_consalifold<T>(
         min_bpp,
         min_align_prob,
         false,
-        use_contra_model,
         false,
         &align_feature_score_sets,
       )
@@ -293,7 +288,7 @@ fn locarnap_plus_pct<T>(
   output_dir_path: &Path,
 ) -> ProbMatSets<T>
 where
-  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Sync + Send,
+  T: HashIndex,
 {
   let num_of_fasta_records = fasta_records.len();
   for i in 0..num_of_fasta_records {
@@ -340,7 +335,7 @@ where
 
 fn exec_locarnap<T>(rna_id_pair: &RnaIdPair, output_dir_path: &Path) -> SparseProbMatPair<T>
 where
-  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Sync + Send,
+  T: HashIndex,
 {
   let mut bpp_mat_pair = (SparseProbMat::<T>::default(), SparseProbMat::<T>::default());
   let (seq_file_path_1, seq_file_path_2) = (
@@ -422,7 +417,7 @@ fn pct_of_bpp_mats_locarnap<T>(
   num_of_rnas: usize,
 ) -> PctStaProbMats<T>
 where
-  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord,
+  T: HashIndex,
 {
   let weight = 1. / (num_of_rnas - 1) as Prob;
   let mut pct_prob_mats = PctStaProbMats::new(upp_mat_len);
@@ -463,7 +458,7 @@ fn compute_and_write_mea_css<T>(
   output_file_path: &Path,
   fasta_records: &FastaRecords,
 ) where
-  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
+  T: HashIndex,
 {
   let mea_css = consalifold::<T>(mix_bpp_mat, sa, gamma);
   let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).unwrap());
@@ -502,7 +497,7 @@ fn compute_and_write_mea_css<T>(
 
 fn get_mea_css_str<T>(mea_css: &SparsePosMat<T>, sa_len: usize) -> MeaCssStr
 where
-  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Display + Sync + Send,
+  T: HashIndex,
 {
   let mut mea_css_str = vec![UNPAIRING_BASE; sa_len];
   for &(i, j) in mea_css {

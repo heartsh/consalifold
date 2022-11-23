@@ -23,7 +23,7 @@ pub fn consalifold<T>(
   gamma: Prob,
 ) -> SparsePosMat<T>
 where
-  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Sync + Send + Display,
+  T: HashIndex,
 {
   let sa_len = sa.cols.len();
   let sa_len = T::from_usize(sa_len).unwrap();
@@ -77,7 +77,7 @@ pub fn traceback_alifold<T>(
   col_pair: &PosPair<T>,
   mea_sets_with_cols: &MeaSetsWithPoss<T>,
 ) where
-  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Sync + Send + Display,
+  T: HashIndex,
 {
   let mut mea;
   let meas = get_meas(&mea_sets_with_cols, &col_pair);
@@ -120,7 +120,7 @@ pub fn update_mea_sets_with_cols<T>(
   meas: &SparseProbs<T>,
   right_bp_cols_with_cols: &ColSetsWithCols<T>,
 ) where
-  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Sync + Send + Display,
+  T: HashIndex,
 {
   let ref right_bp_cols = right_bp_cols_with_cols[&i];
   for (&j, &weight) in right_bp_cols {
@@ -140,7 +140,7 @@ pub fn update_mea_sets_with_cols<T>(
 
 pub fn get_meas<T>(mea_sets_with_cols: &MeaSetsWithPoss<T>, col_pair: &PosPair<T>) -> SparseProbs<T>
 where
-  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Sync + Send + Display,
+  T: HashIndex,
 {
   let (i, j) = *col_pair;
   let mut meas = SparseProbs::<T>::default();
@@ -172,7 +172,7 @@ where
 
 pub fn get_bpp_mat_alifold<T>(sa_file_path: &Path) -> SparseProbMat<T>
 where
-  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Sync + Send + Display,
+  T: HashIndex,
 {
   let sa_file_prefix = sa_file_path.file_stem().unwrap().to_str().unwrap();
   let arg = format!("--id-prefix={}", sa_file_prefix);
@@ -218,7 +218,7 @@ pub fn get_mix_bpp_mat<T>(
   mix_weight: Prob,
 ) -> SparseProbMat<T>
 where
-  T: Unsigned + PrimInt + Hash + FromPrimitive + Integer + Ord + Sync + Send + Display,
+  T: HashIndex,
 {
   let mut mix_bpp_mat = SparseProbMat::<T>::default();
   let sa_len = sa.cols.len();

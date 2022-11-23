@@ -66,7 +66,15 @@ fn main() {
     &format!("A mixture weight (Use {} by default)", DEFAULT_MIX_WEIGHT),
     "FLOAT",
   );
-  opts.optopt("m", "scoring_model", &format!("Choose a structural alignment scoring model from turner, posterior (Use {} by default)", DEFAULT_SCORING_MODEL), "STR");
+  opts.optopt(
+    "m",
+    "scoring_model",
+    &format!(
+      "Choose a structural alignment scoring model from turner, posterior (Use {} by default)",
+      DEFAULT_SCORING_MODEL
+    ),
+    "STR",
+  );
   opts.optopt(
     "t",
     "num_of_threads",

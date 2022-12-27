@@ -232,12 +232,14 @@ fn multi_threaded_consalifold<T>(
   }
   let mut align_feature_score_sets = AlignFeatureCountSets::new(0.);
   align_feature_score_sets.transfer();
+  let seqs = fasta_records.iter().map(|x| &x.seq[..]).collect();
+  let ref ref_2_seqs = seqs;
   scope(|scope| {
     let handler = scope.spawn(|_| get_bpp_mat_alifold(input_file_path));
     let prob_mat_sets = if !is_posterior_model {
       consprob::<T>(
         thread_pool,
-        ref_2_fasta_records,
+        ref_2_seqs,
         min_bpp,
         min_align_prob,
         false,

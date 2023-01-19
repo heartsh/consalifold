@@ -1,8 +1,7 @@
 *
 !**/
 target
-!trna.fa
-!sampled_trnas.fa
+!test_seqs.fa
 !*.rs
 !*.py
 !*.tar.bz2
@@ -11,4 +10,4 @@ target
 !.gitignore
 !README.md
 !assets/rfam_seed_stas_v14.3.sth
-!capr_sampled_trnas.dat
+!capr_test_seqs.dat

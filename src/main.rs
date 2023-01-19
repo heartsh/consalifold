@@ -235,7 +235,7 @@ fn multi_threaded_consalifold<T>(
   let seqs = fasta_records.iter().map(|x| &x.seq[..]).collect();
   let ref ref_2_seqs = seqs;
   scope(|scope| {
-    let handler = scope.spawn(|_| get_bpp_mat_alifold(input_file_path));
+    let handler = scope.spawn(|_| get_bpp_mat_alifold(input_file_path, output_dir_path));
     let prob_mat_sets = if !is_posterior_model {
       consprob::<T>(
         thread_pool,

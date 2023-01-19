@@ -170,7 +170,7 @@ where
   meas
 }
 
-pub fn get_bpp_mat_alifold<T>(sa_file_path: &Path) -> SparseProbMat<T>
+pub fn get_bpp_mat_alifold<T>(sa_file_path: &Path, output_dir_path: &Path,) -> SparseProbMat<T>
 where
   T: HashIndex,
 {
@@ -183,10 +183,11 @@ where
     "--noPS",
     "--noDP",
   ];
+  let _ = env::set_current_dir(&output_dir_path);
   let _ = run_command("RNAalifold", &args, "Failed to run RNAalifold");
   let mut bpp_mat_alifold = SparseProbMat::<T>::default();
   let cwd = env::current_dir().unwrap();
-  let output_file_path = cwd.join(String::from(sa_file_prefix) + "_0001_ali.out");
+  let output_file_path = output_dir_path.join(String::from(sa_file_prefix) + "_0001_ali.out");
   let output_file = BufReader::new(File::open(output_file_path.clone()).unwrap());
   for (k, line) in output_file.lines().enumerate() {
     if k == 0 {

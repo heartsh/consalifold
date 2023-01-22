@@ -1,0 +1,3 @@
+[submodule "rna-playground"]
+	path = rna-playground
+	url = git@github.com:heartsh/rna-playground

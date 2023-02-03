@@ -13,6 +13,13 @@ num_cpus = "1.0"
 crossbeam = "0.8"
 consprob = "0.1"
 
+[dev-dependencies]
+criterion = "0.3"
+
 [lib]
 path = "src/lib.rs"
 name = "consalifold"
+
+[[bench]]
+name = "benches"
+harness = false

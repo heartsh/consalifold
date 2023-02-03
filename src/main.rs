@@ -15,8 +15,6 @@ use std::process::{Command, Output};
 type MeaCssStr = MeaSsStr;
 
 const DEFAULT_MIX_WEIGHT: Prob = 0.5;
-const MIN_POW_OF_2: i32 = -4;
-const MAX_POW_OF_2: i32 = 10;
 const DEFAULT_GAMMA: Prob = NEG_INFINITY;
 enum ScoringModel {
   Turner,

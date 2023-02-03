@@ -2,8 +2,11 @@
 !**/
 target
 !test_seqs.fa
+!test_seqs.aln
 !*.rs
 !*.py
+!*.sh
+!*.yml
 !*.tar.bz2
 !Cargo.toml
 !rustfmt.toml

@@ -16,6 +16,9 @@ pub type SparsePosMat<T> = HashSet<PosPair<T>>;
 pub type SparseProbMats<T> = Vec<SparseProbMat<T>>;
 
 pub const GAP: Char = '-' as Char;
+pub const EXAMPLE_CLUSTAL_FILE_PATH: &str = "assets/test_seqs.aln";
+pub const MIN_POW_OF_2: i32 = -4;
+pub const MAX_POW_OF_2: i32 = 10;
 
 pub fn consalifold<T>(
   mix_bpp_mat: &SparseProbMat<T>,
@@ -170,12 +173,14 @@ where
   meas
 }
 
-pub fn get_bpp_mat_alifold<T>(sa_file_path: &Path, output_dir_path: &Path,) -> SparseProbMat<T>
+pub fn get_bpp_mat_alifold<T>(sa_file_path: &Path, output_dir_path: &Path) -> SparseProbMat<T>
 where
   T: HashIndex,
 {
+  let cwd = env::current_dir().unwrap();
+  let sa_file_path = cwd.join(sa_file_path);
   let sa_file_prefix = sa_file_path.file_stem().unwrap().to_str().unwrap();
-  let arg = format!("--id-prefix={}", sa_file_prefix);
+  let arg = format!("--id-prefix={sa_file_prefix}");
   let args = vec![
     "-p",
     sa_file_path.to_str().unwrap(),
@@ -183,10 +188,10 @@ where
     "--noPS",
     "--noDP",
   ];
-  let _ = env::set_current_dir(&output_dir_path);
+  let _ = env::set_current_dir(output_dir_path);
   let _ = run_command("RNAalifold", &args, "Failed to run RNAalifold");
+  let _ = env::set_current_dir(cwd);
   let mut bpp_mat_alifold = SparseProbMat::<T>::default();
-  let cwd = env::current_dir().unwrap();
   let output_file_path = output_dir_path.join(String::from(sa_file_prefix) + "_0001_ali.out");
   let output_file = BufReader::new(File::open(output_file_path.clone()).unwrap());
   for (k, line) in output_file.lines().enumerate() {
@@ -194,12 +199,12 @@ where
       continue;
     }
     let line = line.unwrap();
-    if !line.starts_with(" ") {
+    if !line.starts_with(' ') {
       continue;
     }
     let substrings: Vec<&str> = line.split_whitespace().collect();
-    let i = T::from_usize(substrings[0].parse().unwrap()).unwrap() - T::one();
-    let j = T::from_usize(substrings[1].parse().unwrap()).unwrap() - T::one();
+    let i = T::from_usize(substrings[0].parse().unwrap()).unwrap();
+    let j = T::from_usize(substrings[1].parse().unwrap()).unwrap();
     let mut bpp = String::from(substrings[3]);
     bpp.pop();
     let bpp = 0.01 * bpp.parse::<Prob>().unwrap();

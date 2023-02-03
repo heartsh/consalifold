@@ -55,18 +55,15 @@ where
     rightmost_bp_cols_with_cols.insert(i, max);
   }
   for i in range_inclusive(T::one(), sa_len).rev() {
-    match rightmost_bp_cols_with_cols.get(&i) {
-      Some(&j) => {
-        let col_pair = (i, j);
-        let meas = get_meas(&mea_sets_with_cols, &col_pair);
-        update_mea_sets_with_cols(
-          &mut mea_sets_with_cols,
-          col_pair.0,
-          &meas,
-          &right_bp_cols_with_cols,
-        );
-      }
-      None => {}
+    if let Some(&j) = rightmost_bp_cols_with_cols.get(&i) {
+      let col_pair = (i, j);
+      let meas = get_meas(&mea_sets_with_cols, &col_pair);
+      update_mea_sets_with_cols(
+        &mut mea_sets_with_cols,
+        col_pair.0,
+        &meas,
+        &right_bp_cols_with_cols,
+      );
     }
   }
   let pseudo_col_pair = (T::zero(), sa_len + T::one());
@@ -93,26 +90,23 @@ pub fn traceback_alifold<T>(
       k = k - T::one();
       continue;
     }
-    match mea_sets_with_cols.get(&k) {
-      Some(meas_4_bps) => {
-        for (&col_left, mea_4_bp) in meas_4_bps {
-          if i >= col_left {
-            continue;
-          }
-          let col_4_bp = col_left - T::one();
-          let ea = meas[&col_4_bp];
-          let ea = ea + mea_4_bp;
-          if ea == mea {
-            let col_pair = (col_left, k);
-            traceback_alifold(bp_col_pairs, &col_pair, mea_sets_with_cols);
-            let col_pair = (col_left - T::one(), k - T::one());
-            bp_col_pairs.insert(col_pair);
-            k = col_4_bp;
-            break;
-          }
+    if let Some(meas_4_bps) = mea_sets_with_cols.get(&k) {
+      for (&col_left, mea_4_bp) in meas_4_bps {
+        if i >= col_left {
+          continue;
+        }
+        let col_4_bp = col_left - T::one();
+        let ea = meas[&col_4_bp];
+        let ea = ea + mea_4_bp;
+        if ea == mea {
+          let col_pair = (col_left, k);
+          traceback_alifold(bp_col_pairs, &col_pair, mea_sets_with_cols);
+          let col_pair = (col_left - T::one(), k - T::one());
+          bp_col_pairs.insert(col_pair);
+          k = col_4_bp;
+          break;
         }
       }
-      None => {}
     }
   }
 }
@@ -153,20 +147,17 @@ where
       continue;
     }
     let mut mea = meas[&(k - T::one())];
-    match mea_sets_with_cols.get(&k) {
-      Some(meas_4_bps) => {
-        for (&l, mea_4_bp) in meas_4_bps {
-          if i >= l {
-            continue;
-          }
-          let ea = meas[&(l - T::one())];
-          let ea = ea + mea_4_bp;
-          if ea > mea {
-            mea = ea;
-          }
+    if let Some(meas_4_bps) = mea_sets_with_cols.get(&k) {
+      for (&l, mea_4_bp) in meas_4_bps {
+        if i >= l {
+          continue;
+        }
+        let ea = meas[&(l - T::one())];
+        let ea = ea + mea_4_bp;
+        if ea > mea {
+          mea = ea;
         }
       }
-      None => {}
     }
     meas.insert(k, mea);
   }
@@ -247,11 +238,8 @@ where
         .collect();
       let mut bpp_sum = 0.;
       for (pos_map_pair, bpp_mat) in pos_map_pairs.iter().zip(bpp_mats.iter()) {
-        match bpp_mat.get(pos_map_pair) {
-          Some(&bpp) => {
-            bpp_sum += bpp;
-          }
-          None => {}
+        if let Some(&bpp) = bpp_mat.get(pos_map_pair) {
+          bpp_sum += bpp;
         }
       }
       let bpp_avg = bpp_sum / num_of_rnas as Prob;
@@ -271,8 +259,7 @@ pub fn revert_char(c: Base) -> u8 {
     U => BIG_U,
     PSEUDO_BASE => GAP,
     _ => {
-      assert!(false);
-      GAP
+      panic!();
     }
   }
 }

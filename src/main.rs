@@ -13,6 +13,18 @@ use std::path::Path;
 use std::process::{Command, Output};
 
 type MeaCssStr = MeaSsStr;
+type Inputs4MultiThreadedConsalifold<'a> = (
+  &'a mut Pool,
+  &'a Cols,
+  &'a SeqIds,
+  Prob,
+  Prob,
+  &'a Path,
+  Prob,
+  Prob,
+  &'a Path,
+  ScoringModel,
+);
 
 const DEFAULT_MIX_WEIGHT: Prob = 0.5;
 const DEFAULT_GAMMA: Prob = NEG_INFINITY;
@@ -95,8 +107,7 @@ fn main() {
     } else if scoring_model_str == "posterior" {
       ScoringModel::Posterior
     } else {
-      assert!(false);
-      ScoringModel::Turner
+      panic!();
     }
   } else {
     ScoringModel::Turner
@@ -131,14 +142,8 @@ fn main() {
     num_cpus::get() as NumOfThreads
   };
   let extension = input_file_path.extension().unwrap().to_str().unwrap();
-  let is_stockholm = match extension {
-    "sto" | "stk" | "sth" => true,
-    _ => false,
-  };
-  let is_fasta = match extension {
-    "fasta" | "fna" | "ffn" | "faa" | "frn" | "fa" => true,
-    _ => false,
-  };
+  let is_stockholm = matches!(extension, "sto" | "stk" | "sth");
+  let is_fasta = matches!(extension, "fasta" | "fna" | "ffn" | "faa" | "frn" | "fa");
   let (cols, seq_ids) = if is_stockholm {
     read_sa_from_stockholm_file(input_file_path)
   } else if is_fasta {
@@ -149,7 +154,7 @@ fn main() {
   let sa_len = cols.len();
   let mut thread_pool = Pool::new(num_of_threads);
   if sa_len + 2 <= u8::MAX as usize {
-    multi_threaded_consalifold::<u8>(
+    multi_threaded_consalifold::<u8>((
       &mut thread_pool,
       &cols,
       &seq_ids,
@@ -160,9 +165,9 @@ fn main() {
       mix_weight,
       input_file_path,
       scoring_model,
-    );
+    ));
   } else {
-    multi_threaded_consalifold::<u16>(
+    multi_threaded_consalifold::<u16>((
       &mut thread_pool,
       &cols,
       &seq_ids,
@@ -173,24 +178,26 @@ fn main() {
       mix_weight,
       input_file_path,
       scoring_model,
-    );
+    ));
   }
 }
 
-fn multi_threaded_consalifold<T>(
-  thread_pool: &mut Pool,
-  cols: &Cols,
-  seq_ids: &SeqIds,
-  min_bpp: Prob,
-  min_align_prob: Prob,
-  output_dir_path: &Path,
-  gamma: Prob,
-  mix_weight: Prob,
-  input_file_path: &Path,
-  scoring_model: ScoringModel,
-) where
+fn multi_threaded_consalifold<T>(inputs: Inputs4MultiThreadedConsalifold)
+where
   T: HashIndex,
 {
+  let (
+    thread_pool,
+    cols,
+    seq_ids,
+    min_bpp,
+    min_align_prob,
+    output_dir_path,
+    gamma,
+    mix_weight,
+    input_file_path,
+    scoring_model,
+  ) = inputs;
   let is_posterior_model = matches!(scoring_model, ScoringModel::Posterior);
   let mut sa = SeqAlign::<T>::new();
   sa.cols = cols.clone();
@@ -292,10 +299,10 @@ where
   T: HashIndex,
 {
   let num_of_fasta_records = fasta_records.len();
-  for i in 0..num_of_fasta_records {
+  for (i, fasta_record) in fasta_records.iter().enumerate() {
     let output_file_path = output_dir_path.join(&format!("locarnap_seq_{i}.fa"));
     let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).unwrap());
-    let seq = &fasta_records[i].seq;
+    let seq = &fasta_record.seq;
     let seq_len = seq.len();
     let buf_4_writer_2_output_file = format!(">{}\n{}", i, revert(&seq[1..seq_len - 1]));
     let _ = writer_2_output_file.write_all(buf_4_writer_2_output_file.as_bytes());
@@ -388,7 +395,7 @@ where
   bpp_mat_pair
 }
 
-pub fn revert<'a>(seq: &'a [usize]) -> String {
+pub fn revert(seq: &[usize]) -> String {
   let mut new_seq = Vec::<u8>::new();
   for &c in seq {
     let new_base = match c {
@@ -397,8 +404,7 @@ pub fn revert<'a>(seq: &'a [usize]) -> String {
       G => BIG_G,
       U => BIG_U,
       _ => {
-        assert!(false);
-        U as u8
+        panic!();
       }
     };
     new_seq.push(new_base);
@@ -468,9 +474,8 @@ fn compute_and_write_mea_css<T>(
   let descriptor = "#=GC SS_cons";
   let descriptor_len = descriptor.len();
   let max_seq_id_len = max_seq_id_len.max(descriptor_len);
-  let num_of_rnas = sa.cols[0].len();
-  for rna_id in 0..num_of_rnas {
-    let seq_id = &fasta_records[rna_id].fasta_id;
+  for (rna_id, fasta_record) in fasta_records.iter().enumerate() {
+    let seq_id = &fasta_record.fasta_id;
     buf_4_writer_2_output_file.push_str(seq_id);
     let mut stockholm_row = vec![b' '; max_seq_id_len - seq_id.len() + 2];
     let mut sa_row = (0..sa_len)

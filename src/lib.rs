@@ -15,7 +15,7 @@ pub type ColsWithCols<T> = HashMap<T, T>;
 pub type SparsePosMat<T> = HashSet<PosPair<T>>;
 pub type SparseProbMats<T> = Vec<SparseProbMat<T>>;
 
-pub const GAP: Char = '-' as Char;
+pub const GAP: Char = b'-';
 pub const EXAMPLE_CLUSTAL_FILE_PATH: &str = "assets/test_seqs.aln";
 pub const MIN_POW_OF_2: i32 = -4;
 pub const MAX_POW_OF_2: i32 = 10;
@@ -51,7 +51,7 @@ where
   }
   let mut rightmost_bp_cols_with_cols = ColsWithCols::<T>::default();
   for (&i, cols) in &right_bp_cols_with_cols {
-    let max = cols.keys().map(|&x| x).max().unwrap();
+    let max = cols.keys().copied().max().unwrap();
     rightmost_bp_cols_with_cols.insert(i, max);
   }
   for i in range_inclusive(T::one(), sa_len).rev() {
@@ -83,7 +83,7 @@ pub fn traceback_alifold<T>(
   T: HashIndex,
 {
   let mut mea;
-  let meas = get_meas(&mea_sets_with_cols, &col_pair);
+  let meas = get_meas(mea_sets_with_cols, col_pair);
   let (i, j) = *col_pair;
   let mut k = j - T::one();
   while k > i {
@@ -96,7 +96,7 @@ pub fn traceback_alifold<T>(
     match mea_sets_with_cols.get(&k) {
       Some(meas_4_bps) => {
         for (&col_left, mea_4_bp) in meas_4_bps {
-          if !(i < col_left) {
+          if i >= col_left {
             continue;
           }
           let col_4_bp = col_left - T::one();
@@ -125,7 +125,7 @@ pub fn update_mea_sets_with_cols<T>(
 ) where
   T: HashIndex,
 {
-  let ref right_bp_cols = right_bp_cols_with_cols[&i];
+  let right_bp_cols = &right_bp_cols_with_cols[&i];
   for (&j, &weight) in right_bp_cols {
     let mea_4_bp = weight + meas[&(j - T::one())];
     match mea_sets_with_cols.get_mut(&j) {
@@ -156,7 +156,7 @@ where
     match mea_sets_with_cols.get(&k) {
       Some(meas_4_bps) => {
         for (&l, mea_4_bp) in meas_4_bps {
-          if !(i < l) {
+          if i >= l {
             continue;
           }
           let ea = meas[&(l - T::one())];
@@ -230,7 +230,7 @@ where
   let sa_len = sa.cols.len();
   let num_of_rnas = sa.cols[0].len();
   for i in 0..sa_len {
-    let ref pos_maps = sa.pos_map_sets[i];
+    let pos_maps = &sa.pos_map_sets[i];
     let short_i = T::from_usize(i).unwrap();
     for j in i + 1..sa_len {
       let short_j = T::from_usize(j).unwrap();
@@ -239,7 +239,7 @@ where
         Some(&bpp_alifold) => bpp_alifold,
         None => 0.,
       };
-      let ref pos_maps_2 = sa.pos_map_sets[j];
+      let pos_maps_2 = &sa.pos_map_sets[j];
       let pos_map_pairs: Vec<(T, T)> = pos_maps
         .iter()
         .zip(pos_maps_2.iter())

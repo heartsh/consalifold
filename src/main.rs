@@ -276,8 +276,8 @@ where
       let z = &align;
       let a = &fasta_records;
       for b in MIN_LOG_HYPERPARAM..MAX_LOG_HYPERPARAM + 1 {
-        let b = (2. as Prob).powi(b);
-        let output_file_path = output_dir_path.join(&format!("hyperparam={b}.sth"));
+        let b = (2. as Score).powi(b);
+        let output_file_path = output_dir_path.join(format!("hyperparam={b}.sth"));
         let b = b + 1.;
         x.execute(move || {
           consalifold_wrapped::<T>(y, z, b, &output_file_path, a);
@@ -300,12 +300,12 @@ where
 {
   let num_fasta_records = fasta_records.len();
   for (i, fasta_record) in fasta_records.iter().enumerate() {
-    let output_file_path = output_dir_path.join(&format!("locarnap_seq{i}.fa"));
-    let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).unwrap());
+    let output_file_path = output_dir_path.join(format!("locarnap_seq{i}.fa"));
+    let mut writer = BufWriter::new(File::create(output_file_path).unwrap());
     let seq = &fasta_record.seq;
     let seq_len = seq.len();
-    let buf_4_writer_2_output_file = format!(">{}\n{}", i, seq2str(&seq[1..seq_len - 1]));
-    let _ = writer_2_output_file.write_all(buf_4_writer_2_output_file.as_bytes());
+    let buf = format!(">{}\n{}", i, seq2str(&seq[1..seq_len - 1]));
+    let _ = writer.write_all(buf.as_bytes());
   }
   let mut alignfold_probs_hashed_ids = AlignfoldProbsHashedIds::<T>::default();
   for x in 0..num_fasta_records {
@@ -326,7 +326,7 @@ where
     let y = &alignfold_probs_hashed_ids;
     for (z, a) in alignfold_prob_mats_avg.iter_mut().enumerate() {
       let b = fasta_records[z].seq.len();
-      let c = output_dir_path.join(&format!("locarnap_seq{z}.fa"));
+      let c = output_dir_path.join(format!("locarnap_seq{z}.fa"));
       x.execute(move || {
         *a = postprocess_locarnap::<T>(y, z, b, num_fasta_records);
         let _ = remove_file(c);
@@ -342,8 +342,8 @@ where
 {
   let mut basepair_probs_pair = (SparseProbMat::<T>::default(), SparseProbMat::<T>::default());
   let (seq_file_path, seq_file_path2) = (
-    output_dir_path.join(&format!("locarnap_seq{}.fa", rna_id_pair.0)),
-    output_dir_path.join(&format!("locarnap_seq{}.fa", rna_id_pair.1)),
+    output_dir_path.join(format!("locarnap_seq{}.fa", rna_id_pair.0)),
+    output_dir_path.join(format!("locarnap_seq{}.fa", rna_id_pair.1)),
   );
   let output_file_path = output_dir_path.join(format!(
     "locarnap_seq{}_seq{}.dat",

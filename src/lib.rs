@@ -68,11 +68,8 @@ where
   basepairs
 }
 
-pub fn traceback<T>(
-  x: &mut SparsePosMat<T>,
-  y: &PosPair<T>,
-  z: &ScoresHashedPoss<T>,
-) where
+pub fn traceback<T>(x: &mut SparsePosMat<T>, y: &PosPair<T>, z: &ScoresHashedPoss<T>)
+where
   T: HashIndex,
 {
   let mut a;
@@ -159,7 +156,10 @@ where
   z
 }
 
-pub fn get_basepair_probs_alifold<T>(align_file_path: &Path, output_dir_path: &Path) -> SparseProbMat<T>
+pub fn get_basepair_probs_alifold<T>(
+  align_file_path: &Path,
+  output_dir_path: &Path,
+) -> SparseProbMat<T>
 where
   T: HashIndex,
 {
@@ -240,7 +240,8 @@ where
         }
       }
       let basepair_prob_avg = basepair_prob_sum / num_rnas as Prob;
-      let basepair_prob_mix = mix_weight * basepair_prob_avg + (1. - mix_weight) * basepair_prob_alifold;
+      let basepair_prob_mix =
+        mix_weight * basepair_prob_avg + (1. - mix_weight) * basepair_prob_alifold;
       let pos_pair = (pos_pair.0 + T::one(), pos_pair.1 + T::one());
       basepair_probs_mix.insert(pos_pair, basepair_prob_mix);
     }

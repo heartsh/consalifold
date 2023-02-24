@@ -263,7 +263,13 @@ where
   if hyperparam != NEG_INFINITY {
     let output_file_path = output_dir_path.join(format!("hyperparam={hyperparam}.sth"));
     let hyperparam = hyperparam + 1.;
-    consalifold_wrapped(&basepair_probs_mix, &align, hyperparam, &output_file_path, &fasta_records);
+    consalifold_wrapped(
+      &basepair_probs_mix,
+      &align,
+      hyperparam,
+      &output_file_path,
+      &fasta_records,
+    );
   } else {
     thread_pool.scoped(|x| {
       let y = &basepair_probs_mix;
@@ -274,13 +280,7 @@ where
         let output_file_path = output_dir_path.join(&format!("hyperparam={b}.sth"));
         let b = b + 1.;
         x.execute(move || {
-          consalifold_wrapped::<T>(
-            y,
-            z,
-            b,
-            &output_file_path,
-            a,
-          );
+          consalifold_wrapped::<T>(y, z, b, &output_file_path, a);
         });
       }
     });
@@ -328,12 +328,7 @@ where
       let b = fasta_records[z].seq.len();
       let c = output_dir_path.join(&format!("locarnap_seq{z}.fa"));
       x.execute(move || {
-        *a = postprocess_locarnap::<T>(
-          y,
-          z,
-          b,
-          num_fasta_records,
-        );
+        *a = postprocess_locarnap::<T>(y, z, b, num_fasta_records);
         let _ = remove_file(c);
       });
     }
@@ -427,11 +422,7 @@ where
     if x == rna_id {
       continue;
     }
-    let y = if rna_id < x {
-      (rna_id, x)
-    } else {
-      (x, rna_id)
-    };
+    let y = if rna_id < x { (rna_id, x) } else { (x, rna_id) };
     let y = &alignfold_probs_hashed_ids[&y];
     let y = if rna_id < x {
       &y.basepair_probs_pair.0

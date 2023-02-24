@@ -11,8 +11,7 @@ license = "MIT"
 [dependencies]
 num_cpus = "1.0"
 crossbeam = "0.8"
-# consprob = "0.1"
-consprob = {path = "../consprob"}
+consprob = "0.1"
 
 [dev-dependencies]
 criterion = "0.3"

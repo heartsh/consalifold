@@ -31,12 +31,12 @@ def main():
   seq = seqs[0]
   seq_lens = [len(seq) for seq in seqs]
   seq_len = len(seq)
-  upp_mat_4_hl_turner = utils.get_upp_mats(asset_dir_path + "/test_seqs/upp_mats_on_hl.dat", seq_lens)[0]
-  bpp_mat_2_turner = utils.get_upp_mats(asset_dir_path + "/test_seqs/bpp_mats_2.dat", seq_lens)[0]
-  upp_mat_4_bl_turner = utils.get_upp_mats(asset_dir_path + "/test_seqs/upp_mats_on_bl.dat", seq_lens)[0]
-  upp_mat_4_il_turner = utils.get_upp_mats(asset_dir_path + "/test_seqs/upp_mats_on_il.dat", seq_lens)[0]
-  upp_mat_4_ml_turner = utils.get_upp_mats(asset_dir_path + "/test_seqs/upp_mats_on_ml.dat", seq_lens)[0]
-  upp_mat_4_el_turner = utils.get_upp_mats(asset_dir_path + "/test_seqs/upp_mats_on_el.dat", seq_lens)[0]
+  upp_mat_4_hl_turner = utils.get_upp_mats(asset_dir_path + "/test_seqs/unpair_probs_hairpin.dat", seq_lens)[0]
+  bpp_mat_2_turner = utils.get_upp_mats(asset_dir_path + "/test_seqs/basepair_probs2.dat", seq_lens)[0]
+  upp_mat_4_bl_turner = utils.get_upp_mats(asset_dir_path + "/test_seqs/unpair_probs_bulge.dat", seq_lens)[0]
+  upp_mat_4_il_turner = utils.get_upp_mats(asset_dir_path + "/test_seqs/unpair_probs_interior.dat", seq_lens)[0]
+  upp_mat_4_ml_turner = utils.get_upp_mats(asset_dir_path + "/test_seqs/unpair_probs_multibranch.dat", seq_lens)[0]
+  upp_mat_4_el_turner = utils.get_upp_mats(asset_dir_path + "/test_seqs/unpair_probs_external.dat", seq_lens)[0]
   pyplot.figure(figsize=(7, 7))
   pyplot.stackplot(range(seq_len), upp_mat_4_hl_turner, bpp_mat_2_turner, upp_mat_4_bl_turner, upp_mat_4_il_turner, upp_mat_4_ml_turner, upp_mat_4_el_turner)
   legends = ["Unpairing in hairpin loop", "Base-pairing", "Unpairing in bulge loop", "Unpairing in interior loop", "Unpairing in multi-loop", "Unpairing in external loop"]

@@ -10,30 +10,28 @@ use std::fs::remove_file;
 use std::fs::File;
 use std::io::{BufRead, BufWriter};
 use std::path::Path;
-use std::process::{Command, Output};
 
-type MeaCssStr = MeaSsStr;
-type Inputs4MultiThreadedConsalifold<'a> = (
+type InputsConsalifoldMultithreaded<'a> = (
   &'a mut Pool,
   &'a Cols,
   &'a SeqIds,
   Prob,
   Prob,
   &'a Path,
-  Prob,
+  Score,
   Prob,
   &'a Path,
-  ScoringModel,
+  ScoreModel,
 );
 
 const DEFAULT_MIX_WEIGHT: Prob = 0.5;
-const DEFAULT_GAMMA: Prob = NEG_INFINITY;
-enum ScoringModel {
+const DEFAULT_HYPERPARAM: Prob = NEG_INFINITY;
+enum ScoreModel {
   Turner,
   Posterior,
 }
-const DEFAULT_SCORING_MODEL: &str = "turner";
-const README_CONTENTS_2: &str = "# gamma=x.sth\nThis file type contains a predicted consensus secondary structure in Stockholm format, and this predicted consensus structure is under the prediction accuracy control parameter \"x.\"\n\n";
+const DEFAULT_SCORE_MODEL: &str = "turner";
+const README_CONTENTS_ALIFOLD: &str = "# hyperparam=x.sth\nThis file type contains a predicted consensus secondary structure in Stockholm format.\n\n";
 
 fn main() {
   let args = env::args().collect::<Vec<Arg>>();
@@ -42,26 +40,26 @@ fn main() {
   opts.reqopt(
     "i",
     "input_file_path",
-    "An input CLUSTAL/FASTA/STOCKHOLM file path containing the sequence alignment of RNA sequences",
+    "An input CLUSTAL/FASTA/STOCKHOLM file path containing an RNA alignment",
     "STR",
   );
   opts.reqopt("o", "output_dir_path", "An output directory path", "STR");
   opts.optopt(
     "",
-    "min_base_pair_prob",
-    &format!("A minimum base-pairing probability (Use {DEFAULT_MIN_BPP} by default)"),
+    "min_basepair_prob",
+    &format!("A minimum base-pairing probability (Use {DEFAULT_MIN_BASEPAIR_PROB} by default)"),
     "FLOAT",
   );
   opts.optopt(
     "",
-    "min_align_prob",
-    &format!("A minimum aligning probability (Use {DEFAULT_MIN_ALIGN_PROB} by default)"),
+    "min_match_prob",
+    &format!("A minimum matching probability (Use {DEFAULT_MIN_MATCH_PROB} by default)"),
     "FLOAT",
   );
   opts.optopt(
-    "g",
-    "gamma",
-    "A specific gamma parameter rather than a range of gamma parameters",
+    "p",
+    "hyperparam",
+    "A specific hyper-parameter rather than a range of hyper-parameters",
     "FLOAT",
   );
   opts.optopt(
@@ -72,15 +70,15 @@ fn main() {
   );
   opts.optopt(
     "m",
-    "scoring_model",
+    "score_model",
     &format!(
-      "Choose a structural alignment scoring model from turner, posterior (Use {DEFAULT_SCORING_MODEL} by default)"
+      "Choose a structural alignment scoring model from turner, posterior (Use {DEFAULT_SCORE_MODEL} by default)"
     ),
     "STR",
   );
   opts.optopt(
     "t",
-    "num_of_threads",
+    "num_threads",
     "The number of threads in multithreading (Use all the threads of this computer by default)",
     "UINT",
   );
@@ -100,89 +98,89 @@ fn main() {
   let input_file_path = Path::new(&input_file_path);
   let output_dir_path = matches.opt_str("o").unwrap();
   let output_dir_path = Path::new(&output_dir_path);
-  let scoring_model = if matches.opt_present("m") {
-    let scoring_model_str = matches.opt_str("m").unwrap();
-    if scoring_model_str == "turner" {
-      ScoringModel::Turner
-    } else if scoring_model_str == "posterior" {
-      ScoringModel::Posterior
+  let score_model = if matches.opt_present("m") {
+    let x = matches.opt_str("m").unwrap();
+    if x == "turner" {
+      ScoreModel::Turner
+    } else if x == "posterior" {
+      ScoreModel::Posterior
     } else {
       panic!();
     }
   } else {
-    ScoringModel::Turner
+    ScoreModel::Turner
   };
-  let min_bpp = if matches.opt_present("min_base_pair_prob") {
+  let min_basepair_prob = if matches.opt_present("min_basepair_prob") {
     matches
-      .opt_str("min_base_pair_prob")
+      .opt_str("min_basepair_prob")
       .unwrap()
       .parse()
       .unwrap()
   } else {
-    DEFAULT_MIN_BPP
+    DEFAULT_MIN_BASEPAIR_PROB
   };
-  let min_align_prob = if matches.opt_present("min_align_prob") {
-    matches.opt_str("min_align_prob").unwrap().parse().unwrap()
+  let min_match_prob = if matches.opt_present("min_match_prob") {
+    matches.opt_str("min_match_prob").unwrap().parse().unwrap()
   } else {
-    DEFAULT_MIN_ALIGN_PROB
+    DEFAULT_MIN_MATCH_PROB
   };
-  let gamma = if matches.opt_present("gamma") {
-    matches.opt_str("gamma").unwrap().parse().unwrap()
+  let hyperparam = if matches.opt_present("hyperparam") {
+    matches.opt_str("hyperparam").unwrap().parse().unwrap()
   } else {
-    DEFAULT_GAMMA
+    DEFAULT_HYPERPARAM
   };
   let mix_weight = if matches.opt_present("mix_weight") {
     matches.opt_str("mix_weight").unwrap().parse().unwrap()
   } else {
     DEFAULT_MIX_WEIGHT
   };
-  let num_of_threads = if matches.opt_present("t") {
+  let num_threads = if matches.opt_present("t") {
     matches.opt_str("t").unwrap().parse().unwrap()
   } else {
-    num_cpus::get() as NumOfThreads
+    num_cpus::get() as NumThreads
   };
   let extension = input_file_path.extension().unwrap().to_str().unwrap();
-  let is_stockholm = matches!(extension, "sto" | "stk" | "sth");
-  let is_fasta = matches!(extension, "fasta" | "fna" | "ffn" | "faa" | "frn" | "fa");
-  let (cols, seq_ids) = if is_stockholm {
-    read_sa_from_stockholm_file(input_file_path)
-  } else if is_fasta {
-    read_sa_from_fasta_file(input_file_path)
+  let matches_stockholm = matches!(extension, "sto" | "stk" | "sth");
+  let matches_fasta = matches!(extension, "fasta" | "fna" | "ffn" | "faa" | "frn" | "fa");
+  let (cols, seq_ids) = if matches_stockholm {
+    read_align_stockholm(input_file_path)
+  } else if matches_fasta {
+    read_align_fasta(input_file_path)
   } else {
-    read_sa_from_clustal_file(input_file_path)
+    read_align_clustal(input_file_path)
   };
-  let sa_len = cols.len();
-  let mut thread_pool = Pool::new(num_of_threads);
-  if sa_len + 2 <= u8::MAX as usize {
-    multi_threaded_consalifold::<u8>((
+  let align_len = cols.len();
+  let mut thread_pool = Pool::new(num_threads);
+  if align_len + 2 <= u8::MAX as usize {
+    consalifold_multithreaded::<u8>((
       &mut thread_pool,
       &cols,
       &seq_ids,
-      min_bpp,
-      min_align_prob,
+      min_basepair_prob,
+      min_match_prob,
       output_dir_path,
-      gamma,
+      hyperparam,
       mix_weight,
       input_file_path,
-      scoring_model,
+      score_model,
     ));
   } else {
-    multi_threaded_consalifold::<u16>((
+    consalifold_multithreaded::<u16>((
       &mut thread_pool,
       &cols,
       &seq_ids,
-      min_bpp,
-      min_align_prob,
+      min_basepair_prob,
+      min_match_prob,
       output_dir_path,
-      gamma,
+      hyperparam,
       mix_weight,
       input_file_path,
-      scoring_model,
+      score_model,
     ));
   }
 }
 
-fn multi_threaded_consalifold<T>(inputs: Inputs4MultiThreadedConsalifold)
+fn consalifold_multithreaded<T>(inputs: InputsConsalifoldMultithreaded)
 where
   T: HashIndex,
 {
@@ -190,168 +188,170 @@ where
     thread_pool,
     cols,
     seq_ids,
-    min_bpp,
-    min_align_prob,
+    min_basepair_prob,
+    min_match_prob,
     output_dir_path,
-    gamma,
+    hyperparam,
     mix_weight,
     input_file_path,
-    scoring_model,
+    score_model,
   ) = inputs;
-  let is_posterior_model = matches!(scoring_model, ScoringModel::Posterior);
-  let mut sa = SeqAlign::<T>::new();
-  sa.cols = cols.clone();
-  let num_of_rnas = sa.cols[0].len();
-  let mut seq_lens = vec![0_usize; num_of_rnas];
-  let sa_len = sa.cols.len();
-  sa.pos_map_sets = vec![vec![T::zero(); num_of_rnas]; sa_len];
-  let mut fasta_records = vec![FastaRecord::origin(); num_of_rnas];
-  for i in 0..sa_len {
-    for j in 0..num_of_rnas {
-      let base = sa.cols[i][j];
-      if base != PSEUDO_BASE {
-        fasta_records[j].seq.push(base);
+  let matches_posterior_model = matches!(score_model, ScoreModel::Posterior);
+  let mut align = Align::<T>::new();
+  align.cols = cols.clone();
+  let num_rnas = align.cols[0].len();
+  let mut seq_lens = vec![0_usize; num_rnas];
+  let align_len = align.cols.len();
+  align.pos_map_sets = vec![vec![T::zero(); num_rnas]; align_len];
+  let mut fasta_records = vec![FastaRecord::origin(); num_rnas];
+  for i in 0..align_len {
+    for j in 0..num_rnas {
+      let x = align.cols[i][j];
+      if x != PSEUDO_BASE {
+        fasta_records[j].seq.push(x);
         seq_lens[j] += 1;
-        sa.pos_map_sets[i][j] = T::from_usize(seq_lens[j]).unwrap();
+        align.pos_map_sets[i][j] = T::from_usize(seq_lens[j]).unwrap();
       }
     }
   }
-  for i in 0..num_of_rnas {
+  for i in 0..num_rnas {
     fasta_records[i].seq.insert(0, PSEUDO_BASE);
     fasta_records[i].seq.push(PSEUDO_BASE);
     fasta_records[i].fasta_id = seq_ids[i].clone();
   }
-  let ref_2_sa = &sa;
-  let ref_2_fasta_records = &fasta_records;
-  let mut mix_bpp_mat = SparseProbMat::default();
-  let ref_2_mix_bpp_mat = &mut mix_bpp_mat;
+  let mut basepair_probs_mix = SparseProbMat::default();
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }
-  let mut align_feature_score_sets = AlignFeatureCountSets::new(0.);
-  align_feature_score_sets.transfer();
+  let mut align_scores = AlignScores::new(0.);
+  align_scores.transfer();
   let seqs = fasta_records.iter().map(|x| &x.seq[..]).collect();
-  let ref_2_seqs = &seqs;
-  scope(|scope| {
-    let handler = scope.spawn(|_| get_bpp_mat_alifold(input_file_path, output_dir_path));
-    let prob_mat_sets = if !is_posterior_model {
+  scope(|x| {
+    let y = &mut basepair_probs_mix;
+    let z = &align;
+    let a = &fasta_records;
+    let b = &seqs;
+    let c = x.spawn(|_| get_basepair_probs_alifold(input_file_path, output_dir_path));
+    let produces_context_profs = false;
+    let produces_match_probs = false;
+    let d = if !matches_posterior_model {
       consprob::<T>(
         thread_pool,
-        ref_2_seqs,
-        min_bpp,
-        min_align_prob,
-        false,
-        false,
-        &align_feature_score_sets,
+        b,
+        min_basepair_prob,
+        min_match_prob,
+        produces_context_profs,
+        produces_match_probs,
+        &align_scores,
       )
       .0
     } else {
-      locarnap_plus_pct(thread_pool, ref_2_fasta_records, output_dir_path)
+      locarnap(thread_pool, a, output_dir_path)
     };
-    write_prob_mat_sets::<T>(
+    write_alignfold_prob_mats::<T>(
       output_dir_path,
-      &prob_mat_sets,
-      false,
-      &AlignProbMatSetsWithRnaIdPairs::<T>::default(),
-      false,
+      &d,
+      &MatchProbsHashedIds::<T>::default(),
+      produces_context_profs,
+      produces_match_probs,
     );
-    let bpp_mats = prob_mat_sets.iter().map(|x| x.bpp_mat.clone()).collect();
-    let rnaalifold_bpp_mat = handler.join().unwrap();
-    *ref_2_mix_bpp_mat = get_mix_bpp_mat(ref_2_sa, &bpp_mats, &rnaalifold_bpp_mat, mix_weight);
+    let d = d.iter().map(|d| d.basepair_probs.clone()).collect();
+    let c = c.join().unwrap();
+    *y = get_basepair_probs_mix(z, &d, &c, mix_weight);
   })
   .unwrap();
-  if gamma != NEG_INFINITY {
-    let output_file_path = output_dir_path.join(format!("gamma={gamma}.sth"));
-    let gamma = gamma + 1.;
-    compute_and_write_mea_css(&mix_bpp_mat, &sa, gamma, &output_file_path, &fasta_records);
+  if hyperparam != NEG_INFINITY {
+    let output_file_path = output_dir_path.join(format!("hyperparam={hyperparam}.sth"));
+    let hyperparam = hyperparam + 1.;
+    consalifold_wrapped(&basepair_probs_mix, &align, hyperparam, &output_file_path, &fasta_records);
   } else {
-    thread_pool.scoped(|scope| {
-      for pow_of_2 in MIN_POW_OF_2..MAX_POW_OF_2 + 1 {
-        let gamma = (2. as Prob).powi(pow_of_2);
-        let ref_2_mix_bpp_mat = &mix_bpp_mat;
-        let ref_2_sa = &sa;
-        let ref_2_fasta_records = &fasta_records;
-        let output_file_path = output_dir_path.join(&format!("gamma={gamma}.sth"));
-        let gamma = gamma + 1.;
-        scope.execute(move || {
-          compute_and_write_mea_css::<T>(
-            ref_2_mix_bpp_mat,
-            ref_2_sa,
-            gamma,
+    thread_pool.scoped(|x| {
+      let y = &basepair_probs_mix;
+      let z = &align;
+      let a = &fasta_records;
+      for b in MIN_LOG_HYPERPARAM..MAX_LOG_HYPERPARAM + 1 {
+        let b = (2. as Prob).powi(b);
+        let output_file_path = output_dir_path.join(&format!("hyperparam={b}.sth"));
+        let b = b + 1.;
+        x.execute(move || {
+          consalifold_wrapped::<T>(
+            y,
+            z,
+            b,
             &output_file_path,
-            ref_2_fasta_records,
+            a,
           );
         });
       }
     });
   }
-  let mut readme_contents = String::from(README_CONTENTS_2);
+  let mut readme_contents = String::from(README_CONTENTS_ALIFOLD);
   readme_contents.push_str(README_CONTENTS);
   write_readme(output_dir_path, &readme_contents);
 }
 
-fn locarnap_plus_pct<T>(
+fn locarnap<T>(
   thread_pool: &mut Pool,
   fasta_records: &FastaRecords,
   output_dir_path: &Path,
-) -> ProbMatSets<T>
+) -> ProbMatSetsAvg<T>
 where
   T: HashIndex,
 {
-  let num_of_fasta_records = fasta_records.len();
+  let num_fasta_records = fasta_records.len();
   for (i, fasta_record) in fasta_records.iter().enumerate() {
-    let output_file_path = output_dir_path.join(&format!("locarnap_seq_{i}.fa"));
+    let output_file_path = output_dir_path.join(&format!("locarnap_seq{i}.fa"));
     let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).unwrap());
     let seq = &fasta_record.seq;
     let seq_len = seq.len();
-    let buf_4_writer_2_output_file = format!(">{}\n{}", i, revert(&seq[1..seq_len - 1]));
+    let buf_4_writer_2_output_file = format!(">{}\n{}", i, seq2str(&seq[1..seq_len - 1]));
     let _ = writer_2_output_file.write_all(buf_4_writer_2_output_file.as_bytes());
   }
-  let mut prob_mats_with_rna_id_pairs = StaProbMatsWithRnaIdPairs::<T>::default();
-  for rna_id_1 in 0..num_of_fasta_records {
-    for rna_id_2 in rna_id_1 + 1..num_of_fasta_records {
-      let rna_id_pair = (rna_id_1, rna_id_2);
-      prob_mats_with_rna_id_pairs.insert(rna_id_pair, StaProbMats::<T>::origin());
+  let mut alignfold_probs_hashed_ids = AlignfoldProbsHashedIds::<T>::default();
+  for x in 0..num_fasta_records {
+    for y in x + 1..num_fasta_records {
+      let y = (x, y);
+      alignfold_probs_hashed_ids.insert(y, AlignfoldProbMats::<T>::origin());
     }
   }
-  thread_pool.scoped(|scope| {
-    for (rna_id_pair, prob_mats) in prob_mats_with_rna_id_pairs.iter_mut() {
-      scope.execute(move || {
-        prob_mats.bpp_mat_pair = exec_locarnap(rna_id_pair, output_dir_path);
+  thread_pool.scoped(|x| {
+    for (y, z) in alignfold_probs_hashed_ids.iter_mut() {
+      x.execute(move || {
+        z.basepair_probs_pair = exec_locarnap(y, output_dir_path);
       });
     }
   });
-  let mut prob_mat_sets = vec![PctStaProbMats::<T>::origin(); num_of_fasta_records];
-  thread_pool.scoped(|scope| {
-    for (rna_id, prob_mats) in prob_mat_sets.iter_mut().enumerate() {
-      let ref_2_prob_mats_with_rna_id_pairs = &prob_mats_with_rna_id_pairs;
-      let seq_len = fasta_records[rna_id].seq.len();
-      let output_file_path = output_dir_path.join(&format!("locarnap_seq_{rna_id}.fa"));
-      scope.execute(move || {
-        *prob_mats = pct_of_bpp_mats_locarnap::<T>(
-          ref_2_prob_mats_with_rna_id_pairs,
-          rna_id,
-          seq_len,
-          num_of_fasta_records,
+  let mut alignfold_prob_mats_avg = vec![AlignfoldProbMatsAvg::<T>::origin(); num_fasta_records];
+  thread_pool.scoped(|x| {
+    let y = &alignfold_probs_hashed_ids;
+    for (z, a) in alignfold_prob_mats_avg.iter_mut().enumerate() {
+      let b = fasta_records[z].seq.len();
+      let c = output_dir_path.join(&format!("locarnap_seq{z}.fa"));
+      x.execute(move || {
+        *a = postprocess_locarnap::<T>(
+          y,
+          z,
+          b,
+          num_fasta_records,
         );
-        let _ = remove_file(output_file_path);
+        let _ = remove_file(c);
       });
     }
   });
-  prob_mat_sets
+  alignfold_prob_mats_avg
 }
 
 fn exec_locarnap<T>(rna_id_pair: &RnaIdPair, output_dir_path: &Path) -> SparseProbMatPair<T>
 where
   T: HashIndex,
 {
-  let mut bpp_mat_pair = (SparseProbMat::<T>::default(), SparseProbMat::<T>::default());
-  let (seq_file_path_1, seq_file_path_2) = (
-    output_dir_path.join(&format!("locarnap_seq_{}.fa", rna_id_pair.0)),
-    output_dir_path.join(&format!("locarnap_seq_{}.fa", rna_id_pair.1)),
+  let mut basepair_probs_pair = (SparseProbMat::<T>::default(), SparseProbMat::<T>::default());
+  let (seq_file_path, seq_file_path2) = (
+    output_dir_path.join(&format!("locarnap_seq{}.fa", rna_id_pair.0)),
+    output_dir_path.join(&format!("locarnap_seq{}.fa", rna_id_pair.1)),
   );
   let output_file_path = output_dir_path.join(format!(
-    "locarnap_seq_{}_seq_{}.dat",
+    "locarnap_seq{}_seq{}.dat",
     rna_id_pair.0, rna_id_pair.1
   ));
   let arg = format!(
@@ -359,155 +359,151 @@ where
     output_file_path.to_str().unwrap()
   );
   let args = vec![
-    seq_file_path_1.to_str().unwrap(),
-    seq_file_path_2.to_str().unwrap(),
+    seq_file_path.to_str().unwrap(),
+    seq_file_path2.to_str().unwrap(),
     &arg,
   ];
   let _ = run_command("locarna_p", &args, "Failed to run LocARNA-P");
   let output_file = BufReader::new(File::open(output_file_path.clone()).unwrap());
-  for line in output_file.lines() {
-    let strs: Vec<String> = line.unwrap().split_whitespace().map(String::from).collect();
-    let (i, j, k, l, bpap) = (
-      T::from_usize(strs[0].parse().unwrap()).unwrap(),
-      T::from_usize(strs[1].parse().unwrap()).unwrap(),
-      T::from_usize(strs[2].parse().unwrap()).unwrap(),
-      T::from_usize(strs[3].parse().unwrap()).unwrap(),
-      strs[4].parse().unwrap(),
+  for x in output_file.lines() {
+    let x: Vec<String> = x.unwrap().split_whitespace().map(String::from).collect();
+    let (i, j, k, l, y) = (
+      T::from_usize(x[0].parse().unwrap()).unwrap(),
+      T::from_usize(x[1].parse().unwrap()).unwrap(),
+      T::from_usize(x[2].parse().unwrap()).unwrap(),
+      T::from_usize(x[3].parse().unwrap()).unwrap(),
+      x[4].parse().unwrap(),
     );
-    match bpp_mat_pair.0.get_mut(&(i, j)) {
-      Some(bpp) => {
-        *bpp += bpap;
+    match basepair_probs_pair.0.get_mut(&(i, j)) {
+      Some(x) => {
+        *x += y;
       }
       None => {
-        bpp_mat_pair.0.insert((i, j), bpap);
+        basepair_probs_pair.0.insert((i, j), y);
       }
     }
-    match bpp_mat_pair.1.get_mut(&(k, l)) {
-      Some(bpp) => {
-        *bpp += bpap;
+    match basepair_probs_pair.1.get_mut(&(k, l)) {
+      Some(x) => {
+        *x += y;
       }
       None => {
-        bpp_mat_pair.1.insert((k, l), bpap);
+        basepair_probs_pair.1.insert((k, l), y);
       }
     }
   }
   let _ = remove_file(output_file_path);
-  bpp_mat_pair
+  basepair_probs_pair
 }
 
-pub fn revert(seq: &[usize]) -> String {
-  let mut new_seq = Vec::<u8>::new();
-  for &c in seq {
-    let new_base = match c {
-      A => BIG_A,
-      C => BIG_C,
-      G => BIG_G,
-      U => BIG_U,
+pub fn seq2str(x: &[Base]) -> String {
+  let mut y = Vec::<u8>::new();
+  for &x in x {
+    let x = match x {
+      A => A_UPPER,
+      C => C_UPPER,
+      G => G_UPPER,
+      U => U_UPPER,
       _ => {
         panic!();
       }
     };
-    new_seq.push(new_base);
+    y.push(x);
   }
-  String::from_utf8(new_seq).unwrap()
+  String::from_utf8(y).unwrap()
 }
 
-fn pct_of_bpp_mats_locarnap<T>(
-  prob_mats_with_rna_id_pairs: &StaProbMatsWithRnaIdPairs<T>,
+fn postprocess_locarnap<T>(
+  alignfold_probs_hashed_ids: &AlignfoldProbsHashedIds<T>,
   rna_id: RnaId,
-  upp_mat_len: usize,
-  num_of_rnas: usize,
-) -> PctStaProbMats<T>
+  unpair_probs_len: usize,
+  num_rnas: usize,
+) -> AlignfoldProbMatsAvg<T>
 where
   T: HashIndex,
 {
-  let weight = 1. / (num_of_rnas - 1) as Prob;
-  let mut pct_prob_mats = PctStaProbMats::new(upp_mat_len);
-  for rna_id_2 in 0..num_of_rnas {
-    if rna_id == rna_id_2 {
+  let weight = 1. / (num_rnas - 1) as Prob;
+  let mut alignfold_prob_mats_avg = AlignfoldProbMatsAvg::new(unpair_probs_len);
+  for x in 0..num_rnas {
+    if x == rna_id {
       continue;
     }
-    let rna_id_pair = if rna_id < rna_id_2 {
-      (rna_id, rna_id_2)
+    let y = if rna_id < x {
+      (rna_id, x)
     } else {
-      (rna_id_2, rna_id)
+      (x, rna_id)
     };
-    let ref_2_prob_mats = &prob_mats_with_rna_id_pairs[&rna_id_pair];
-    let ref_2_bpp_mat = if rna_id < rna_id_2 {
-      &ref_2_prob_mats.bpp_mat_pair.0
+    let y = &alignfold_probs_hashed_ids[&y];
+    let y = if rna_id < x {
+      &y.basepair_probs_pair.0
     } else {
-      &ref_2_prob_mats.bpp_mat_pair.1
+      &y.basepair_probs_pair.1
     };
-    for (pos_pair, &bpp) in ref_2_bpp_mat.iter() {
-      let weighted_bpp = weight * bpp;
-      match pct_prob_mats.bpp_mat.get_mut(pos_pair) {
-        Some(bpp) => {
-          *bpp += weighted_bpp;
+    for (x, &y) in y.iter() {
+      let y = weight * y;
+      match alignfold_prob_mats_avg.basepair_probs.get_mut(x) {
+        Some(z) => {
+          *z += y;
         }
         None => {
-          pct_prob_mats.bpp_mat.insert(*pos_pair, weighted_bpp);
+          alignfold_prob_mats_avg.basepair_probs.insert(*x, y);
         }
       }
     }
   }
-  pct_prob_mats
+  alignfold_prob_mats_avg
 }
 
-fn compute_and_write_mea_css<T>(
-  mix_bpp_mat: &SparseProbMat<T>,
-  sa: &SeqAlign<T>,
-  gamma: Prob,
+fn consalifold_wrapped<T>(
+  basepair_probs_mix: &SparseProbMat<T>,
+  align: &Align<T>,
+  hyperparam: Prob,
   output_file_path: &Path,
   fasta_records: &FastaRecords,
 ) where
   T: HashIndex,
 {
-  let mea_css = consalifold::<T>(mix_bpp_mat, sa, gamma);
-  let mut writer_2_output_file = BufWriter::new(File::create(output_file_path).unwrap());
-  let mut buf_4_writer_2_output_file = "# STOCKHOLM 1.0\n".to_string();
-  let sa_len = sa.cols.len();
+  let basepairs = consalifold::<T>(basepair_probs_mix, align, hyperparam);
+  let mut writer = BufWriter::new(File::create(output_file_path).unwrap());
+  let mut buf = "# STOCKHOLM 1.0\n".to_string();
+  let align_len = align.cols.len();
   let max_seq_id_len = fasta_records
     .iter()
-    .map(|fasta_record| fasta_record.fasta_id.len())
+    .map(|x| x.fasta_id.len())
     .max()
     .unwrap();
   let descriptor = "#=GC SS_cons";
   let descriptor_len = descriptor.len();
   let max_seq_id_len = max_seq_id_len.max(descriptor_len);
-  for (rna_id, fasta_record) in fasta_records.iter().enumerate() {
-    let seq_id = &fasta_record.fasta_id;
-    buf_4_writer_2_output_file.push_str(seq_id);
-    let mut stockholm_row = vec![b' '; max_seq_id_len - seq_id.len() + 2];
-    let mut sa_row = (0..sa_len)
-      .map(|x| revert_char(sa.cols[x][rna_id]))
+  for (x, y) in fasta_records.iter().enumerate() {
+    let y = &y.fasta_id;
+    buf.push_str(y);
+    let mut y = vec![b' '; max_seq_id_len - y.len() + 2];
+    let mut z = (0..align_len)
+      .map(|y| base2char(align.cols[y][x]))
       .collect::<Vec<Char>>();
-    stockholm_row.append(&mut sa_row);
-    let stockholm_row = unsafe { from_utf8_unchecked(&stockholm_row) };
-    buf_4_writer_2_output_file.push_str(stockholm_row);
-    buf_4_writer_2_output_file.push('\n');
+    y.append(&mut z);
+    let y = unsafe { from_utf8_unchecked(&y) };
+    buf.push_str(y);
+    buf.push('\n');
   }
-  buf_4_writer_2_output_file.push_str(descriptor);
+  buf.push_str(descriptor);
   let mut stockholm_row = vec![b' '; max_seq_id_len - descriptor_len + 2];
-  let mut mea_css_str = get_mea_css_str(&mea_css, sa_len);
-  stockholm_row.append(&mut mea_css_str);
+  let mut fold_str = get_fold_str(&basepairs, align_len);
+  stockholm_row.append(&mut fold_str);
   let stockholm_row = unsafe { from_utf8_unchecked(&stockholm_row) };
-  buf_4_writer_2_output_file.push_str(stockholm_row);
-  buf_4_writer_2_output_file.push_str("\n//");
-  let _ = writer_2_output_file.write_all(buf_4_writer_2_output_file.as_bytes());
+  buf.push_str(stockholm_row);
+  buf.push_str("\n//");
+  let _ = writer.write_all(buf.as_bytes());
 }
 
-fn get_mea_css_str<T>(mea_css: &SparsePosMat<T>, sa_len: usize) -> MeaCssStr
+fn get_fold_str<T>(x: &SparsePosMat<T>, y: usize) -> FoldStr
 where
   T: HashIndex,
 {
-  let mut mea_css_str = vec![UNPAIRING_BASE; sa_len];
-  for &(i, j) in mea_css {
-    mea_css_str[i.to_usize().unwrap()] = BASE_PAIRING_LEFT_BASE;
-    mea_css_str[j.to_usize().unwrap()] = BASE_PAIRING_RIGHT_BASE;
+  let mut z = vec![UNPAIR; y];
+  for &(i, j) in x {
+    z[i.to_usize().unwrap()] = BASEPAIR_LEFT;
+    z[j.to_usize().unwrap()] = BASEPAIR_RIGHT;
   }
-  mea_css_str
-}
-
-fn run_command(command: &str, args: &[&str], expect: &str) -> Output {
-  Command::new(command).args(args).output().expect(expect)
+  z
 }

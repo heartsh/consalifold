@@ -4,106 +4,101 @@ pub use consprob::*;
 pub use std::fs::remove_file;
 use std::process::{Command, Output};
 
-pub type Prob4dMatsWithRnaIdPairs<T> = HashMap<RnaIdPair, Prob4dMat<T>>;
-pub type ProbsWithRnaIds = Vec<Probs>;
-pub type ProbsWithPosPairs<T> = HashMap<PosPair<T>, Prob>;
-pub type ProbMatsWithRnaIds<T> = Vec<SparseProbMat<T>>;
-pub type SparseProbs<T> = HashMap<T, Prob>;
-pub type MeaSetsWithPoss<T> = HashMap<T, SparseProbs<T>>;
-pub type ColSetsWithCols<T> = HashMap<T, SparseProbs<T>>;
-pub type ColsWithCols<T> = HashMap<T, T>;
+pub type SparseScores<T> = HashMap<T, Score>;
+pub type ScoresHashedPoss<T> = HashMap<T, SparseScores<T>>;
+pub type ColSetsHashedCols<T> = HashMap<T, SparseScores<T>>;
+pub type ColsHashedCols<T> = HashMap<T, T>;
 pub type SparsePosMat<T> = HashSet<PosPair<T>>;
 pub type SparseProbMats<T> = Vec<SparseProbMat<T>>;
 
 pub const GAP: Char = b'-';
 pub const EXAMPLE_CLUSTAL_FILE_PATH: &str = "assets/test_seqs.aln";
-pub const MIN_POW_OF_2: i32 = -4;
-pub const MAX_POW_OF_2: i32 = 10;
+pub const MIN_LOG_HYPERPARAM: i32 = -4;
+pub const MAX_LOG_HYPERPARAM: i32 = 10;
 
 pub fn consalifold<T>(
-  mix_bpp_mat: &SparseProbMat<T>,
-  sa: &SeqAlign<T>,
-  gamma: Prob,
+  basepair_probs_mix: &SparseProbMat<T>,
+  align: &Align<T>,
+  hyperparam: Score,
 ) -> SparsePosMat<T>
 where
   T: HashIndex,
 {
-  let sa_len = sa.cols.len();
-  let sa_len = T::from_usize(sa_len).unwrap();
-  let mix_bpp_mat: SparseProbMat<T> = mix_bpp_mat
+  let align_len = align.cols.len();
+  let align_len = T::from_usize(align_len).unwrap();
+  let basepair_scores: SparseScoreMat<T> = basepair_probs_mix
     .iter()
-    .filter(|x| gamma * x.1 - 1. >= 0.)
+    .filter(|x| hyperparam * x.1 - 1. >= 0.)
     .map(|x| (*x.0, *x.1))
     .collect();
-  let mut mea_sets_with_cols = MeaSetsWithPoss::default();
-  let mut right_bp_cols_with_cols = ColSetsWithCols::<T>::default();
-  for (col_pair, &mix_bpp) in &mix_bpp_mat {
-    match right_bp_cols_with_cols.get_mut(&col_pair.0) {
-      Some(cols) => {
-        cols.insert(col_pair.1, mix_bpp);
+  let mut scores_hashed_cols = ScoresHashedPoss::default();
+  let mut right_basepairs_hashed_cols = ColSetsHashedCols::<T>::default();
+  for (x, &y) in &basepair_scores {
+    match right_basepairs_hashed_cols.get_mut(&x.0) {
+      Some(z) => {
+        z.insert(x.1, y);
       }
       None => {
-        let mut cols = SparseProbs::default();
-        cols.insert(col_pair.1, mix_bpp);
-        right_bp_cols_with_cols.insert(col_pair.0, cols);
+        let mut z = SparseScores::default();
+        z.insert(x.1, y);
+        right_basepairs_hashed_cols.insert(x.0, z);
       }
     }
   }
-  let mut rightmost_bp_cols_with_cols = ColsWithCols::<T>::default();
-  for (&i, cols) in &right_bp_cols_with_cols {
-    let max = cols.keys().copied().max().unwrap();
-    rightmost_bp_cols_with_cols.insert(i, max);
+  let mut rightmost_basepairs_hashed_cols = ColsHashedCols::<T>::default();
+  for (&x, y) in &right_basepairs_hashed_cols {
+    let y = y.keys().copied().max().unwrap();
+    rightmost_basepairs_hashed_cols.insert(x, y);
   }
-  for i in range_inclusive(T::one(), sa_len).rev() {
-    if let Some(&j) = rightmost_bp_cols_with_cols.get(&i) {
-      let col_pair = (i, j);
-      let meas = get_meas(&mea_sets_with_cols, &col_pair);
-      update_mea_sets_with_cols(
-        &mut mea_sets_with_cols,
-        col_pair.0,
-        &meas,
-        &right_bp_cols_with_cols,
+  for i in range_inclusive(T::one(), align_len).rev() {
+    if let Some(&j) = rightmost_basepairs_hashed_cols.get(&i) {
+      let j = (i, j);
+      let x = get_scores(&scores_hashed_cols, &j);
+      update_scores_hashed_cols(
+        &mut scores_hashed_cols,
+        j.0,
+        &x,
+        &right_basepairs_hashed_cols,
       );
     }
   }
-  let pseudo_col_pair = (T::zero(), sa_len + T::one());
-  let mut bp_col_pairs = SparsePosMat::<T>::default();
-  traceback_alifold(&mut bp_col_pairs, &pseudo_col_pair, &mea_sets_with_cols);
-  bp_col_pairs
+  let pseudo_col_pair = (T::zero(), align_len + T::one());
+  let mut basepairs = SparsePosMat::<T>::default();
+  traceback(&mut basepairs, &pseudo_col_pair, &scores_hashed_cols);
+  basepairs
 }
 
-pub fn traceback_alifold<T>(
-  bp_col_pairs: &mut SparsePosMat<T>,
-  col_pair: &PosPair<T>,
-  mea_sets_with_cols: &MeaSetsWithPoss<T>,
+pub fn traceback<T>(
+  x: &mut SparsePosMat<T>,
+  y: &PosPair<T>,
+  z: &ScoresHashedPoss<T>,
 ) where
   T: HashIndex,
 {
-  let mut mea;
-  let meas = get_meas(mea_sets_with_cols, col_pair);
-  let (i, j) = *col_pair;
+  let mut a;
+  let b = get_scores(z, y);
+  let (i, j) = *y;
   let mut k = j - T::one();
   while k > i {
-    mea = meas[&k];
-    let ea = meas[&(k - T::one())];
-    if ea == mea {
+    a = b[&k];
+    let c = b[&(k - T::one())];
+    if c == a {
       k = k - T::one();
-      continue;
     }
-    if let Some(meas_4_bps) = mea_sets_with_cols.get(&k) {
-      for (&col_left, mea_4_bp) in meas_4_bps {
-        if i >= col_left {
+    if let Some(c) = z.get(&k) {
+      for (&c, d) in c {
+        if i >= c {
           continue;
         }
-        let col_4_bp = col_left - T::one();
-        let ea = meas[&col_4_bp];
-        let ea = ea + mea_4_bp;
-        if ea == mea {
-          let col_pair = (col_left, k);
-          traceback_alifold(bp_col_pairs, &col_pair, mea_sets_with_cols);
-          let col_pair = (col_left - T::one(), k - T::one());
-          bp_col_pairs.insert(col_pair);
-          k = col_4_bp;
+        let e = c - T::one();
+        let b = b[&e];
+        let d = b + d;
+        if d == a {
+          let d = (c, k);
+          traceback(x, &d, z);
+          let d = (c - T::one(), k - T::one());
+          x.insert(d);
+          k = e;
           break;
         }
       }
@@ -111,70 +106,70 @@ pub fn traceback_alifold<T>(
   }
 }
 
-pub fn update_mea_sets_with_cols<T>(
-  mea_sets_with_cols: &mut MeaSetsWithPoss<T>,
-  i: T,
-  meas: &SparseProbs<T>,
-  right_bp_cols_with_cols: &ColSetsWithCols<T>,
+pub fn update_scores_hashed_cols<T>(
+  x: &mut ScoresHashedPoss<T>,
+  y: T,
+  z: &SparseScores<T>,
+  a: &ColSetsHashedCols<T>,
 ) where
   T: HashIndex,
 {
-  let right_bp_cols = &right_bp_cols_with_cols[&i];
-  for (&j, &weight) in right_bp_cols {
-    let mea_4_bp = weight + meas[&(j - T::one())];
-    match mea_sets_with_cols.get_mut(&j) {
-      Some(meas_4_bps) => {
-        meas_4_bps.insert(i, mea_4_bp);
+  let a = &a[&y];
+  for (&a, &b) in a {
+    let b = b + z[&(a - T::one())];
+    match x.get_mut(&a) {
+      Some(x) => {
+        x.insert(y, b);
       }
       None => {
-        let mut meas_4_bps = SparseProbs::default();
-        meas_4_bps.insert(i, mea_4_bp);
-        mea_sets_with_cols.insert(j, meas_4_bps);
+        let mut z = SparseScores::default();
+        z.insert(y, b);
+        x.insert(a, z);
       }
     }
   }
 }
 
-pub fn get_meas<T>(mea_sets_with_cols: &MeaSetsWithPoss<T>, col_pair: &PosPair<T>) -> SparseProbs<T>
+pub fn get_scores<T>(x: &ScoresHashedPoss<T>, y: &PosPair<T>) -> SparseScores<T>
 where
   T: HashIndex,
 {
-  let (i, j) = *col_pair;
-  let mut meas = SparseProbs::<T>::default();
+  let (i, j) = *y;
+  let mut z = SparseScores::<T>::default();
   for k in range(i, j) {
     if k == i {
-      meas.insert(k, 0.);
+      z.insert(k, 0.);
       continue;
     }
-    let mut mea = meas[&(k - T::one())];
-    if let Some(meas_4_bps) = mea_sets_with_cols.get(&k) {
-      for (&l, mea_4_bp) in meas_4_bps {
+    let mut y = z[&(k - T::one())];
+    if let Some(x) = x.get(&k) {
+      for (&l, x) in x {
         if i >= l {
           continue;
         }
-        let ea = meas[&(l - T::one())];
-        let ea = ea + mea_4_bp;
-        if ea > mea {
-          mea = ea;
+        let z = z[&(l - T::one())];
+        let z = x + z;
+        if z > y {
+          y = z;
         }
       }
     }
-    meas.insert(k, mea);
+    z.insert(k, y);
   }
-  meas
+  z
 }
 
-pub fn get_bpp_mat_alifold<T>(sa_file_path: &Path, output_dir_path: &Path) -> SparseProbMat<T>
+pub fn get_basepair_probs_alifold<T>(align_file_path: &Path, output_dir_path: &Path) -> SparseProbMat<T>
 where
   T: HashIndex,
 {
   let cwd = env::current_dir().unwrap();
-  let sa_file_path = cwd.join(sa_file_path);
-  let sa_file_prefix = sa_file_path.file_stem().unwrap().to_str().unwrap();
-  let arg = format!("--id-prefix={sa_file_prefix}");
+  let align_file_path = cwd.join(align_file_path);
+  let align_file_prefix = align_file_path.file_stem().unwrap().to_str().unwrap();
+  let arg = format!("--id-prefix={align_file_prefix}");
   let args = vec![
     "-p",
-    sa_file_path.to_str().unwrap(),
+    align_file_path.to_str().unwrap(),
     &arg,
     "--noPS",
     "--noDP",
@@ -182,81 +177,83 @@ where
   let _ = env::set_current_dir(output_dir_path);
   let _ = run_command("RNAalifold", &args, "Failed to run RNAalifold");
   let _ = env::set_current_dir(cwd);
-  let mut bpp_mat_alifold = SparseProbMat::<T>::default();
-  let output_file_path = output_dir_path.join(String::from(sa_file_prefix) + "_0001_ali.out");
+  let mut basepair_probs_alifold = SparseProbMat::<T>::default();
+  let output_file_path = output_dir_path.join(String::from(align_file_prefix) + "_0001_ali.out");
   let output_file = BufReader::new(File::open(output_file_path.clone()).unwrap());
-  for (k, line) in output_file.lines().enumerate() {
-    if k == 0 {
+  for (x, y) in output_file.lines().enumerate() {
+    if x == 0 {
       continue;
     }
-    let line = line.unwrap();
-    if !line.starts_with(' ') {
+    let y = y.unwrap();
+    if !y.starts_with(' ') {
       continue;
     }
-    let substrings: Vec<&str> = line.split_whitespace().collect();
-    let i = T::from_usize(substrings[0].parse().unwrap()).unwrap();
-    let j = T::from_usize(substrings[1].parse().unwrap()).unwrap();
-    let mut bpp = String::from(substrings[3]);
-    bpp.pop();
-    let bpp = 0.01 * bpp.parse::<Prob>().unwrap();
-    if bpp == 0. {
+    let y: Vec<&str> = y.split_whitespace().collect();
+    let z = (
+      T::from_usize(y[0].parse().unwrap()).unwrap(),
+      T::from_usize(y[1].parse().unwrap()).unwrap(),
+    );
+    let mut a = String::from(y[3]);
+    a.pop();
+    let a = 0.01 * a.parse::<Prob>().unwrap();
+    if a == 0. {
       continue;
     }
-    bpp_mat_alifold.insert((i, j), bpp);
+    basepair_probs_alifold.insert(z, a);
   }
   let _ = remove_file(output_file_path);
-  bpp_mat_alifold
+  basepair_probs_alifold
 }
 
-pub fn get_mix_bpp_mat<T>(
-  sa: &SeqAlign<T>,
-  bpp_mats: &SparseProbMats<T>,
-  bpp_mat_alifold: &SparseProbMat<T>,
+pub fn get_basepair_probs_mix<T>(
+  align: &Align<T>,
+  basepair_prob_mats: &SparseProbMats<T>,
+  basepair_probs_alifold: &SparseProbMat<T>,
   mix_weight: Prob,
 ) -> SparseProbMat<T>
 where
   T: HashIndex,
 {
-  let mut mix_bpp_mat = SparseProbMat::<T>::default();
-  let sa_len = sa.cols.len();
-  let num_of_rnas = sa.cols[0].len();
-  for i in 0..sa_len {
-    let pos_maps = &sa.pos_map_sets[i];
+  let mut basepair_probs_mix = SparseProbMat::<T>::default();
+  let align_len = align.cols.len();
+  let num_rnas = align.cols[0].len();
+  for i in 0..align_len {
+    let pos_maps = &align.pos_map_sets[i];
     let short_i = T::from_usize(i).unwrap();
-    for j in i + 1..sa_len {
+    for j in i + 1..align_len {
       let short_j = T::from_usize(j).unwrap();
       let pos_pair = (short_i, short_j);
-      let bpp_alifold = match bpp_mat_alifold.get(&pos_pair) {
-        Some(&bpp_alifold) => bpp_alifold,
+      let basepair_prob_alifold = match basepair_probs_alifold.get(&pos_pair) {
+        Some(&x) => x,
         None => 0.,
       };
-      let pos_maps_2 = &sa.pos_map_sets[j];
+      let pos_maps2 = &align.pos_map_sets[j];
       let pos_map_pairs: Vec<(T, T)> = pos_maps
         .iter()
-        .zip(pos_maps_2.iter())
+        .zip(pos_maps2.iter())
         .map(|(&x, &y)| (x, y))
         .collect();
-      let mut bpp_sum = 0.;
-      for (pos_map_pair, bpp_mat) in pos_map_pairs.iter().zip(bpp_mats.iter()) {
-        if let Some(&bpp) = bpp_mat.get(pos_map_pair) {
-          bpp_sum += bpp;
+      let mut basepair_prob_sum = 0.;
+      for (x, y) in pos_map_pairs.iter().zip(basepair_prob_mats.iter()) {
+        if let Some(&y) = y.get(x) {
+          basepair_prob_sum += y;
         }
       }
-      let bpp_avg = bpp_sum / num_of_rnas as Prob;
-      let mix_bpp = mix_weight * bpp_avg + (1. - mix_weight) * bpp_alifold;
+      let basepair_prob_avg = basepair_prob_sum / num_rnas as Prob;
+      let basepair_prob_mix = mix_weight * basepair_prob_avg + (1. - mix_weight) * basepair_prob_alifold;
       let pos_pair = (pos_pair.0 + T::one(), pos_pair.1 + T::one());
-      mix_bpp_mat.insert(pos_pair, mix_bpp);
+      basepair_probs_mix.insert(pos_pair, basepair_prob_mix);
     }
   }
-  mix_bpp_mat
+  basepair_probs_mix
 }
 
-pub fn revert_char(c: Base) -> u8 {
+pub fn base2char(c: Base) -> Char {
   match c {
-    A => BIG_A,
-    C => BIG_C,
-    G => BIG_G,
-    U => BIG_U,
+    A => A_UPPER,
+    C => C_UPPER,
+    G => G_UPPER,
+    U => U_UPPER,
     PSEUDO_BASE => GAP,
     _ => {
       panic!();
@@ -264,6 +261,6 @@ pub fn revert_char(c: Base) -> u8 {
   }
 }
 
-pub fn run_command(command: &str, args: &[&str], expect: &str) -> Output {
-  Command::new(command).args(args).output().expect(expect)
+pub fn run_command(x: &str, y: &[&str], z: &str) -> Output {
+  Command::new(x).args(y).output().expect(z)
 }

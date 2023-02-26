@@ -77,8 +77,8 @@ def main():
     raf_plus_consalifold_params.insert(0, raf_plus_consalifold_command)
     for gamma in gammas:
       gamma_str = str(gamma) if gamma < 1 else str(int(gamma))
-      output_file = "gamma=" + gamma_str + ".sth"
-      output_file_2 = "gamma=" + gamma_str + ".fa"
+      output_file = "hyperparam=" + gamma_str + ".sth"
+      output_file_2 = "hyperparam=" + gamma_str + ".fa"
       centroidhomfold_output_file_path = os.path.join(centroidhomfold_output_dir_path, output_file_2)
       centroidhomfold_params.insert(0, (rna_seq_file_path, centroidhomfold_output_file_path, gamma_str, temp_dir_path))
       if gamma == 1:
@@ -128,7 +128,7 @@ def run_turbofold(turbofold_params):
   recs = [rec for rec in SeqIO.parse(rna_file_path, "fasta")]
   rec_lens = [len(rec) for rec in recs]
   rec_seq_len = len(recs)
-  turbofold_temp_dir_path = "%s/%s_gamma=%d" % (temp_dir_path, rna_family_name, gamma)
+  turbofold_temp_dir_path = "%s/%s_hyperparam=%d" % (temp_dir_path, rna_family_name, gamma)
   if not os.path.isdir(turbofold_temp_dir_path):
     os.mkdir(turbofold_temp_dir_path)
   turbofold_config_file_contents = "InSeq = {"
@@ -205,8 +205,8 @@ def run_centroidhomfold(centroidhomfold_params):
   centroidhomfold_output_buf = ""
   basename = os.path.basename(rna_file_path)
   (rna_family_name, extension) = os.path.splitext(basename)
-  seq_file_path = os.path.join(temp_dir_path, "seqs_4_%s_and_gamma=%s.fa" % (rna_family_name, gamma_str))
-  hom_seq_file_path = os.path.join(temp_dir_path, "hom_seqs_4_%s_and_gamma=%s.fa" % (rna_family_name, gamma_str))
+  seq_file_path = os.path.join(temp_dir_path, "seqs_4_%s_and_hyperparam=%s.fa" % (rna_family_name, gamma_str))
+  hom_seq_file_path = os.path.join(temp_dir_path, "hom_seqs_4_%s_and_hyperparam=%s.fa" % (rna_family_name, gamma_str))
   for (i, rec) in enumerate(recs):
     SeqIO.write([rec], open(seq_file_path, "w"), "fasta")
     hom_recs = [rec for (j, rec) in enumerate(recs) if j != i]

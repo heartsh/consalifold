@@ -59,10 +59,10 @@ def main():
       ref_css = utils.get_css(ref_css_file_path)
       locarna_plus_consalifold_estimated_css_dir_path = os.path.join(locarna_plus_consalifold_css_dir_path, rna_fam_name)
       raf_plus_consalifold_estimated_css_dir_path = os.path.join(raf_plus_consalifold_css_dir_path, rna_fam_name)
-      locarna_plus_consalifold_estimated_css_file_path = os.path.join(locarna_plus_consalifold_estimated_css_dir_path, "gamma=" + gamma_str + ".sth")
+      locarna_plus_consalifold_estimated_css_file_path = os.path.join(locarna_plus_consalifold_estimated_css_dir_path, "hyperparam=" + gamma_str + ".sth")
       estimated_css = utils.get_css(locarna_plus_consalifold_estimated_css_file_path)
       locarna_plus_consalifold_count_params.insert(0, (rna_seq_lens, estimated_css, ref_css))
-      raf_plus_consalifold_estimated_css_file_path = os.path.join(raf_plus_consalifold_estimated_css_dir_path, "gamma=" + gamma_str + ".sth")
+      raf_plus_consalifold_estimated_css_file_path = os.path.join(raf_plus_consalifold_estimated_css_dir_path, "hyperparam=" + gamma_str + ".sth")
       estimated_css = utils.get_css(raf_plus_consalifold_estimated_css_file_path)
       raf_plus_consalifold_count_params.insert(0, (rna_seq_lens, estimated_css, ref_css))
       if gamma == 1.:

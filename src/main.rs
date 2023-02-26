@@ -1,9 +1,7 @@
 extern crate consalifold;
-extern crate crossbeam;
 extern crate num_cpus;
 
 use consalifold::*;
-use crossbeam::scope;
 use std::env;
 use std::fs::create_dir;
 use std::fs::remove_file;
@@ -219,47 +217,38 @@ where
     fasta_records[i].seq.push(PSEUDO_BASE);
     fasta_records[i].fasta_id = seq_ids[i].clone();
   }
-  let mut basepair_probs_mix = SparseProbMat::default();
   if !output_dir_path.exists() {
     let _ = create_dir(output_dir_path);
   }
   let mut align_scores = AlignScores::new(0.);
   align_scores.transfer();
   let seqs = fasta_records.iter().map(|x| &x.seq[..]).collect();
-  scope(|x| {
-    let y = &mut basepair_probs_mix;
-    let z = &align;
-    let a = &fasta_records;
-    let b = &seqs;
-    let c = x.spawn(|_| get_basepair_probs_alifold(input_file_path, output_dir_path));
-    let produces_context_profs = false;
-    let produces_match_probs = false;
-    let d = if !matches_posterior_model {
-      consprob::<T>(
-        thread_pool,
-        b,
-        min_basepair_prob,
-        min_match_prob,
-        produces_context_profs,
-        produces_match_probs,
-        &align_scores,
-      )
-      .0
-    } else {
-      locarnap(thread_pool, a, output_dir_path)
-    };
+  let basepair_probs_alifold = get_basepair_probs_alifold(input_file_path, output_dir_path);
+  let produces_context_profs = false;
+  let produces_match_probs = false;
+  let alignfold_prob_mats_avg = if matches_posterior_model {
+    locarnap(thread_pool, &fasta_records, output_dir_path)
+  } else {
+    let x = consprob::<T>(
+      thread_pool,
+      &seqs,
+      min_basepair_prob,
+      min_match_prob,
+      produces_context_profs,
+      produces_match_probs,
+      &align_scores,
+    ).0;
     write_alignfold_prob_mats::<T>(
       output_dir_path,
-      &d,
+      &x,
       &MatchProbsHashedIds::<T>::default(),
       produces_context_profs,
       produces_match_probs,
     );
-    let d = d.iter().map(|d| d.basepair_probs.clone()).collect();
-    let c = c.join().unwrap();
-    *y = get_basepair_probs_mix(z, &d, &c, mix_weight);
-  })
-  .unwrap();
+    x
+  };
+  let basepair_prob_mats = alignfold_prob_mats_avg.iter().map(|x| x.basepair_probs.clone()).collect();
+  let basepair_probs_mix = get_basepair_probs_mix(&align, &basepair_prob_mats, &basepair_probs_alifold, mix_weight);
   if hyperparam != NEG_INFINITY {
     let output_file_path = output_dir_path.join(format!("hyperparam={hyperparam}.sth"));
     let hyperparam = hyperparam + 1.;

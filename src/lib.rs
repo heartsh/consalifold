@@ -222,7 +222,7 @@ where
     let short_i = T::from_usize(i).unwrap();
     for j in i + 1..align_len {
       let short_j = T::from_usize(j).unwrap();
-      let pos_pair = (short_i, short_j);
+      let pos_pair = (short_i + T::one(), short_j + T::one());
       let basepair_prob_alifold = match basepair_probs_alifold.get(&pos_pair) {
         Some(&x) => x,
         None => 0.,
@@ -242,7 +242,6 @@ where
       let basepair_prob_avg = basepair_prob_sum / num_rnas as Prob;
       let basepair_prob_mix =
         mix_weight * basepair_prob_avg + (1. - mix_weight) * basepair_prob_alifold;
-      let pos_pair = (pos_pair.0 + T::one(), pos_pair.1 + T::one());
       basepair_probs_mix.insert(pos_pair, basepair_prob_mix);
     }
   }

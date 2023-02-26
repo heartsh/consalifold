@@ -30,11 +30,6 @@ def main():
   posterior_mafft_plus_consalifold_params = []
   posterior_mafft_xinsi_plus_consalifold_params = []
   posterior_ref_sa_plus_consalifold_params = []
-  contra_mafft_plus_consalifold_params = []
-  contra_probcons_plus_consalifold_params = []
-  contra_clustalw_plus_consalifold_params = []
-  contra_mafft_xinsi_plus_consalifold_params = []
-  contra_ref_sa_plus_consalifold_params = []
   consalifold_params_4_elapsed_time = []
   mafft_plus_centroidalifold_params = []
   probcons_plus_centroidalifold_params = []
@@ -64,11 +59,6 @@ def main():
   clustalw_plus_consalifold_dir_path = asset_dir_path + "/clustalw_plus_consalifold"
   mafft_xinsi_plus_consalifold_dir_path = asset_dir_path + "/mafft_xinsi_plus_consalifold"
   ref_sa_plus_consalifold_dir_path = asset_dir_path + "/ref_sa_plus_consalifold"
-  contra_mafft_plus_consalifold_dir_path = asset_dir_path + "/contra_mafft_plus_consalifold"
-  contra_probcons_plus_consalifold_dir_path = asset_dir_path + "/contra_probcons_plus_consalifold"
-  contra_clustalw_plus_consalifold_dir_path = asset_dir_path + "/contra_clustalw_plus_consalifold"
-  contra_mafft_xinsi_plus_consalifold_dir_path = asset_dir_path + "/contra_mafft_xinsi_plus_consalifold"
-  contra_ref_sa_plus_consalifold_dir_path = asset_dir_path + "/contra_ref_sa_plus_consalifold"
   posterior_probcons_plus_consalifold_dir_path = asset_dir_path + "/posterior_probcons_plus_consalifold"
   posterior_clustalw_plus_consalifold_dir_path = asset_dir_path + "/posterior_clustalw_plus_consalifold"
   posterior_mafft_plus_consalifold_dir_path = asset_dir_path + "/posterior_mafft_plus_consalifold"
@@ -107,16 +97,6 @@ def main():
     os.mkdir(mafft_xinsi_plus_consalifold_dir_path)
   if not os.path.isdir(ref_sa_plus_consalifold_dir_path):
     os.mkdir(ref_sa_plus_consalifold_dir_path)
-  if not os.path.isdir(contra_mafft_plus_consalifold_dir_path):
-    os.mkdir(contra_mafft_plus_consalifold_dir_path)
-  if not os.path.isdir(contra_probcons_plus_consalifold_dir_path):
-    os.mkdir(contra_probcons_plus_consalifold_dir_path)
-  if not os.path.isdir(contra_clustalw_plus_consalifold_dir_path):
-    os.mkdir(contra_clustalw_plus_consalifold_dir_path)
-  if not os.path.isdir(contra_mafft_xinsi_plus_consalifold_dir_path):
-    os.mkdir(contra_mafft_xinsi_plus_consalifold_dir_path)
-  if not os.path.isdir(contra_ref_sa_plus_consalifold_dir_path):
-    os.mkdir(contra_ref_sa_plus_consalifold_dir_path)
   if not os.path.isdir(posterior_probcons_plus_consalifold_dir_path):
     os.mkdir(posterior_probcons_plus_consalifold_dir_path)
   if not os.path.isdir(posterior_clustalw_plus_consalifold_dir_path):
@@ -192,11 +172,6 @@ def main():
     clustalw_plus_consalifold_output_dir_path = os.path.join(clustalw_plus_consalifold_dir_path, rna_family_name)
     mafft_xinsi_plus_consalifold_output_dir_path = os.path.join(mafft_xinsi_plus_consalifold_dir_path, rna_family_name)
     ref_sa_plus_consalifold_output_dir_path = os.path.join(ref_sa_plus_consalifold_dir_path, rna_family_name)
-    contra_mafft_plus_consalifold_output_dir_path = os.path.join(contra_mafft_plus_consalifold_dir_path, rna_family_name)
-    contra_probcons_plus_consalifold_output_dir_path = os.path.join(contra_probcons_plus_consalifold_dir_path, rna_family_name)
-    contra_clustalw_plus_consalifold_output_dir_path = os.path.join(contra_clustalw_plus_consalifold_dir_path, rna_family_name)
-    contra_mafft_xinsi_plus_consalifold_output_dir_path = os.path.join(contra_mafft_xinsi_plus_consalifold_dir_path, rna_family_name)
-    contra_ref_sa_plus_consalifold_output_dir_path = os.path.join(contra_ref_sa_plus_consalifold_dir_path, rna_family_name)
     posterior_probcons_plus_consalifold_output_dir_path = os.path.join(posterior_probcons_plus_consalifold_dir_path, rna_family_name)
     posterior_clustalw_plus_consalifold_output_dir_path = os.path.join(posterior_clustalw_plus_consalifold_dir_path, rna_family_name)
     posterior_mafft_plus_consalifold_output_dir_path = os.path.join(posterior_mafft_plus_consalifold_dir_path, rna_family_name)
@@ -264,16 +239,6 @@ def main():
     ref_sa_plus_consalifold_params.insert(0, ref_sa_plus_consalifold_command)
     mafft_xinsi_plus_consalifold_command = "consalifold -g 1 -t " + str(sub_thread_num) + " -i " + mafft_xinsi_output_file_path + " -o " + mafft_xinsi_plus_consalifold_output_dir_path
     consalifold_params_4_elapsed_time.insert(0, mafft_xinsi_plus_consalifold_command)
-    contra_mafft_plus_consalifold_command = "consalifold -m contra -t " + str(sub_thread_num) + " -i " + mafft_output_file_path + " -o " + contra_mafft_plus_consalifold_output_dir_path
-    contra_probcons_plus_consalifold_command = "consalifold -m contra -t " + str(sub_thread_num) + " -i " + probcons_output_file_path + " -o " + contra_probcons_plus_consalifold_output_dir_path
-    contra_clustalw_plus_consalifold_command = "consalifold -m contra -t " + str(sub_thread_num) + " -i " + clustalw_output_file_path + " -o " + contra_clustalw_plus_consalifold_output_dir_path
-    contra_mafft_xinsi_plus_consalifold_command = "consalifold -m contra -t " + str(sub_thread_num) + " -i " + mafft_xinsi_output_file_path + " -o " + contra_mafft_xinsi_plus_consalifold_output_dir_path
-    contra_ref_sa_plus_consalifold_command = "consalifold -m contra -t " + str(sub_thread_num) + " -i " + ref_sa_file_path + " -o " + contra_ref_sa_plus_consalifold_output_dir_path
-    contra_mafft_plus_consalifold_params.insert(0, contra_mafft_plus_consalifold_command)
-    contra_probcons_plus_consalifold_params.insert(0, contra_probcons_plus_consalifold_command)
-    contra_clustalw_plus_consalifold_params.insert(0, contra_clustalw_plus_consalifold_command)
-    contra_mafft_xinsi_plus_consalifold_params.insert(0, contra_mafft_xinsi_plus_consalifold_command)
-    contra_ref_sa_plus_consalifold_params.insert(0, contra_ref_sa_plus_consalifold_command)
     posterior_probcons_plus_consalifold_command = "consalifold -m posterior -t " + str(sub_thread_num) + " -i " + probcons_output_file_path + " -o " + posterior_probcons_plus_consalifold_output_dir_path
     posterior_probcons_plus_consalifold_params.insert(0, posterior_probcons_plus_consalifold_command)
     posterior_clustalw_plus_consalifold_command = "consalifold -m posterior -t " + str(sub_thread_num) + " -i " + clustalw_output_file_path + " -o " + posterior_clustalw_plus_consalifold_output_dir_path
@@ -302,7 +267,7 @@ def main():
     ref_sa_file_path_2 = os.path.join(ref_sa_dir_path, rna_family_name + ".fa")
     for gamma in gammas:
       gamma_str = str(gamma) if gamma < 1 else str(int(gamma))
-      output_file = "gamma=" + gamma_str + ".sth"
+      output_file = "hyperparam=" + gamma_str + ".sth"
       petfold_gamma_str = str(1 / gamma) if gamma > 1 else str(int(1 / gamma))
       mafft_plus_centroidalifold_output_file_path = os.path.join(mafft_plus_centroidalifold_output_dir_path, output_file)
       probcons_plus_centroidalifold_output_file_path = os.path.join(probcons_plus_centroidalifold_output_dir_path, output_file)
@@ -335,11 +300,6 @@ def main():
   pool.map(utils.run_command, clustalw_plus_consalifold_params)
   pool.map(utils.run_command, mafft_xinsi_plus_consalifold_params)
   pool.map(utils.run_command, ref_sa_plus_consalifold_params)
-  pool.map(utils.run_command, contra_mafft_plus_consalifold_params)
-  pool.map(utils.run_command, contra_probcons_plus_consalifold_params)
-  pool.map(utils.run_command, contra_clustalw_plus_consalifold_params)
-  pool.map(utils.run_command, contra_mafft_xinsi_plus_consalifold_params)
-  pool.map(utils.run_command, contra_ref_sa_plus_consalifold_params)
   pool.map(utils.run_command, posterior_probcons_plus_consalifold_params)
   pool.map(utils.run_command, posterior_clustalw_plus_consalifold_params)
   pool.map(utils.run_command, posterior_mafft_plus_consalifold_params)

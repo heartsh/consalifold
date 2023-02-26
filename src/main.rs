@@ -237,7 +237,8 @@ where
       produces_context_profs,
       produces_match_probs,
       &align_scores,
-    ).0;
+    )
+    .0;
     write_alignfold_prob_mats::<T>(
       output_dir_path,
       &x,
@@ -247,8 +248,16 @@ where
     );
     x
   };
-  let basepair_prob_mats = alignfold_prob_mats_avg.iter().map(|x| x.basepair_probs.clone()).collect();
-  let basepair_probs_mix = get_basepair_probs_mix(&align, &basepair_prob_mats, &basepair_probs_alifold, mix_weight);
+  let basepair_prob_mats = alignfold_prob_mats_avg
+    .iter()
+    .map(|x| x.basepair_probs.clone())
+    .collect();
+  let basepair_probs_mix = get_basepair_probs_mix(
+    &align,
+    &basepair_prob_mats,
+    &basepair_probs_alifold,
+    mix_weight,
+  );
   if hyperparam != NEG_INFINITY {
     let output_file_path = output_dir_path.join(format!("hyperparam={hyperparam}.sth"));
     let hyperparam = hyperparam + 1.;
